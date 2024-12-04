@@ -107,7 +107,7 @@ class GNN(nn.Module):
                 x = layer(x)
         return x
 
-    def fit(self, X, y, adj, train_idx, epochs=200, lr=1e-2):
+    def fit(self, X, y, adj, train_idx, epochs=200, lr=1e-2, batch_size=32):
         # Get edges for training set
         train_edges, train_weights = self.edge_func(adj, train_idx)
         X_train = X[train_idx]
@@ -127,6 +127,16 @@ class GNN(nn.Module):
 
         self.train()
         for i in range(epochs):
+            # for j in range(0, len(X), batch_size):
+            #     X_batch = X[j : j + batch_size]
+            #     y_batch = y[j : j + batch_size]
+
+            #     opt.zero_grad()
+            #     y_pred = self(X_batch, train_edges, train_weights)
+            #     loss = loss_fn(y_pred, y_batch)
+            #     loss.backward()
+            #     opt.step()
+
             opt.zero_grad()
             y_pred = self(X_train, train_edges, train_weights)
             loss = loss_fn(y_pred, y_train)
@@ -141,7 +151,11 @@ class GNN(nn.Module):
         test_edges, test_weights = self.edge_func(adj, test_idx)
         X_test = X[test_idx]
         y_pred = self(X_test, test_edges, test_weights)
-        return y_pred.argmax(1).detach()
+        # return y_pred.argmax(1).detach()
+        if self.task == "classification":
+            return y_pred.argmax(1).detach()
+        else:
+            return y_pred.detach()
 
 class LinkPredictionGNN(GNN):
     def forward(self, x, edge_index, edge_weight=None, ):

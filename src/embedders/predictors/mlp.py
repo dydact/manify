@@ -36,7 +36,7 @@ class MLP(nn.Module):
             x = layer(x)
         return x
 
-    def fit(self, X, y, epochs=200, lr=1e-2):
+    def fit(self, X, y, epochs=1_000, lr=1e-2, batch_size=32):
         """Train the model."""
         opt = torch.optim.Adam(self.parameters(), lr=lr)
         if self.task == "classification":
@@ -48,6 +48,15 @@ class MLP(nn.Module):
 
         self.train()
         for i in range(epochs):
+            # for j in range(0, len(X), batch_size):
+            #     X_batch = X[j : j + batch_size]
+            #     y_batch = y[j : j + batch_size]
+
+            #     opt.zero_grad()
+            #     y_pred = self(X_batch)
+            #     loss = loss_fn(y_pred, y_batch)
+            #     loss.backward()
+            #     opt.step()
             opt.zero_grad()
             y_pred = self(X)
             loss = loss_fn(y_pred, y)
@@ -58,4 +67,7 @@ class MLP(nn.Module):
         """Make predictions."""
         self.eval()
         with torch.no_grad():
-            return self(X).argmax(1).detach()
+            if self.task == "classification":
+                return self(X).argmax(1).detach()
+            else:
+                return self(X).detach()

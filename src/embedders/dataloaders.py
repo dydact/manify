@@ -10,6 +10,9 @@ from scipy.io import mmread
 import anndata
 import gzip
 import pickle
+from mpl_toolkits.basemap import Basemap
+import h5py
+from scipy.fftpack import fft, fftfreq
 
 
 def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[np.ndarray, list]:
@@ -306,6 +309,7 @@ def _month_to_unit_circle_point(month: str) -> Tuple[float, float]:
 
 def load_temperature(
     temperature_path: str = Path(__file__).parent.parent.parent / "data" / "temperature" / "temperature.csv",
+    seed: int = 42,  # Not used
 ) -> Tuple[TT["n_points", "n_dims"], TT["n_points"], None]:
     temperature_dataset = pd.read_csv(temperature_path)
     temperature_dataset = temperature_dataset.drop(columns=["Latitude", "Longitude", "Country", "City", "Year"])
@@ -319,10 +323,140 @@ def load_temperature(
     )
 
     return (
-        torch.tensor(temperature_dataset[["X", "Y", "Z", "Month_X", "Month_Y"]].values),
+        torch.tensor(temperature_dataset[["X", "Y", "Z", "Month_X", "Month_Y"]].values, dtype=torch.float32),
         torch.tensor(temperature_dataset[["Temperature"]].values.flatten()),
         None,
     )
+
+def load_landmasses(n_points: int = 400, seed=None) -> Tuple[TT["n_points", "n_dims"], None, None]:
+    # 1. Get inputs
+    _x = np.linspace(-180, 180, n_points)
+    _y = np.linspace(-90, 90, n_points)
+    xx, yy = np.meshgrid(_x, _y)
+    xx = xx.flatten()
+    yy = yy.flatten()
+
+    # 2. Get projection coordinates
+    m = Basemap()
+    mxx, myy = m(xx, yy)
+
+    # 3. Convert grid to radians
+    xx_rads = np.radians(xx).reshape(-1, 1)
+    yy_rads = np.radians(yy).reshape(-1, 1)
+    X = np.hstack(
+        [
+            np.cos(yy_rads) * np.cos(xx_rads),
+            np.cos(yy_rads) * np.sin(xx_rads),
+            np.sin(yy_rads),
+        ]
+    )
+
+    # 4. Get y-values
+    y = np.array([m.is_land(x, y) for x, y in zip(mxx, myy)])
+
+    # For some reason we were getting double-precision floats here by default
+    return torch.tensor(X, dtype=torch.float32), torch.tensor(y), None
+
+def _load_neuron(
+    neuron_idx, 
+    n_coefficients=20, 
+    threshold=0, 
+    n_samples=1000, 
+    seed=None, 
+    path_to_data=Path(__file__).parent.parent.parent / "data" / "electrophysiology" / "623474383_ephys.nwb"
+) -> Tuple[TT["n_points", "n_dims"], TT["n_points"]]:
+    with h5py.File(path_to_data, "r") as data:
+        X = np.array(data[f"acquisition/timeseries/Sweep_{neuron_idx}/data"])
+    # y_labels = X > threshold
+    # y_coords = np.arange(len(X))[y_labels]
+
+    # FFT
+    X_fft = fft(X)
+    top_k_idx = np.argsort(np.abs(X_fft))[-n_coefficients - 1 : -1] # Avoid division by zero
+    # X_fft_approx = np.zeros_like(X_fft)
+    # X_fft_approx[top_k_idx] = X_fft[top_k_idx]
+    # X_approx = ifft(X_fft_approx)
+
+    # Get freqs
+    freqs = fftfreq(len(X), d=1.)
+    top_freqs = freqs[top_k_idx]
+
+    # Stratify
+    X_pos_idx = np.arange(X.shape[0])[X > threshold]
+    X_neg_idx = np.arange(X.shape[0])[X <= threshold]
+    n_samples_fixed = min(len(X_pos_idx), len(X_neg_idx), n_samples)
+
+    # Get sample
+    np.random.seed(seed)
+    data = []
+    labels = []
+    for my_set in [X_pos_idx, X_neg_idx]:
+        for idx in np.random.choice(my_set, size=n_samples_fixed, replace=False):
+            # Get period for X
+            periods = [idx / f for f in top_freqs]
+            # periods = [p % 1 for p in periods]
+
+            # Convert to angles
+            angles = [np.pi * 2 * p for p in periods]
+
+            # Convert to xs and ys
+            xs = [np.cos(theta) for theta in angles]
+            ys = [np.sin(theta) for theta in angles]
+
+            data.append([[x, y] for x, y in zip(xs, ys)])
+
+            # Also sample a label
+            label = X[idx] > threshold
+            labels.append(label)
+
+    data = np.stack(data, axis=0).reshape(n_samples_fixed * 2, 2 * n_coefficients)
+    labels = np.array(labels)
+
+    return torch.tensor(data, dtype=torch.float32), torch.tensor(labels), None
+
+def load_neuron33(**kwargs):
+    return _load_neuron(33, **kwargs)
+
+def load_neuron46(**kwargs):
+    return _load_neuron(46, **kwargs)
+
+def load_traffic(
+    traffic_path: str = Path(__file__).parent.parent.parent / "data" / "traffic" / "traffic.csv",
+    seed: int = 42 # Not used
+) -> Tuple[TT["n_points", "n_dims"], TT["n_points"], None]:
+    df = pd.read_csv(traffic_path)
+    df["datetime"] = pd.to_datetime(df["DateTime"])
+    df["day_of_week"] = df["datetime"].dt.dayofweek
+    df["hour"] = df["datetime"].dt.hour
+    df["day_of_year"] = df["datetime"].dt.dayofyear
+    df["minute"] = df["datetime"].dt.minute
+    # y = df["Vehicles"]
+
+    # Basic datasets
+    # X = df[["Junction", "day_of_week", "hour", "day_of_year", "minute"]]
+    # y = df["Vehicles"]
+
+    angle = lambda x, n : x / n * 2 * np.pi
+
+    X, y = [], []
+    for i, row in df.iterrows():
+        _, jct, vehicles, _, _, day, hr, doy, minute = row
+        X.append([
+            jct,
+            np.cos(angle(doy, 365)),
+            np.sin(angle(doy, 365)),
+            np.cos(angle(day, 7)),
+            np.sin(angle(day, 7)),
+            np.cos(angle(hr, 24)),
+            np.sin(angle(hr, 24)),
+            np.cos(angle(minute, 60)),
+            np.sin(angle(minute, 60)),
+        ])
+        y.append(vehicles)
+
+    return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32).log(), None
+
+
 
 
 def load(name: str, **kwargs) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
@@ -346,6 +480,10 @@ def load(name: str, **kwargs) -> Tuple[TT["n_points", "n_points"], TT["n_points"
         "cifar_100": load_cifar_100,
         "mnist": load_mnist,
         "temperature": load_temperature,
+        "landmasses": load_landmasses,
+        "neuron_33": load_neuron33,
+        "neuron_46": load_neuron46,
+        "traffic": load_traffic,
     }
     if name in loaders:
         return loaders[name](**kwargs)

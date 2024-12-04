@@ -106,16 +106,15 @@ def benchmark(
 
     # Make sure classification labels are formatted correctly
     if task == "classification":
-        y = torch.unique(y, return_inverse=True)[1]
+        if y is not None:
+            y = torch.unique(y, return_inverse=True)[1]
+        if y_train is not None and y_test is not None:
+            y_concat = torch.cat([y_train, y_test])
+            y_train = torch.unique(y_concat, return_inverse=True)[1][: len(y_train)]
+            y_test = torch.unique(y_concat, return_inverse=True)[1][len(y_train) :]
 
     # Make sure we're on the right device
     pm = pm.to(device)
-
-    # Get pdists
-    pdists = pm.pdist(X).detach()
-
-    # Get tangent plane
-    X_tangent = pm.logmap(X).detach()
 
     # Split data
     if X_train is not None and X_test is not None and y_train is not None and y_test is not None:
@@ -145,9 +144,24 @@ def benchmark(
         X = X.to(device)
         y = y.to(device)
 
-        X_train, X_test, y_train, y_test, X_train_tangent, X_test_tangent, train_idx, test_idx = train_test_split(
-            X, y, X_tangent, np.arange(len(X)), test_size=0.2
+        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
+            X, y, np.arange(len(X)), test_size=0.2
         )
+    
+    # If we use X_train and X_test, we should make a fake X and y
+    if X is None and y is None:
+        X = torch.cat([X_train, X_test])
+        y = torch.cat([y_train, y_test])
+        train_idx = np.arange(len(X_train))
+        test_idx = np.arange(len(X_train), len(X))
+
+    # Get pdists
+    pdists = pm.pdist(X).detach()
+
+    # Get tangent plane
+    X_tangent = pm.logmap(X).detach()
+    X_train_tangent = pm.logmap(X_train).detach()
+    X_test_tangent = pm.logmap(X_test).detach()
 
     # Get numpy versions
     X_train_np, X_test_np = X_train.detach().cpu().numpy(), X_test.detach().cpu().numpy()
@@ -373,7 +387,7 @@ def benchmark(
     out_dim = 1 if task == "regression" else len(torch.unique(y))
 
     if "tangent_mlp" in models:
-        tangent_mlp = MLP(pm=pm, tangent=True, task=task, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim)
+        tangent_mlp = MLP(pm=pm, tangent=True, task=task, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim)
         tangent_mlp = tangent_mlp.to(device)
         t1 = time.time()
         tangent_mlp.fit(X_train_tangent, y_train)
@@ -382,7 +396,7 @@ def benchmark(
         accs["tangent_mlp"]["time"] = t2 - t1
 
     if "ambient_mlp" in models:
-        ambient_mlp = MLP(pm=pm, tangent=False, task=task, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim)
+        ambient_mlp = MLP(pm=pm, tangent=False, task=task, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim)
         ambient_mlp = ambient_mlp.to(device)
         t1 = time.time()
         ambient_mlp.fit(X_train, y_train)
@@ -391,7 +405,7 @@ def benchmark(
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if adj is not None and "tangent_gnn" in models:
-        tangent_gnn = GNN(pm=pm, tangent=True, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim, task=task, edge_func=get_nonzero)
+        tangent_gnn = GNN(pm=pm, tangent=True, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task, edge_func=get_nonzero)
         tangent_gnn = tangent_gnn.to(device)
         t1 = time.time()
         tangent_gnn.fit(X_tangent, y, adj=adj, train_idx=train_idx)
@@ -401,17 +415,17 @@ def benchmark(
         accs["tangent_gnn_adj"]["time"] = t2 - t1
 
     if adj is not None and "ambient_gnn" in models:
-        ambient_gnn = GNN(pm=pm, tangent=False, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim, task=task, edge_func=get_nonzero)
+        ambient_gnn = GNN(pm=pm, tangent=False, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task, edge_func=get_nonzero)
         ambient_gnn = ambient_gnn.to(device)
         t1 = time.time()
         ambient_gnn.fit(X, y, adj=adj, train_idx=train_idx)
         y_pred = ambient_gnn.predict(X, adj=adj, test_idx=test_idx)
-        t2 = time.time()
+        t2 = time.time() 
         accs["ambient_gnn_adj"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn_adj"]["time"] = t2 - t1
 
     if "tangent_gnn" in models:
-        tangent_gnn = GNN(pm=pm, tangent=True, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim, task=task)
+        tangent_gnn = GNN(pm=pm, tangent=True, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task)
         tangent_gnn = tangent_gnn.to(device)
         t1 = time.time()
         tangent_gnn.fit(X_tangent, y, adj=pdists, train_idx=train_idx)
@@ -421,7 +435,7 @@ def benchmark(
         accs["tangent_gnn"]["time"] = t2 - t1
 
     if "ambient_gnn" in models:
-        ambient_gnn = GNN(pm=pm, tangent=False, input_dim=in_dim, hidden_dims=[in_dim], output_dim=out_dim, task=task)
+        ambient_gnn = GNN(pm=pm, tangent=False, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task)
         ambient_gnn = ambient_gnn.to(device)
         t1 = time.time()
         ambient_gnn.fit(X, y, adj=pdists, train_idx=train_idx)
