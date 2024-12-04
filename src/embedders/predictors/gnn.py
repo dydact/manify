@@ -109,7 +109,7 @@ class GNN(nn.Module):
                 x = layer(x)
         return x
 
-    def fit(self, X, y, adj, train_idx, epochs=200, lr=1e-2, batch_size=32):
+    def fit(self, X, y, adj, train_idx, epochs=200, lr=1e-2):
         # Get edges for training set
         train_edges, train_weights = self.edge_func(adj, train_idx)
         X_train = X[train_idx]
