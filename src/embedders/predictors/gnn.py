@@ -37,6 +37,7 @@ def get_dense_edges(dist_matrix, node_indices):
 
     return edge_index, edge_weights
 
+
 def get_nonzero(adj_matrix, node_indices):
     # Get submatrix of distances
     sub_adj = adj_matrix[node_indices][:, node_indices]
@@ -48,6 +49,7 @@ def get_nonzero(adj_matrix, node_indices):
     edge_weights = sub_adj[sub_adj.nonzero(as_tuple=True)]
 
     return edges, edge_weights
+
 
 def get_all(adj_matrix, node_indices):
     n = len(node_indices)
@@ -127,16 +129,6 @@ class GNN(nn.Module):
 
         self.train()
         for i in range(epochs):
-            # for j in range(0, len(X), batch_size):
-            #     X_batch = X[j : j + batch_size]
-            #     y_batch = y[j : j + batch_size]
-
-            #     opt.zero_grad()
-            #     y_pred = self(X_batch, train_edges, train_weights)
-            #     loss = loss_fn(y_pred, y_batch)
-            #     loss.backward()
-            #     opt.step()
-
             opt.zero_grad()
             y_pred = self(X_train, train_edges, train_weights)
             loss = loss_fn(y_pred, y_train)
@@ -156,43 +148,3 @@ class GNN(nn.Module):
             return y_pred.argmax(1).detach()
         else:
             return y_pred.detach()
-
-class LinkPredictionGNN(GNN):
-    def forward(self, x, edge_index, edge_weight=None, ):
-        # Get node embeddings
-        x = super().forward(x, edge_index, edge_weight)
-        
-        # Compute edge scores
-        row, col = edge_index
-        scores = (x[row] * x[col]).sum(dim=1)
-        # return torch.sigmoid(scores)
-        return scores
-
-    def fit(self, X, dists, adj, train_idx, epochs=200, lr=1e-2, print_interval=None):
-        opt = torch.optim.Adam(self.parameters(), lr=lr)
-
-        train_edges, _ = self.edge_func(dists, train_idx)
-
-        # Convert adj to float
-        adj = adj.float().clip(0, 1) # some graphs have 2 edges
-
-        # Weights
-        loss_fn = nn.BCEWithLogitsLoss(pos_weight=1-adj.mean())
-
-        self.train()
-        for i in range(epochs):
-            opt.zero_grad()
-            pred = self(X, edge_index=train_edges)
-            labels = adj[train_idx][:, train_idx].flatten()
-            loss = loss_fn(pred, labels)
-            loss.backward()
-            opt.step()
-
-            if print_interval is not None and i % print_interval == 0:
-                print(f"Loss: {loss.item()}")
-
-    def predict(self, X, dists, test_idx):
-        self.eval()
-        # test_edges, _ = self.edge_func(dists, test_idx)
-        test_edges, _ = self.edge_func(dists, test_idx)
-        return self(X, edge_index=test_edges, ).detach()

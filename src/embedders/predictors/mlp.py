@@ -48,15 +48,6 @@ class MLP(nn.Module):
 
         self.train()
         for i in range(epochs):
-            # for j in range(0, len(X), batch_size):
-            #     X_batch = X[j : j + batch_size]
-            #     y_batch = y[j : j + batch_size]
-
-            #     opt.zero_grad()
-            #     y_pred = self(X_batch)
-            #     loss = loss_fn(y_pred, y_batch)
-            #     loss.backward()
-            #     opt.step()
             opt.zero_grad()
             y_pred = self(X)
             loss = loss_fn(y_pred, y)
