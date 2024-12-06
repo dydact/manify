@@ -5,8 +5,13 @@ import torch
 
 from .manifolds import ProductManifold
 
-
+"""Product space variational autoencoder implementation"""
 class ProductSpaceVAE(torch.nn.Module):
+    """
+    Variational Autoencoder (VAE) for data in a mixed-curvature product manifold space.
+    This VAE model leverages a product manifold structure for latent representations, enabling 
+    flexible encodings in spaces with different curvature properties (e.g., hyperbolic, Euclidean, spherical).
+    """
     def __init__(
         self,
         encoder: torch.nn.Module,
@@ -38,6 +43,17 @@ class ProductSpaceVAE(torch.nn.Module):
         return self.decoder(z)
 
     def forward(self, x: TT["batch_size", "n_features"]) -> TT["batch_size", "n_features"]:
+        """
+        Performs the forward pass of the VAE.
+
+        Encodes the input, samples latent variables, and decodes to reconstruct the input.
+
+        Args:
+            x (torch.Tensor): Input data of shape (batch_size, n_features).
+
+        Returns:
+            tuple: Reconstructed data, latent means, and latent variances.
+        """
         z_means, z_logvars = self.encode(x)
         # sigma = torch.diag_embed(torch.exp(z_logvars) + 1e-8)
         # z = self.pm.sample(z_means, sigma)
@@ -57,6 +73,16 @@ class ProductSpaceVAE(torch.nn.Module):
         # sigma: TT["n_latent", "n_latent"],
         sigma_factorized: List[TT["batch_size", "n_latent", "n_latent"]],
     ) -> TT["batch_size"]:
+        """
+        Computes the KL divergence between posterior and prior distributions.
+
+        Args:
+            z_mean (torch.Tensor): Latent means of shape (batch_size, n_latent).
+            sigma_factorized (list of torch.Tensor): Factorized covariance matrices for each latent dimension.
+
+        Returns:
+            torch.Tensor: KL divergence values for each data point in the batch.
+        """
         # Get KL divergence as the average of log q(z|x) - log p(z)
         # See http://joschu.net/blog/kl-approx.html for more info
         means = torch.repeat_interleave(z_mean, self.n_samples, dim=0)
@@ -72,6 +98,15 @@ class ProductSpaceVAE(torch.nn.Module):
         return (log_qz - log_pz).view(-1, self.n_samples).mean(dim=1)
 
     def elbo(self, x: TT["batch_size", "n_features"]) -> TT["batch_size"]:
+        """
+        Computes the Evidence Lower Bound (ELBO).
+
+        Args:
+            x (torch.Tensor): Input data of shape (batch_size, n_features).
+
+        Returns:
+            tuple: Mean ELBO, mean log-likelihood, and mean KL divergence across the batch.
+        """
         # x_reconstructed, z_means, sigmas = self(x)
         # kld = self.kl_divergence(z_means, sigmas)
         x_reconstructed, z_means, sigma_factorized = self(x)
