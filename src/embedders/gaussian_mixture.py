@@ -6,7 +6,7 @@ from .manifolds import ProductManifold
 
 from typing import Optional, Tuple, Literal
 
-
+"""Implementation of a Gaussian mixuture generator in the product space"""
 @torch.no_grad()
 def gaussian_mixture(
     pm: ProductManifold,
