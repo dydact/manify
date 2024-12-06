@@ -27,6 +27,7 @@ from .predictors.svm import ProductSpaceSVM
 from .predictors.mlp import MLP
 from .predictors.gnn import GNN, get_nonzero
 
+"""Implementation for benchmarking different product space machine learning methods"""
 
 def _fix_X(X, signature):
     # Use numpy since it's going to the legacy ProductDT anyway
@@ -93,6 +94,40 @@ def benchmark(
     batch_size=None,
     adj=None,
 ) -> Dict[str, float]:
+    """
+    Benchmarks various machine learning models on a dataset using a product manifold structure.
+
+    Args:
+        X (batch, dim): input tensor of features
+        y (batch,): input tensor of labels.
+        pm: the defined product manifold for benchmarks.
+        split: data splitting strategy ('train_test' or 'cross_val').
+        device: device for computation ('cpu', 'cuda', 'mps').
+        score: scoring metric for model evaluation ('accuracy', 'f1-micro', etc.).
+        models: list of model names to evaluate. Options include:
+            * "sklearn_dt": Decision tree from scikit-learn.
+            * "sklearn_rf": Random forest from scikit-learn.
+            * "product_dt": Product space decision tree.
+            * "product_rf": Product space random forest.
+            * "tangent_dt": Decision tree on tangent space.
+            * "tangent_rf": Random forest on tangent space.
+            * "knn": k-nearest neighbors.
+            * "ps_perceptron": Product space perceptron.
+        max_depth: maximum depth of tree-based models in integer.
+        n_estimators: integer number of estimators for random forest models.
+        min_samples_split: minimum number of samples required to split an internal node.
+        min_samples_leaf: minimum number of samples in a leaf node.
+        task: task type ('classification' or 'regression').
+        seed: random seed for reproducibility.
+        use_special_dims: boolean for whether to use special manifold dimensions.
+        n_features: feature dimensionality type ('d' or 'd_choose_2').
+        X_train, X_test, y_train, y_test: training and testing datasets, X is of feature, and y is of labels
+        batch_size: batch size for certain models.
+
+    Returns:
+        Dict[str, float]: dictionary of model names and their corresponding evaluation scores.
+
+    """    
     # Input validation on (task, score) pairing
     if task == "classification":
         # assert score in ["accuracy", "f1-micro"]
