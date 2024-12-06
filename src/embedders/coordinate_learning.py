@@ -32,20 +32,20 @@ def train_coords(
     Coordinate training and optimization
 
     Args:
-        pm: productManifold object that encapsulates the manifold and its signature.
-        dists: (n_points, n_points) tensor representing the pairwise distance matrix between points.
-        device: device for training (default: "cpu").
-        burn_in_learning_rate: learning rate during the burn-in phase (default: 1e-3).
-        burn_in_iterations: number of iterations during the burn-in phase (default: 2,000).
-        learning_rate: learning rate during the training phase (default: 1e-2).
-        scale_factor_learning_rate: learning rate for scale factor optimization (default: 0.0).
-        training_iterations: number of iterations for the training phase (default: 18,000).
-        loss_window_size: window size for computing the moving average of the loss (default: 100).
-        logging_interval: interval for logging the training progress (default: 10).
+        pm: ProductManifold object that encapsulates the manifold and its signature.
+        dists: (n_points, n_points) Tensor representing the pairwise distance matrix between points.
+        device: Device for training (default: "cpu").
+        burn_in_learning_rate: Learning rate during the burn-in phase (default: 1e-3).
+        burn_in_iterations: Number of iterations during the burn-in phase (default: 2,000).
+        learning_rate: Learning rate during the training phase (default: 1e-2).
+        scale_factor_learning_rate: Learning rate for scale factor optimization (default: 0.0).
+        training_iterations: Number of iterations for the training phase (default: 18,000).
+        loss_window_size: Window size for computing the moving average of the loss (default: 100).
+        logging_interval: Interval for logging the training progress (default: 10).
 
     Returns:
-        pm.x_embed: tensor of the final learned coordinates in the manifold.
-        losses: list of loss values at each iteration during training.
+        pm.x_embed: Tensor of the final learned coordinates in the manifold.
+        losses: List of loss values at each iteration during training.
     """    
     # Move everything to the device
     pm.x_embed = pm.initialize_embeddings(n_points=len(dists)).to(device)
