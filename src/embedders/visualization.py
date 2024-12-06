@@ -1,9 +1,17 @@
 from torchtyping import TensorType
 import torch
 
-
+"""Tools for visualization"""
 def hyperboloid_to_poincare(X: TensorType["n_points", "n_dim"]) -> TensorType["n_points", "n_dim_minus_1"]:
-    """Convert hyperboloid coordinates to Poincaré ball coordinates."""
+    """
+    Convert hyperboloid coordinates to Poincaré ball coordinates.
+
+    Args:
+        X: (n_points, n_dim) Tensor, input coordinates in the hyperboloid model.
+
+    Returns:
+        poincare_coords: (n_points, n_dim_minus_1) Tensor, coordinates in the Poincaré ball model.
+    """
     # Spatial components: all columns except the first
     x_space = X[:, 1:]
 
@@ -17,7 +25,15 @@ def hyperboloid_to_poincare(X: TensorType["n_points", "n_dim"]) -> TensorType["n
 
 
 def spherical_to_polar(X: TensorType["n_points", "n_dim"]) -> TensorType["n_points", "n_dim_minus_1"]:
-    """Convert spherical coordinates to polar coordinates."""
+    """
+    Convert spherical coordinates to polar coordinates.
+
+    Args:
+        X: (n_points, n_dim) Tensor, input coordinates in spherical form.
+
+    Returns:
+        out[:, 1:]: (n_points, n_dim_minus_1) Tensor, coordinates in polar form.
+    """
     # Radius computation
     r = torch.norm(X, dim=1, keepdim=True)
 
@@ -43,5 +59,14 @@ def spherical_to_polar(X: TensorType["n_points", "n_dim"]) -> TensorType["n_poin
 
 
 def S2_to_polar(X: TensorType["n_points", 3]) -> TensorType["n_points", 2]:
-    """Convert S^2,1 coordinates to polar coordinates."""
+    """
+    Convert S^2 (2-sphere) coordinates to polar coordinates.
+
+    Args:
+        X: (n_points, 3) Tensor, input coordinates on the 2-sphere.
+
+    Returns:
+        polar_coords: (n_points, 2) Tensor, coordinates in polar form (elevation, azimuth).
+    """
     return torch.stack([torch.acos(X[:, 2]), torch.atan2(X[:, 1], X[:, 0])], dim=1)
+
