@@ -13,7 +13,7 @@ import pickle
 from mpl_toolkits.basemap import Basemap
 import h5py
 from scipy.fftpack import fft, fftfreq
-
+"""Dataloaders for different datasets"""
 
 def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[np.ndarray, list]:
     """Returns the distances between the top connected component of a graph"""
@@ -460,6 +460,16 @@ def load_traffic(
 
 
 def load(name: str, **kwargs) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
+    """
+    Driver function to load the specified dataset
+
+    Args:
+        name: The name of the dataset in string.
+        **kwargs: Additional keyword argument.
+
+    Returns:
+        A tuple that contains the distance matrix, the labels, and the adjacency matrix
+    """
     loaders = {
         "cities": load_cities,
         "cs_phds": load_cs_phds,
