@@ -98,13 +98,13 @@ def benchmark(
     Benchmarks various machine learning models on a dataset using a product manifold structure.
 
     Args:
-        X (batch, dim): input tensor of features
-        y (batch,): input tensor of labels.
-        pm: the defined product manifold for benchmarks.
-        split: data splitting strategy ('train_test' or 'cross_val').
-        device: device for computation ('cpu', 'cuda', 'mps').
-        score: scoring metric for model evaluation ('accuracy', 'f1-micro', etc.).
-        models: list of model names to evaluate. Options include:
+        X (batch, dim): Input tensor of features
+        y (batch,): Input tensor of labels.
+        pm: The defined product manifold for benchmarks.
+        split: Data splitting strategy ('train_test' or 'cross_val').
+        device: Device for computation ('cpu', 'cuda', 'mps').
+        score: Scoring metric for model evaluation ('accuracy', 'f1-micro', etc.).
+        models: List of model names to evaluate. Options include:
             * "sklearn_dt": Decision tree from scikit-learn.
             * "sklearn_rf": Random forest from scikit-learn.
             * "product_dt": Product space decision tree.
@@ -113,19 +113,19 @@ def benchmark(
             * "tangent_rf": Random forest on tangent space.
             * "knn": k-nearest neighbors.
             * "ps_perceptron": Product space perceptron.
-        max_depth: maximum depth of tree-based models in integer.
-        n_estimators: integer number of estimators for random forest models.
-        min_samples_split: minimum number of samples required to split an internal node.
-        min_samples_leaf: minimum number of samples in a leaf node.
-        task: task type ('classification' or 'regression').
-        seed: random seed for reproducibility.
-        use_special_dims: boolean for whether to use special manifold dimensions.
-        n_features: feature dimensionality type ('d' or 'd_choose_2').
-        X_train, X_test, y_train, y_test: training and testing datasets, X is of feature, and y is of labels
-        batch_size: batch size for certain models.
+        max_depth: Maximum depth of tree-based models in integer.
+        n_estimators: Integer number of estimators for random forest models.
+        min_samples_split: Minimum number of samples required to split an internal node.
+        min_samples_leaf: Minimum number of samples in a leaf node.
+        task: Task type ('classification' or 'regression').
+        seed: Random seed for reproducibility.
+        use_special_dims: Boolean for whether to use special manifold dimensions.
+        n_features: Feature dimensionality type ('d' or 'd_choose_2').
+        X_train, X_test, y_train, y_test: Training and testing datasets, X is of feature, and y is of labels
+        batch_size: Batch size for certain models.
 
     Returns:
-        Dict[str, float]: dictionary of model names and their corresponding evaluation scores.
+        Dict[str, float]: Dictionary of model names and their corresponding evaluation scores.
 
     """    
     # Input validation on (task, score) pairing
