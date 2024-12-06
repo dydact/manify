@@ -454,18 +454,18 @@ class ProductManifold(Manifold):
         sigma_factorized: Optional[List[TT["n_points", "n_dim_manifold", "n_dim_manifold"]]] = None,
         return_tangent: bool = False,
     ) -> Union[TT["n_points", "n_ambient_dim"], Tuple[TT["n_points", "n_ambient_dim"], TT["n_points", "n_dim"]]]:
-    """
-    Sample from the variational distribution.
-
-    Args:
-        z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-        sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults to identity matrices.
-        return_tangent: Bool for whether to return the tangent vectors along with the sampled points. Defaults to False.
-
-    Returns:
-        Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing the sampled points on the manifold. 
-        If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
-    """
+        """
+        Sample from the variational distribution.
+    
+        Args:
+            z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults to identity matrices.
+            return_tangent: Bool for whether to return the tangent vectors along with the sampled points. Defaults to False.
+    
+        Returns:
+            Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing the sampled points on the manifold. 
+            If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
+        """
         if z_mean is None:
             z_mean = self.mu0
         z_mean = torch.Tensor(z_mean).reshape(-1, self.ambient_dim).to(self.device)
