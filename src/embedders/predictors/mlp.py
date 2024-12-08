@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-
+"""Implementation for multilayered perception(MLP)"""
 class MLP(nn.Module):
     def __init__(
         self, pm, input_dim=0, hidden_dims=None, output_dim=0, tangent=True, task="classification", activation=nn.ReLU
@@ -31,13 +31,29 @@ class MLP(nn.Module):
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
-        """Forward pass through the network."""
+        """
+        Forward pass through the network.
+        
+        Args:
+            x: Feature in tensor
+
+        Returns:
+            x: Result after the forward pass
+        """
         for layer in self.layers:
             x = layer(x)
         return x
 
     def fit(self, X, y, epochs=1_000, lr=1e-2):
-        """Train the model."""
+        """
+        Train the model.
+        
+        Args:
+            X: feature tensor for training the model
+            y: labels tensor the training the model
+            epochs: number of epochs in training, default to 1000
+            lr: learning rate of training, default to 1e-2
+        """
         opt = torch.optim.Adam(self.parameters(), lr=lr)
         if self.task == "classification":
             loss_fn = nn.CrossEntropyLoss()
@@ -55,7 +71,15 @@ class MLP(nn.Module):
             opt.step()
 
     def predict(self, X):
-        """Make predictions."""
+        """
+        Make predictions.
+
+        Args:
+            X: feature in tensors for predictions
+            
+        Returns: 
+            self(X).detach(): Result of the prediction
+        """
         self.eval()
         with torch.no_grad():
             if self.task == "classification":
