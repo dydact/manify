@@ -12,7 +12,7 @@ from ..manifolds import ProductManifold
 from torchtyping import TensorType as TT
 from typing import Tuple, Optional, Literal
 
-
+"""Product space decision tree and random forest implementation"""
 def _angular_greater(queries: TT["query_batch"], keys: TT["key_batch"]) -> TT["query_batch key_batch"]:
     """
     Given an angle theta, check whether a tensor of inputs is in [theta, theta + pi)
@@ -268,6 +268,7 @@ def _get_split(
 
 # Copied over from hyperdt.torch.tree
 class DecisionNode:
+    """Class for nodes in a decision tree."""
     def __init__(self, value=None, probs=None, feature=None, theta=None):
         self.value = value
         self.probs = probs  # predicted class probabilities of all samples in the leaf
@@ -278,6 +279,7 @@ class DecisionNode:
 
 
 class ProductSpaceDT(BaseEstimator, ClassifierMixin):
+"""Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""    
     def __init__(
         self,
         pm,
@@ -632,6 +634,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
 
 class ProductSpaceRF(BaseEstimator, ClassifierMixin):
+    """Random Forest in the product space"""
     def __init__(
         self,
         pm,
