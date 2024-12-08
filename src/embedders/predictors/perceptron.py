@@ -4,6 +4,7 @@ from .kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
+    """ A product-space perceptron model for multiclass classification in the product manifold space. """
     def __init__(self, pm, max_epochs=1_000, patience=5, weights=None):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
@@ -16,6 +17,15 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             self.weights = weights
 
     def fit(self, X, y):
+        """
+        Trains the perceptron model using the provided data and labels.
+        Args:
+            X: The training data of shape.
+            y: The class labels for the training data.
+
+        Returns:
+            self: The fitted model.
+        """
         # Identify unique classes for multiclass classification
         self.classes_ = torch.unique(y).tolist()
         n_samples = X.shape[0]
@@ -73,6 +83,17 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         return self
 
     def predict_proba(self, X):
+        """
+        Predicts the decision values for each class.
+
+        Args:
+            X: The test data.
+
+        Returns:
+            torch.Tensor: The decision values for each test sample and each class, 
+            of shape (n_samples_test, n_classes).
+        """
+
         n_samples = X.shape[0]
         n_classes = len(self.classes_)
         decision_values = torch.zeros((n_samples, n_classes), dtype=X.dtype, device=X.device)
@@ -95,6 +116,15 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         return decision_values
 
     def predict(self, X):
+        """
+        Predicts the class labels for the given test data X.
+        
+        Args:
+            X: The test data.
+
+        Returns:
+            torch.Tensor: The predicted class labels for each test sample.
+        """
         decision_values = self.predict_proba(X)
         # Return the class with the highest decision value
         argmax_idx = torch.argmax(decision_values, dim=1)
