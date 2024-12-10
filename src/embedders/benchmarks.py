@@ -1,23 +1,19 @@
-from torchtyping import TensorType as TT
+"""Implementation for benchmarking different product space machine learning methods"""
+
 from typing import List, Literal, Dict, Optional
+import time
+from torchtyping import TensorType as TT
 
 import torch
 import numpy as np
 
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
-
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.svm import SVC, SVR
-
-# Tabbaghi imports
-# from hyperdt.product_space_svm import mix_curv_svm
-# from hyperdt.product_space_perceptron import mix_curv_perceptron
-
-import time
 
 from .manifolds import ProductManifold
 
@@ -26,8 +22,6 @@ from .predictors.perceptron import ProductSpacePerceptron
 from .predictors.svm import ProductSpaceSVM
 from .predictors.mlp import MLP
 from .predictors.gnn import GNN, get_nonzero
-
-"""Implementation for benchmarking different product space machine learning methods"""
 
 def _fix_X(X, signature):
     # Use numpy since it's going to the legacy ProductDT anyway
@@ -121,7 +115,7 @@ def benchmark(
         seed: Random seed for reproducibility.
         use_special_dims: Boolean for whether to use special manifold dimensions.
         n_features: Feature dimensionality type ('d' or 'd_choose_2').
-        X_train, X_test, y_train, y_test: Training and testing datasets, X is of feature, and y is of labels
+        X_train, X_test, y_train, y_test: Training and testing datasets, X: feature, y: label.
         batch_size: Batch size for certain models.
 
     Returns:
@@ -182,7 +176,6 @@ def benchmark(
         X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
             X, y, np.arange(len(X)), test_size=0.2
         )
-    
     # If we use X_train and X_test, we should make a fake X and y
     if X is None and y is None:
         X = torch.cat([X_train, X_test])
@@ -211,8 +204,6 @@ def benchmark(
     X_train_restricted = _restrict_X(X_train_np, pm.signature)
     X_test_restricted = _restrict_X(X_test_np, pm.signature)
 
-    # TODO: Implement other splits
-    # TODO: Implement other scoring metrics
     def _score(_X, _y, model, y_pred_override=None, torch=False):
         # Override y_pred
         if y_pred_override is not None:
@@ -382,7 +373,6 @@ def benchmark(
             t2 = time.time()
             accs["ps_perceptron"] = _score(X_test, y_test_np, ps_per, torch=True)
             accs["ps_perceptron"]["time"] = t2 - t1
-        # TODO: regression
 
     if "svm" in models:
         # Get inner products for precomputed kernel matrix
@@ -455,7 +445,7 @@ def benchmark(
         t1 = time.time()
         ambient_gnn.fit(X, y, adj=adj, train_idx=train_idx)
         y_pred = ambient_gnn.predict(X, adj=adj, test_idx=test_idx)
-        t2 = time.time() 
+        t2 = time.time()
         accs["ambient_gnn_adj"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn_adj"]["time"] = t2 - t1
 
