@@ -1,12 +1,10 @@
-import torch
-
-from torchtyping import TensorType as TT
-
-from .manifolds import ProductManifold
+"""Implementation of a Gaussian mixuture generator in the product space"""
 
 from typing import Optional, Tuple, Literal
+import torch
+from torchtyping import TensorType as TT
+from .manifolds import ProductManifold
 
-"""Implementation of a Gaussian mixuture generator in the product space"""
 @torch.no_grad()
 def gaussian_mixture(
     pm: ProductManifold,
