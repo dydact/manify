@@ -1,9 +1,3 @@
-import torch
-import geoopt
-
-from torchtyping import TensorType as TT
-from typing import List, Optional, Tuple, Union
-
 """
 Tools for generating Riemannian manifolds and product manifolds.
 
@@ -13,13 +7,20 @@ The ProductManifold class supports products of multiple manifolds,
 combining their geometric properties to create mixed-curvature. Both classes
 includes functions for different key geometric operations.
 """
+from typing import List, Optional, Tuple, Union
+import torch
+import geoopt
+from torchtyping import TensorType as TT
+
+
 class Manifold:
     """
     Tools for generating Riemannian manifolds.
 
     Parameters
     ----------
-    curvature: (float) The curvature of the manifold. Negative for hyperbolic, zero for Euclidean, and positive for spherical manifolds.
+    curvature: (float) The curvature of the manifold. Negative for hyperbolic, 
+    zero for Euclidean, and positive for spherical manifolds.
     dim: (int) The dimension of the manifold.
     device: (str) The device on which the manifold is stored (default: "cpu").
     
@@ -84,7 +85,7 @@ class Manifold:
 
         Returns:
             inner_product: (n_points1, n_points2) Tensor of inner products between points.        
-        """        
+        """
         # "Not inherited because of weird broadcasting stuff, plus need for scale.
         # This ensures we compute the right inner product for all manifolds (flip sign of dim 0 for hyperbolic)
         X_fixed = torch.cat([-X[:, 0:1], X[:, 1:]], dim=1) if self.type == "H" else X
@@ -103,7 +104,7 @@ class Manifold:
 
         Returns:
             distance: (n_points1, n_points2) Tensor of distances between points.
-        """    
+        """
         # if self.type == "E":
         #     return self.manifold.dist(X[:, None], Y[None, :]).norm(dim=-1)
         # else:
@@ -183,11 +184,11 @@ class Manifold:
     
         Args:
             z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults to identity matrices.
-            return_tangent: Bool for whether to return the tangent vectors along with the sampled points. Defaults to False.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
+            return_tangent: Bool for whether to return the tangent vectors along with the sampled points.
     
         Returns:
-            Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing the sampled points on the manifold. 
+            Tensor or tuple of tensor(n_points, n_ambient_dim) representing the sampled points on the manifold. 
             If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
         """
         if z_mean is None:
@@ -242,7 +243,8 @@ class Manifold:
             sigma: (n_points", "n_dim", "n_dim) Tensor representing the covariance matrix. Defaults to the identity matrix.
 
         Returns:
-            (n_points) Tensor containing the log-likelihood of the points `z` under the distribution with mean `mu` and covariance `sigma.`
+            (n_points) Tensor containing the log-likelihood of the points `z` under the distribution 
+            with mean `mu` and covariance `sigma.`
 
         """
 
@@ -459,8 +461,8 @@ class ProductManifold(Manifold):
     
         Args:
             z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults to identity matrices.
-            return_tangent: Bool for whether to return the tangent vectors along with the sampled points. Defaults to False.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
+            return_tangent: Bool for whether to return the tangent vectors along with the sampled points. 
     
         Returns:
             Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing the sampled points on the manifold. 
@@ -512,11 +514,12 @@ class ProductManifold(Manifold):
         
         Args:
             z: (batch_size, n_dim) Tensor representing the points for which the log-likelihood is computed.
-            mu: (n_dim,) Tensor representing the mean of the distribution. Defaults to `self.mu0` if not provided.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults to identity matrices.
+            mu: (n_dim,) Tensor representing the mean of the distribution. 
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. 
     
         Returns:
-            (batch_size,) Tensor of shape containing the log-likelihood of each point in `z`  with mean `mu` and covariance `sigma`.        
+            (batch_size,) Tensor of shape containing the log-likelihood 
+            of each point in `z`  with mean `mu` and covariance `sigma`.        
         """
         n = z.shape[0]
         if mu is None:
