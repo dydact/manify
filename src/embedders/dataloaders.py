@@ -1,19 +1,20 @@
+"""Dataloaders for different datasets"""
+import shlex
+import gzip
+import pickle
+from pathlib import Path
+from typing import Tuple
 import torch
 from torchtyping import TensorType as TT
-from typing import Tuple
 import networkx as nx
 import pandas as pd
 import numpy as np
-import shlex
-from pathlib import Path
 from scipy.io import mmread
 import anndata
-import gzip
-import pickle
 from mpl_toolkits.basemap import Basemap
 import h5py
 from scipy.fftpack import fft, fftfreq
-"""Dataloaders for different datasets"""
+
 
 def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[np.ndarray, list]:
     """Returns the distances between the top connected component of a graph"""
