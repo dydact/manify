@@ -1,9 +1,10 @@
+"""Preprocessing with link prediction"""
+
+from typing import Tuple
 import torch
 from torchtyping import TensorType as TT
-from typing import Tuple
 from .manifolds import ProductManifold
 
-"""Preprocessing with link prediction"""
 def make_link_prediction_dataset(
     X_embed: TT["batch", "n_dim"], pm: ProductManifold, adj: TT["batch", "batch"], add_dists: bool = True
 ) -> Tuple[TT["batch**2", "2*n_dim"], TT["batch**2"], ProductManifold]:
@@ -27,7 +28,7 @@ def make_link_prediction_dataset(
             - `y` (batch**2,).: A tensor of labels derived from the adjacency matrix with.
             - `new_pm`: A new ProductManifold instance with an updated signature reflecting the feature space.
 
-    """    
+    """
     # Stack embeddings
     # emb = []
     # for X_i in X_embed:
