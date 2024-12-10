@@ -1,21 +1,19 @@
+"""Implementation for coordinate training and optimization"""
 import sys
-
+import torch
+import numpy as np
+import geoopt
+from torchtyping import TensorType
+from .metrics import distortion_loss, d_avg
+from .manifolds import ProductManifold
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:
     from tqdm.notebook import tqdm
 else:
     from tqdm import tqdm
 
-import torch
-import numpy as np
-import geoopt
 
-from torchtyping import TensorType
 
-from .metrics import distortion_loss, d_avg
-from .manifolds import ProductManifold
-
-"""Implementation for coordinate training and optimization"""
 def train_coords(
     pm: ProductManifold,
     dists: TensorType["n_points", "n_points"],
