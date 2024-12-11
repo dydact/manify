@@ -1,18 +1,17 @@
+"""Product space decision tree and random forest implementation"""
+from typing import Tuple, Optional, Literal
 import torch
-
 # from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from tqdm.notebook import tqdm
-
+from torchtyping import TensorType as TT
 from .midpoint import midpoint
 from ..manifolds import ProductManifold
 
-# Typing stuff
-from torchtyping import TensorType as TT
-from typing import Tuple, Optional, Literal
 
-"""Product space decision tree and random forest implementation"""
+
+
 def _angular_greater(queries: TT["query_batch"], keys: TT["key_batch"]) -> TT["query_batch key_batch"]:
     """
     Given an angle theta, check whether a tensor of inputs is in [theta, theta + pi)
@@ -279,7 +278,7 @@ class DecisionNode:
 
 
 class ProductSpaceDT(BaseEstimator, ClassifierMixin):
-"""Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""    
+    """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""    
     def __init__(
         self,
         pm,
@@ -474,8 +473,6 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             angle_comparisons = _angular_greater(angles[:, d], theta_pos).flatten()
         if (angle_comparisons == 1.0).all():
             theta_neg = theta_pos
-            # TODO: replace this with something better, e.g. make "circular_greater" strict and make the pos_class the
-            # smallest theta where this is 1.
         else:
             n_neg = (angles[angle_comparisons == 0.0, d] - theta_pos).abs().argmin()
             theta_neg = angles[angle_comparisons == 0.0, d][n_neg]
