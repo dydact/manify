@@ -1,8 +1,9 @@
+"""Implementation for multilayered perception(MLP)"""
 import torch
 import torch.nn as nn
 
-"""Implementation for multilayered perception(MLP)"""
 class MLP(nn.Module):
+    """The MLP class and its functions"""
     def __init__(
         self, pm, input_dim=0, hidden_dims=None, output_dim=0, tangent=True, task="classification", activation=nn.ReLU
     ):
