@@ -1,10 +1,11 @@
+"""Product space perceptron implementation"""
 import torch
 from sklearn.base import BaseEstimator, ClassifierMixin
 from .kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
-    """ A product-space perceptron model for multiclass classification in the product manifold space. """
+    """A product-space perceptron model for multiclass classification in the product manifold space. """
     def __init__(self, pm, max_epochs=1_000, patience=5, weights=None):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
