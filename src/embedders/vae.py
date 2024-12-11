@@ -1,11 +1,11 @@
-from torchtyping import TensorType as TT
+"""Product space variational autoencoder implementation"""
 from typing import List
+from torchtyping import TensorType as TT
 
 import torch
 
 from .manifolds import ProductManifold
 
-"""Product space variational autoencoder implementation"""
 class ProductSpaceVAE(torch.nn.Module):
     """
     Variational Autoencoder (VAE) for data in a mixed-curvature product manifold space.
@@ -40,6 +40,7 @@ class ProductSpaceVAE(torch.nn.Module):
         return self.encoder(x)
 
     def decode(self, z: TT["batch_size", "n_latent"]) -> TT["batch_size", "n_features"]:
+        """Decoding in product space VAE"""
         return self.decoder(z)
 
     def forward(self, x: TT["batch_size", "n_features"]) -> TT["batch_size", "n_features"]:
@@ -113,3 +114,4 @@ class ProductSpaceVAE(torch.nn.Module):
         kld = self.kl_divergence(z_means, sigma_factorized)
         ll = -self.reconstruction_loss(x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)).sum(dim=1)
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()
+
