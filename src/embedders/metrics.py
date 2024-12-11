@@ -1,8 +1,9 @@
+"""Implementation of different measurement metrics"""
 import torch
 import networkx as nx
 
 from torchtyping import TensorType
-"""Implementation of different measurement metrics"""
+
 
 def distortion_loss(
     estimated_distances: TensorType["n_points", "n_points"], true_distances: TensorType["n_points", "n_points"]
@@ -35,8 +36,8 @@ def d_avg(
         true_distances (n_points, n_points).: A tensor of true pairwise distances. 
                             
     Returns:
-        float: A float indicating the average distance error D_avg, calculated as the mean relative error 
-               across all pairwise distances.
+        float: A float indicating the average distance error D_avg, calculated as the 
+        mean relative error across all pairwise distances.
     """
     n = true_distances.shape[0]
     idx = torch.triu_indices(n, n, offset=1)
@@ -72,3 +73,4 @@ def dist_component_by_manifold(pm, x_embed):
     return [
         torch.sum(D.triu(diagonal=1) / torch.sum(total_sq_dist.triu(diagonal=1))).item() for D in sq_dists_by_manifold
     ]
+
