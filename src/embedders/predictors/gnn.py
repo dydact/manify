@@ -1,9 +1,9 @@
+"""Implementation for Graph Neural Network and its utility functions"""
 import torch
 from torch_geometric.nn import GCNConv
 from torch import nn
 from .mlp import MLP
 
-"""Implementation for Graph Neural Network and its utility functions"""
 # Create edges for a subset of nodes
 def get_subset_edges(dist_matrix, node_indices):
     """
@@ -110,6 +110,7 @@ def get_all(adj_matrix, node_indices):
 
 
 class GNN(nn.Module):
+    """Graph Neural Network implementation"""
     def __init__(
         self,
         pm,
@@ -226,3 +227,4 @@ class GNN(nn.Module):
             return y_pred.argmax(1).detach()
         else:
             return y_pred.detach()
+
