@@ -1,7 +1,7 @@
+"""Tools for visualization"""
 from torchtyping import TensorType
 import torch
 
-"""Tools for visualization"""
 def hyperboloid_to_poincare(X: TensorType["n_points", "n_dim"]) -> TensorType["n_points", "n_dim_minus_1"]:
     """
     Convert hyperboloid coordinates to Poincaré ball coordinates.
