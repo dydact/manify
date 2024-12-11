@@ -1,6 +1,6 @@
+"""Compute the angular midpoints between two angular coordinates in different geometric spaces"""
 import torch
 
-"""Compute the angular midpoints between two angular coordinates in different geometric spaces"""
 def hyperbolic_midpoint(u, v, assert_hyperbolic=False):
     """
     Compute the hyperbolic midpoint between two angular coordinates u and v.
@@ -13,7 +13,7 @@ def hyperbolic_midpoint(u, v, assert_hyperbolic=False):
 
     Returns:
         torch.Tensor: The computed hyperbolic midpoint between u and v.
-    """    
+    """
     w = torch.sin(2.0 * u - 2.0 * v) / (torch.sin(u + v) * torch.sin(v - u))
     coef = -1.0 if u + v < torch.pi else 1.0
     sol = (-w + coef * torch.sqrt(w**2 - 4.0)) / 2.0
@@ -99,3 +99,4 @@ def midpoint(u, v, manifold, special_first=False):
     # *AND* any angles that don't involve figuring out where you hit the manifold
     else:
         return spherical_midpoint(u, v)
+
