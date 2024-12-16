@@ -1,2 +1,2 @@
 # embedders
-Generate graph/data embeddings multiple ways
+Generate graph/data embeddings and perform product space machine learning in multiple ways
