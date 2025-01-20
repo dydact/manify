@@ -6,12 +6,14 @@ import torch
 
 from .manifolds import ProductManifold
 
+
 class ProductSpaceVAE(torch.nn.Module):
     """
     Variational Autoencoder (VAE) for data in a mixed-curvature product manifold space.
-    This VAE model leverages a product manifold structure for latent representations, enabling 
+    This VAE model leverages a product manifold structure for latent representations, enabling
     flexible encodings in spaces with different curvature properties (e.g., hyperbolic, Euclidean, spherical).
     """
+
     def __init__(
         self,
         encoder: torch.nn.Module,
@@ -37,7 +39,11 @@ class ProductSpaceVAE(torch.nn.Module):
 
     def encode(self, x: TT["batch_size", "n_features"]) -> (TT["batch_size", "n_latent"], TT["batch_size", "n_latent"]):
         """Must return z_mean, z_logvar"""
-        return self.encoder(x)
+        # return self.encoder(x)
+        z_mean_tangent, z_logvar = self.encoder(x)
+        z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
+        z_mean = self.pm.expmap(u=z_mean_ambient, base=None)
+        return z_mean, z_logvar
 
     def decode(self, z: TT["batch_size", "n_latent"]) -> TT["batch_size", "n_features"]:
         """Decoding in product space VAE"""
@@ -114,4 +120,3 @@ class ProductSpaceVAE(torch.nn.Module):
         kld = self.kl_divergence(z_means, sigma_factorized)
         ll = -self.reconstruction_loss(x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)).sum(dim=1)
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()
-
