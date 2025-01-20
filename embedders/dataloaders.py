@@ -26,7 +26,7 @@ def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[np.ndarray, 
 
 
 def load_cities(
-    cities_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cities" / "cities.txt",
+    cities_path: str = Path(__file__).parent.parent / "data" / "graphs" / "cities" / "cities.txt",
 ) -> Tuple[TT["n_points", "n_points"], None, None]:
     dists_flattened = []
     with open(cities_path) as f:
@@ -41,7 +41,7 @@ def load_cities(
 
 
 def load_cs_phds(
-    cs_phds_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cs_phds.txt",
+    cs_phds_path: str = Path(__file__).parent.parent / "data" / "graphs" / "cs_phds.txt",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     G = nx.Graph()
 
@@ -82,12 +82,8 @@ def load_power():
 
 
 def load_polblogs(
-    polblogs_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "polblogs" / "polblogs.mtx",
-    polblogs_labels_path: str = Path(__file__).parent.parent.parent
-    / "data"
-    / "graphs"
-    / "polblogs"
-    / "polblogs_labels.tsv",
+    polblogs_path: str = Path(__file__).parent.parent / "data" / "graphs" / "polblogs" / "polblogs.mtx",
+    polblogs_labels_path: str = Path(__file__).parent.parent / "data" / "graphs" / "polblogs" / "polblogs_labels.tsv",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     # Load the graph
     G = nx.from_scipy_sparse_array(mmread(polblogs_path))
@@ -103,7 +99,7 @@ def load_polblogs(
 
 
 def load_polbooks(
-    polbooks_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "polbooks" / "polbooks.gml",
+    polbooks_path: str = Path(__file__).parent.parent / "data" / "graphs" / "polbooks" / "polbooks.gml",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.read_gml(polbooks_path, label="id")
 
@@ -133,32 +129,28 @@ def _load_network_repository(
 
 
 def load_cora(
-    cora_edges_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cora" / "cora.edges",
-    cora_labels_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cora" / "cora.node_labels",
+    cora_edges_path: str = Path(__file__).parent.parent / "data" / "graphs" / "cora" / "cora.edges",
+    cora_labels_path: str = Path(__file__).parent.parent / "data" / "graphs" / "cora" / "cora.node_labels",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     return _load_network_repository(cora_edges_path, cora_labels_path)
 
 
 def load_citeseer(
-    citeseer_edges_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "citeseer" / "citeseer.edges",
-    citeseer_labels_path: str = Path(__file__).parent.parent.parent
-    / "data"
-    / "graphs"
-    / "citeseer"
-    / "citeseer.node_labels",
+    citeseer_edges_path: str = Path(__file__).parent.parent / "data" / "graphs" / "citeseer" / "citeseer.edges",
+    citeseer_labels_path: str = Path(__file__).parent.parent / "data" / "graphs" / "citeseer" / "citeseer.node_labels",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     return _load_network_repository(citeseer_edges_path, citeseer_labels_path)
 
 
 def load_pubmed(
-    pubmed_edges_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "pubmed" / "pubmed.edges",
-    pubmed_labels_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "pubmed" / "pubmed.node_labels",
+    pubmed_edges_path: str = Path(__file__).parent.parent / "data" / "graphs" / "pubmed" / "pubmed.edges",
+    pubmed_labels_path: str = Path(__file__).parent.parent / "data" / "graphs" / "pubmed" / "pubmed.node_labels",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     return _load_network_repository(pubmed_edges_path, pubmed_labels_path)
 
 
 def load_karate_club(
-    karate_club_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "karate" / "karate.gml",
+    karate_club_path=Path(__file__).parent.parent / "data" / "graphs" / "karate" / "karate.gml",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.read_gml(karate_club_path, label="id")
 
@@ -168,7 +160,7 @@ def load_karate_club(
 
 
 def load_lesmis(
-    lesmis_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "lesmis" / "lesmis.gml",
+    lesmis_path=Path(__file__).parent.parent / "data" / "graphs" / "lesmis" / "lesmis.gml",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.read_gml(lesmis_path, label="id")
 
@@ -178,7 +170,7 @@ def load_lesmis(
 
 
 def load_adjnoun(
-    adjnoun_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "adjnoun" / "adjnoun.gml",
+    adjnoun_path=Path(__file__).parent.parent / "data" / "graphs" / "adjnoun" / "adjnoun.gml",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.read_gml(adjnoun_path, label="id")
 
@@ -188,7 +180,7 @@ def load_adjnoun(
 
 
 def load_football(
-    football_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "football" / "football.mtx",
+    football_path=Path(__file__).parent.parent / "data" / "graphs" / "football" / "football.mtx",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.from_scipy_sparse_array(mmread(football_path))
     dists, idx = _top_cc_dists(G)
@@ -197,7 +189,7 @@ def load_football(
 
 
 def load_dolphins(
-    dolphin_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "dolphins" / "dolphins.gml",
+    dolphin_path=Path(__file__).parent.parent / "data" / "graphs" / "dolphins" / "dolphins.gml",
 ) -> Tuple[TT["n_points", "n_points"], None, TT["n_points", "n_points"]]:
     G = nx.read_gml(dolphin_path, label="id")
 
@@ -207,7 +199,7 @@ def load_dolphins(
 
 
 def load_blood_cells(
-    blood_cell_anndata_path: str = Path(__file__).parent.parent.parent / "data" / "blood_cell_scrna" / "adata.h5ad.gz",
+    blood_cell_anndata_path: str = Path(__file__).parent.parent / "data" / "blood_cell_scrna" / "adata.h5ad.gz",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], None]:
     with gzip.open(blood_cell_anndata_path, "rb") as f:
         adata = anndata.read_h5ad(f)
@@ -219,7 +211,7 @@ def load_blood_cells(
 
 
 def load_lymphoma(
-    lymphoma_anndata_path: str = Path(__file__).parent.parent.parent / "data" / "lymphoma" / "adata.h5ad.gz",
+    lymphoma_anndata_path: str = Path(__file__).parent.parent / "data" / "lymphoma" / "adata.h5ad.gz",
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], None]:
     """https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0"""
     with gzip.open(lymphoma_anndata_path, "rb") as f:
@@ -232,7 +224,7 @@ def load_lymphoma(
 
 
 def load_cifar_100(
-    cifar_data_path=Path(__file__).parent.parent.parent / "data" / "cifar_100" / "cifar-100-python",
+    cifar_data_path=Path(__file__).parent.parent / "data" / "cifar_100" / "cifar-100-python",
     coarse: bool = True,
     train: bool = True,
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], None]:
@@ -250,7 +242,7 @@ def load_cifar_100(
 
 
 def load_mnist(
-    mnist_data_path=Path(__file__).parent.parent.parent / "data" / "mnist",
+    mnist_data_path=Path(__file__).parent.parent / "data" / "mnist",
     train: bool = True,
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], None]:
     split = "train" if train else "t10k"
@@ -309,7 +301,7 @@ def _month_to_unit_circle_point(month: str) -> Tuple[float, float]:
 
 
 def load_temperature(
-    temperature_path: str = Path(__file__).parent.parent.parent / "data" / "temperature" / "temperature.csv",
+    temperature_path: str = Path(__file__).parent.parent / "data" / "temperature" / "temperature.csv",
     seed: int = 42,  # Not used
 ) -> Tuple[TT["n_points", "n_dims"], TT["n_points"], None]:
     temperature_dataset = pd.read_csv(temperature_path)
@@ -328,6 +320,7 @@ def load_temperature(
         torch.tensor(temperature_dataset[["Temperature"]].values.flatten()),
         None,
     )
+
 
 def load_landmasses(n_points: int = 400, seed=None) -> Tuple[TT["n_points", "n_dims"], None, None]:
     # 1. Get inputs
@@ -358,13 +351,14 @@ def load_landmasses(n_points: int = 400, seed=None) -> Tuple[TT["n_points", "n_d
     # For some reason we were getting double-precision floats here by default
     return torch.tensor(X, dtype=torch.float32), torch.tensor(y), None
 
+
 def _load_neuron(
-    neuron_idx, 
-    n_coefficients=20, 
-    threshold=0, 
-    n_samples=1000, 
-    seed=None, 
-    path_to_data=Path(__file__).parent.parent.parent / "data" / "electrophysiology" / "623474383_ephys.nwb"
+    neuron_idx,
+    n_coefficients=20,
+    threshold=0,
+    n_samples=1000,
+    seed=None,
+    path_to_data=Path(__file__).parent.parent / "data" / "electrophysiology" / "623474383_ephys.nwb",
 ) -> Tuple[TT["n_points", "n_dims"], TT["n_points"]]:
     with h5py.File(path_to_data, "r") as data:
         X = np.array(data[f"acquisition/timeseries/Sweep_{neuron_idx}/data"])
@@ -373,13 +367,13 @@ def _load_neuron(
 
     # FFT
     X_fft = fft(X)
-    top_k_idx = np.argsort(np.abs(X_fft))[-n_coefficients - 1 : -1] # Avoid division by zero
+    top_k_idx = np.argsort(np.abs(X_fft))[-n_coefficients - 1 : -1]  # Avoid division by zero
     # X_fft_approx = np.zeros_like(X_fft)
     # X_fft_approx[top_k_idx] = X_fft[top_k_idx]
     # X_approx = ifft(X_fft_approx)
 
     # Get freqs
-    freqs = fftfreq(len(X), d=1.)
+    freqs = fftfreq(len(X), d=1.0)
     top_freqs = freqs[top_k_idx]
 
     # Stratify
@@ -415,15 +409,18 @@ def _load_neuron(
 
     return torch.tensor(data, dtype=torch.float32), torch.tensor(labels), None
 
+
 def load_neuron33(**kwargs):
     return _load_neuron(33, **kwargs)
+
 
 def load_neuron46(**kwargs):
     return _load_neuron(46, **kwargs)
 
+
 def load_traffic(
-    traffic_path: str = Path(__file__).parent.parent.parent / "data" / "traffic" / "traffic.csv",
-    seed: int = 42 # Not used
+    traffic_path: str = Path(__file__).parent.parent / "data" / "traffic" / "traffic.csv",
+    seed: int = 42,  # Not used
 ) -> Tuple[TT["n_points", "n_dims"], TT["n_points"], None]:
     df = pd.read_csv(traffic_path)
     df["datetime"] = pd.to_datetime(df["DateTime"])
@@ -437,27 +434,27 @@ def load_traffic(
     # X = df[["Junction", "day_of_week", "hour", "day_of_year", "minute"]]
     # y = df["Vehicles"]
 
-    angle = lambda x, n : x / n * 2 * np.pi
+    angle = lambda x, n: x / n * 2 * np.pi
 
     X, y = [], []
     for i, row in df.iterrows():
         _, jct, vehicles, _, _, day, hr, doy, minute = row
-        X.append([
-            jct,
-            np.cos(angle(doy, 365)),
-            np.sin(angle(doy, 365)),
-            np.cos(angle(day, 7)),
-            np.sin(angle(day, 7)),
-            np.cos(angle(hr, 24)),
-            np.sin(angle(hr, 24)),
-            np.cos(angle(minute, 60)),
-            np.sin(angle(minute, 60)),
-        ])
+        X.append(
+            [
+                jct,
+                np.cos(angle(doy, 365)),
+                np.sin(angle(doy, 365)),
+                np.cos(angle(day, 7)),
+                np.sin(angle(day, 7)),
+                np.cos(angle(hr, 24)),
+                np.sin(angle(hr, 24)),
+                np.cos(angle(minute, 60)),
+                np.sin(angle(minute, 60)),
+            ]
+        )
         y.append(vehicles)
 
     return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32).log(), None
-
-
 
 
 def load(name: str, **kwargs) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
