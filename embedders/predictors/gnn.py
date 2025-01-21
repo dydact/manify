@@ -4,6 +4,7 @@ from torch_geometric.nn import GCNConv
 from torch import nn
 from .mlp import MLP
 
+
 # Create edges for a subset of nodes
 def get_subset_edges(dist_matrix, node_indices):
     """
@@ -111,6 +112,7 @@ def get_all(adj_matrix, node_indices):
 
 class GNN(nn.Module):
     """Graph Neural Network implementation"""
+
     def __init__(
         self,
         pm,
@@ -151,12 +153,12 @@ class GNN(nn.Module):
     def forward(self, x, edge_index, edge_weight=None):
         """
         Perform a forward pass through the GNN.
-    
+
         Args:
             x (torch.Tensor): Input feature matrix (NxD).
             edge_index (torch.Tensor): Edge indices (2xE).
             edge_weight (torch.Tensor, optional): Edge weights (E).
-    
+
         Returns:
             torch.Tensor: Output features after passing through the network.
         """
@@ -170,7 +172,7 @@ class GNN(nn.Module):
     def fit(self, X, y, adj, train_idx, epochs=200, lr=1e-2):
         """
         Train the GNN on the provided data.
-    
+
         Args:
             X (torch.Tensor): Feature matrix.
             y (torch.Tensor): Labels for training nodes.
@@ -207,12 +209,12 @@ class GNN(nn.Module):
     def predict(self, X, adj, test_idx):
         """
         Make predictions using the trained GNN.
-    
+
         Args:
             X (torch.Tensor): Feature matrix (NxD).
             adj (torch.Tensor): Adjacency or distance matrix (NxN).
             test_idx (torch.Tensor): Indices of nodes for testing.
-    
+
         Returns:
             torch.Tensor: Predicted labels or outputs.
         """
@@ -227,4 +229,3 @@ class GNN(nn.Module):
             return y_pred.argmax(1).detach()
         else:
             return y_pred.detach()
-
