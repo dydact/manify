@@ -3,6 +3,8 @@ Kappa GCN implementation
 """
 import torch
 import geoopt
+
+
 # A kappa-GCN layer
 class KappaGCNLayer(torch.nn.Module):
     """
@@ -15,6 +17,7 @@ class KappaGCNLayer(torch.nn.Module):
     manifold: Manifold object for the Kappa GCN
     nonlinearity: Function for nonlinear activation.
     """
+
     def __init__(self, in_features, out_features, manifold, nonlinearity=torch.relu):
         super().__init__()
 
@@ -58,7 +61,7 @@ class KappaGCNLayer(torch.nn.Module):
         Forward pass for the Kappa GCN layer.
 
         Args:
-            X: Embedding matrix 
+            X: Embedding matrix
             A_hat: Normalized adjacency matrix
 
         Returns:
@@ -75,9 +78,10 @@ class KappaGCNLayer(torch.nn.Module):
 
         return AXW
 
+
 class KappaGCN(torch.nn.Module):
     """
-    Implementation for the Kappa GCN 
+    Implementation for the Kappa GCN
 
     Parameters
     ----------
@@ -86,6 +90,7 @@ class KappaGCN(torch.nn.Module):
     manifold: Manifold object for the Kappa GCN
     nonlinearity: Function for nonlinear activation.
     """
+
     def __init__(self, in_features, out_features, manifold, nonlinearity=torch.relu):
         super().__init__()
         self.layer = KappaGCNLayer(in_features, in_features, manifold, nonlinearity)
@@ -102,7 +107,7 @@ class KappaGCN(torch.nn.Module):
         Forward pass for the Kappa GCN.
 
         Args:
-            X: Embedding matrix 
+            X: Embedding matrix
             A_hat: Normalized adjacency matrix
             softmax: boolean for whether to use softmax function
 
@@ -117,49 +122,54 @@ class KappaGCN(torch.nn.Module):
             return torch.softmax(logits_agg, dim=1)
         else:
             return logits_agg
-    def get_logits(self, man, X, W, b):
+
+    def get_logits(self, X, W, b, return_inner_products=False):
         """
         Computes logits given the manifold.
-    
+
         Args:
-            man: The manifold object, containing the curvature and relevant operations.
             X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
             W: Weight tensor of shape (d, k), where k is the number of classes.
             b: Bias tensor of shape (k,).
-    
+            return_inner_products: If True, returns the inner products between the weight vectors and the input points.
+
         Returns:
             Logits: tensor of shape (n, k).
         """
-        k = W.shape[1]
-        n = X.shape[0]
-        kappa = man.curvature
-        logits = torch.zeros(n, k)
-        for class_idx in range(k):
-            # 0. Get parameters
-            a_k = W[:, class_idx]
-            p_k = b[class_idx]
-    
-            # 1. Let's get z_k = -p_k \oplus_\kappa x
-            z_k = man.manifold.mobius_add(-p_k, X)
-    
-            # 2. Get norms for relevant terms
-            z_k_norm = torch.norm(z_k)
-            a_k_norm = torch.norm(a_k)
-    
-            # 3. Get the argument for sin_kappa^-1
-            num = 2 * abs(kappa) ** 0.5 * man.manifold.inner(z_k, a_k)
-            denom = (1 + kappa * z_k_norm**2) * a_k_norm
-            arg = num / denom
-    
-            # 4. Get the right-hand side
-            sin_kappa_inv = torch.asin if kappa >= 0 else torch.asinh
-            rhs = sin_kappa_inv(arg)
-    
-            # 5. Get the left-hand side
-            lambda_pk = man.manifold.lambda_x(p_k)
-            lhs = lambda_pk * a_k_norm / abs(kappa) ** 0.5
-    
-            # 6. Get the logits
-            logits[:, class_idx] = (lhs * rhs).flatten()
-    
-        return logits
+
+        # 0. For convenience, get curvature and manifold
+        M = self.manifold
+        kappa = M.curvature
+
+        # Euclidean exception: just do <-pk + x, W>_0 for each k
+        if abs(kappa) < 1e-4:
+            logits = X @ W - b
+            if return_inner_products:
+                ip = torch.einsum("nd,dk->nk", X - b, W)
+                return logits, ip
+            else:
+                return logits
+
+        # 1. Get z_k = -p_k \oplus_\kappa x (vectorized)
+        z_ks = M.manifold.mobius_add(-b[None, :], X[:, None])  # (n, k, d)
+
+        # 2. Get norms for relevant terms
+        z_k_norms = torch.norm(z_ks, dim=-1)  # (n, k)
+        a_k_norms = torch.norm(W, dim=0)  # (k,)
+
+        # 3. Get the distance to the hyperplane
+        za = torch.einsum("nkd,dk->nk", z_ks, W)  # (n, k)
+        sin_kappa_inv = torch.asin if kappa >= 0 else torch.asinh
+        dist = sin_kappa_inv(2 * abs(kappa) ** 0.5 * za / ((1 + kappa * z_k_norms**2) * a_k_norms))
+
+        # 4. Get the conformal factor correction
+        lambda_pks = M.manifold.lambda_x(b)  # (k,)
+        coeffs = lambda_pks * a_k_norms / abs(kappa) ** 0.5
+
+        # 5. Get the logits
+        logits = coeffs * dist
+
+        if return_inner_products:
+            return logits, za
+        else:
+            return logits
