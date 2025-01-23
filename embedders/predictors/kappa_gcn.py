@@ -3,6 +3,7 @@ Kappa GCN implementation
 """
 import torch
 import geoopt
+from geoopt.manifolds.stereographic.math import arsin_k
 
 
 # A kappa-GCN layer
@@ -137,34 +138,40 @@ class KappaGCN(torch.nn.Module):
             Logits: tensor of shape (n, k).
         """
 
-        # 0. For convenience, get curvature and manifold
+        # For convenience, get curvature and manifold
         M = self.manifold
-        kappa = M.curvature
+        kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
 
         # Euclidean exception: just do <-pk + x, W>_0 for each k
         if abs(kappa) < 1e-4:
-            logits = X @ W - b
+            z_ks = X[:, None] - b[None, :]
+            za = torch.einsum("nkd,dk->nk", z_ks, W)
             if return_inner_products:
-                ip = torch.einsum("nd,dk->nk", X - b, W)
-                return logits, ip
+                return 4 * za, za  # See hyperbolic GCN paper for explanation
             else:
-                return logits
+                return 4 * za
+
+        # Get dims matched up
+        # Need transposes because column vectors live in the tangent space
+        W = M.manifold.transp0(b, W.T).T  # (d, k)
 
         # 1. Get z_k = -p_k \oplus_\kappa x (vectorized)
         z_ks = M.manifold.mobius_add(-b[None, :], X[:, None])  # (n, k, d)
+        z_ks = M.manifold.projx(z_ks)  # (n, k, d)
 
         # 2. Get norms for relevant terms
-        z_k_norms = torch.norm(z_ks, dim=-1)  # (n, k)
-        a_k_norms = torch.norm(W, dim=0)  # (k,)
+        z_k_norms = torch.norm(z_ks, dim=-1).clamp_min(1e-10)  # (n, k)
+        a_k_norms = torch.norm(W, dim=0).clamp_min(1e-10)  # (k,)
 
         # 3. Get the distance to the hyperplane
         za = torch.einsum("nkd,dk->nk", z_ks, W)  # (n, k)
-        sin_kappa_inv = torch.asin if kappa >= 0 else torch.asinh
-        dist = sin_kappa_inv(2 * abs(kappa) ** 0.5 * za / ((1 + kappa * z_k_norms**2) * a_k_norms))
+        # sin_kappa_inv = torch.asin if kappa >= 0 else torch.asinh
+        # dist = sin_kappa_inv(2 * abs(kappa) ** 0.5 * za / ((1 + kappa * z_k_norms**2) * a_k_norms))
+        dist = arsin_k(2 * za / ((1 + kappa * z_k_norms**2) * a_k_norms), kappa * abs(kappa))
 
         # 4. Get the conformal factor correction
         lambda_pks = M.manifold.lambda_x(b)  # (k,)
-        coeffs = lambda_pks * a_k_norms / abs(kappa) ** 0.5
+        coeffs = lambda_pks * a_k_norms  # / abs(kappa) ** 0.5
 
         # 5. Get the logits
         logits = coeffs * dist
