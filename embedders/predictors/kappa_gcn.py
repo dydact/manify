@@ -40,21 +40,22 @@ class KappaGCNLayer(torch.nn.Module):
         # Also store manifold
         self.manifold = manifold
 
-    def left_multiply(self, A, X):
+    def _left_multiply(self, A, X, M):
         """
         Implementation for Kappa left matrix multiplication for message passing in product space
 
         Args:
             A: Adjacency matrix of the graph
             X: Embedding matrix of the graph.
+            M: Manifold object for the Kappa GCN
 
         Returns:
             out: result of the Kappa left matrix multiplication.
         """
         out = torch.zeros_like(X)
         for i, (A_i, X_i) in enumerate(zip(A, X)):
-            m_i = self.manifold.manifold.weighted_midpoint(xs=X_i, weights=A_i)
-            out[i] = self.manifold.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i)
+            m_i = M.manifold.weighted_midpoint(xs=X_i, weights=A_i)
+            out[i] = M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i)
         return out
 
     def forward(self, X, A_hat):
@@ -72,7 +73,12 @@ class KappaGCNLayer(torch.nn.Module):
         XW = self.manifold.manifold.mobius_matvec(m=self.W, x=X)
 
         # 2. left-multiply (X @ W) by A_hat - we need our own implementation for this
-        AXW = self.left_multiply(A_hat, XW)
+        if isinstance(self.manifold, ProductManifold):
+            # AXW = self.left_multiply(A_hat, XW)
+            XWs = self.manifold.factorize(XW)
+            AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
+        else:
+            AXW = self._left_multiply(A_hat, XW)
 
         # 3. Apply nonlinearity - note that sigma is wrapped with our manifold.apply decorator
         AXW = self.sigma(AXW)
@@ -117,7 +123,7 @@ class KappaGCN(torch.nn.Module):
         """
         H0 = X
         H1 = self.layer(H0, A_hat)
-        logits = self.get_logits(self.manifold, H1, self.W_logits, self.p_ks)
+        logits = self.get_logits(X=H1, W=self.W_logits, b=self.p_ks)
         logits_agg = A_hat @ logits
         if softmax:
             return torch.softmax(logits_agg, dim=1)
@@ -173,9 +179,9 @@ class KappaGCN(torch.nn.Module):
 
         # For convenience, get curvature and manifold
         # kappas = [man.curvature for manifold in M.P]
-        Xs = man.factorize(X)
-        bs = man.factorize(b)
-        Ws = man.factorize(W.T).T
+        Xs = M.factorize(X)
+        bs = M.factorize(b)
+        Ws = [w.T for w in M.factorize(W.T)]
         res = [
             self._get_logits_single_manifold(X_man, W_man, b_man, man, return_inner_products=True)
             for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P)
@@ -194,7 +200,7 @@ class KappaGCN(torch.nn.Module):
 
         return logits * signs
 
-    def get_logits(self, X, W, b, return_inner_products=False):
+    def get_logits(self, X, W=None, b=None, return_inner_products=False):
         """
         Computes logits given the manifold.
 
@@ -210,6 +216,10 @@ class KappaGCN(torch.nn.Module):
         Returns:
             Logits: tensor of shape (n, k).
         """
+        if W is None:
+            W = self.W_logits
+        if b is None:
+            b = self.p_ks
 
         if isinstance(self.manifold, ProductManifold):
             return self._get_logits_product_manifold(X, W, b, self.manifold)
