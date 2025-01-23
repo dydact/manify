@@ -3,7 +3,7 @@ Kappa GCN implementation
 """
 import torch
 import geoopt
-from geoopt.manifolds.stereographic.math import arsin_k
+from ..manifolds import Manifold, ProductManifold
 
 
 # A kappa-GCN layer
@@ -124,25 +124,10 @@ class KappaGCN(torch.nn.Module):
         else:
             return logits_agg
 
-    def get_logits(self, X, W, b, return_inner_products=False):
-        """
-        Computes logits given the manifold.
-
-        Credit to the Curve Your Attention paper for an implementation we referenced:
-        https://openreview.net/forum?id=AN5uo4ByWH
-
-        Args:
-            X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
-            W: Weight tensor of shape (d, k), where k is the number of classes.
-            b: Bias tensor of shape (k,).
-            return_inner_products: If True, returns the inner products between the weight vectors and the input points.
-
-        Returns:
-            Logits: tensor of shape (n, k).
-        """
+    def _get_logits_single_manifold(self, X, W, b, M, return_inner_products=False):
+        """Helper function for get_logits"""
 
         # For convenience, get curvature and manifold
-        M = self.manifold
         kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
 
         # Change shapes
@@ -182,3 +167,53 @@ class KappaGCN(torch.nn.Module):
             return logits, za
         else:
             return logits
+
+    def _get_logits_product_manifold(self, X, W, b, M):
+        """Helper function for get_logits"""
+
+        # For convenience, get curvature and manifold
+        # kappas = [man.curvature for manifold in M.P]
+        Xs = man.factorize(X)
+        bs = man.factorize(b)
+        Ws = man.factorize(W.T).T
+        res = [
+            self._get_logits_single_manifold(X_man, W_man, b_man, man, return_inner_products=True)
+            for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P)
+        ]
+
+        # Each result is (n, k) logits and (n, k) inner products
+        logits, inner_products = zip(*res)
+
+        # Final logits: l2 norm of logits * sign of inner product
+        stacked_logits = torch.stack(logits, dim=2)  # (n, k, m)
+        stack_products = torch.stack(inner_products, dim=2)  # (n, k, m)
+
+        # Reduce
+        logits = torch.norm(stacked_logits, dim=2)  # (n, k)
+        signs = torch.sign(stack_products.sum(dim=2))  # (n, k)
+
+        return logits * signs
+
+    def get_logits(self, X, W, b, return_inner_products=False):
+        """
+        Computes logits given the manifold.
+
+        Credit to the Curve Your Attention paper for an implementation we referenced:
+        https://openreview.net/forum?id=AN5uo4ByWH
+
+        Args:
+            X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
+            W: Weight tensor of shape (d, k), where k is the number of classes.
+            b: Bias tensor of shape (k,).
+            return_inner_products: If True, returns the inner products between the weight vectors and the input points.
+
+        Returns:
+            Logits: tensor of shape (n, k).
+        """
+
+        if isinstance(self.manifold, ProductManifold):
+            return self._get_logits_product_manifold(X, W, b, self.manifold)
+        elif isinstance(self.manifold, Manifold):
+            return self._get_logits_single_manifold(X, W, b, self.manifold, return_inner_products)
+        else:
+            raise ValueError("Manifold must be a Manifold or ProductManifold object.")
