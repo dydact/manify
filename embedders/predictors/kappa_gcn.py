@@ -128,6 +128,9 @@ class KappaGCN(torch.nn.Module):
         """
         Computes logits given the manifold.
 
+        Credit to the Curve Your Attention paper for an implementation we referenced:
+        https://openreview.net/forum?id=AN5uo4ByWH
+
         Args:
             X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
             W: Weight tensor of shape (d, k), where k is the number of classes.
@@ -142,22 +145,17 @@ class KappaGCN(torch.nn.Module):
         M = self.manifold
         kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
 
-        # Euclidean exception: just do <-pk + x, W>_0 for each k
-        if abs(kappa) < 1e-4:
-            z_ks = X[:, None] - b[None, :]
-            za = torch.einsum("nkd,dk->nk", z_ks, W)
-            if return_inner_products:
-                return 4 * za, za  # See hyperbolic GCN paper for explanation
-            else:
-                return 4 * za
+        # Change shapes
+        b = b[None, :]  # (1, k)
+        X = X[:, None]  # (n, 1, d)
 
-        # Get dims matched up
         # Need transposes because column vectors live in the tangent space
-        W = M.manifold.transp0(b, W.T).T  # (d, k)
+        # W = M.manifold.transp0(b, W.T).T  # (d, k)
 
         # 1. Get z_k = -p_k \oplus_\kappa x (vectorized)
-        z_ks = M.manifold.mobius_add(-b[None, :], X[:, None])  # (n, k, d)
-        z_ks = M.manifold.projx(z_ks)  # (n, k, d)
+        # This works for the Euclidean case too
+        z_ks = M.manifold.mobius_add(-b, X)  # (n, k, d)
+        # z_ks = M.manifold.projx(z_ks)  # (n, k, d)
 
         # 2. Get norms for relevant terms
         z_k_norms = torch.norm(z_ks, dim=-1).clamp_min(1e-10)  # (n, k)
@@ -165,16 +163,20 @@ class KappaGCN(torch.nn.Module):
 
         # 3. Get the distance to the hyperplane
         za = torch.einsum("nkd,dk->nk", z_ks, W)  # (n, k)
-        # sin_kappa_inv = torch.asin if kappa >= 0 else torch.asinh
-        # dist = sin_kappa_inv(2 * abs(kappa) ** 0.5 * za / ((1 + kappa * z_k_norms**2) * a_k_norms))
-        dist = arsin_k(2 * za / ((1 + kappa * z_k_norms**2) * a_k_norms), kappa * abs(kappa))
 
-        # 4. Get the conformal factor correction
-        lambda_pks = M.manifold.lambda_x(b)  # (k,)
-        coeffs = lambda_pks * a_k_norms  # / abs(kappa) ** 0.5
+        # 4. Get the logits
+        if abs(kappa) < 1e-4:
+            # Euclidean case: it's just a dot product
+            logits = 4 * za
+        else:
+            # Non-Euclidean case: need to do the arsinh
+            dist = 2 * za / ((1 + kappa * z_k_norms**2) * a_k_norms)
+            dist = geoopt.manifolds.stereographic.math.arsin_k(dist, kappa * abs(kappa))
 
-        # 5. Get the logits
-        logits = coeffs * dist
+            # Get the coefficients
+            lambda_pks = M.manifold.lambda_x(b)  # (k,)
+            coeffs = lambda_pks * a_k_norms  # / abs(kappa) ** 0.5
+            logits = coeffs * dist
 
         if return_inner_products:
             return logits, za
