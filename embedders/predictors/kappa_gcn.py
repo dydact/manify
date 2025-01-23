@@ -47,7 +47,7 @@ class KappaGCNLayer(torch.nn.Module):
         Args:
             A: Adjacency matrix of the graph
             X: Embedding matrix of the graph.
-            M: Manifold object for the Kappa GCN
+            M: Manifold object for the Kappa GCN - need to specify in case we're going by component
 
         Returns:
             out: result of the Kappa left matrix multiplication.
