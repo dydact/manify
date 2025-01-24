@@ -45,11 +45,12 @@ class KappaGCNLayer(torch.nn.Module):
         Returns:
             out: result of the Kappa left matrix multiplication.
         """
-        out = torch.zeros_like(X)
-        for i, (A_i, X_i) in enumerate(zip(A, X)):
+        # out = torch.zeros_like(X)
+        out = []
+        for A_i in A:
             m_i = M.manifold.weighted_midpoint(xs=X, weights=A_i)
-            out[i] = M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i)
-        return out
+            out.append(M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i))
+        return torch.stack(out, dim=0)
 
     def forward(self, X, A_hat):
         """
