@@ -23,7 +23,8 @@ class KappaGCNLayer(torch.nn.Module):
         super().__init__()
 
         # Parameters are Euclidean, straightforardly
-        self.W = torch.nn.Parameter(torch.rand(in_features, out_features))
+        # self.W = torch.rand(in_features, out_features)
+        self.W = torch.nn.Parameter(torch.randn(in_features, out_features) * 0.01)
         # self.b = torch.nn.Parameter(torch.rand(out_features))
 
         # Noninearity must be applied via wrapper
@@ -98,16 +99,20 @@ class KappaGCN(torch.nn.Module):
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(self, in_features, out_features, manifold, nonlinearity=torch.relu):
+    def __init__(self, in_features, out_features, manifold, n_layers=2, nonlinearity=torch.relu):
         super().__init__()
-        self.layer = KappaGCNLayer(in_features, in_features, manifold, nonlinearity)
+        # self.layer1 = KappaGCNLayer(in_features, in_features, manifold, nonlinearity)
+        # self.layer2 = KappaGCNLayer(in_features, in_features, manifold, nonlinearity)
+        self.layers = torch.nn.ModuleList(
+            [KappaGCNLayer(in_features, in_features, manifold, nonlinearity) for _ in range(n_layers)]
+        )
         self.manifold = manifold
 
         # Final layer params
-        self.W_logits = torch.nn.Parameter(torch.rand(in_features, out_features))
-        self.p_ks = geoopt.ManifoldParameter(
-            manifold.expmap(torch.rand(out_features, in_features), base=None), manifold=manifold.manifold
-        )
+        # self.W_logits = torch.rand(in_features, out_features)
+        # self.p_ks = manifold.expmap(torch.rand(out_features, in_features), base=None)
+        self.W_logits = torch.nn.Parameter(torch.randn(in_features, out_features) * 0.01)
+        self.p_ks = geoopt.ManifoldParameter(torch.zeros(out_features, in_features), manifold=manifold.manifold)
 
     def forward(self, X, A_hat, softmax=False):
         """
@@ -121,9 +126,12 @@ class KappaGCN(torch.nn.Module):
         Returns:
             logits_agg: output of Kappa GCN network
         """
-        H0 = X
-        H1 = self.layer(H0, A_hat)
-        logits = self.get_logits(X=H1, W=self.W_logits, b=self.p_ks)
+        # H0 = X
+        # H1 = self.layer1(H0, A_hat)
+        # H2 = self.layer2(H1, A_hat)
+        for layer in self.layers:
+            X = layer(X, A_hat)
+        logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
         logits_agg = A_hat @ logits
         if softmax:
             return torch.softmax(logits_agg, dim=1)
@@ -200,7 +208,7 @@ class KappaGCN(torch.nn.Module):
 
         return logits * signs
 
-    def get_logits(self, X, W=None, b=None, return_inner_products=False):
+    def get_logits(self, X, W=None, b=None):
         """
         Computes logits given the manifold.
 
@@ -210,8 +218,7 @@ class KappaGCN(torch.nn.Module):
         Args:
             X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
             W: Weight tensor of shape (d, k), where k is the number of classes.
-            b: Bias tensor of shape (k,).
-            return_inner_products: If True, returns the inner products between the weight vectors and the input points.
+            b: Bias tensor of shape (k,)
 
         Returns:
             Logits: tensor of shape (n, k).
@@ -224,6 +231,6 @@ class KappaGCN(torch.nn.Module):
         if isinstance(self.manifold, ProductManifold):
             return self._get_logits_product_manifold(X, W, b, self.manifold)
         elif isinstance(self.manifold, Manifold):
-            return self._get_logits_single_manifold(X, W, b, self.manifold, return_inner_products)
+            return self._get_logits_single_manifold(X, W, b, self.manifold)
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
