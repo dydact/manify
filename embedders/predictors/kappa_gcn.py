@@ -47,7 +47,7 @@ class KappaGCNLayer(torch.nn.Module):
         """
         out = torch.zeros_like(X)
         for i, (A_i, X_i) in enumerate(zip(A, X)):
-            m_i = M.manifold.weighted_midpoint(xs=X_i, weights=A_i)
+            m_i = M.manifold.weighted_midpoint(xs=X, weights=A_i)
             out[i] = M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i)
         return out
 
