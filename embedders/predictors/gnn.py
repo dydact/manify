@@ -53,7 +53,7 @@ def get_dense_edges(dist_matrix, node_indices):
     edge_weights = sub_dist.flatten()
 
     # Convert distances to weights (you can modify this function)
-    edge_weights = torch.exp(-edge_weights)  # Gaussian kernel
+    edge_weights = torch.exp(-(edge_weights**2))  # Gaussian kernel
     # Alternative weightings:
     # edge_weights = 1 / (edge_weights + 1e-6)  # Inverse distance
     # edge_weights = torch.softmax(-edge_weights, dim=0)  # Softmax of negative distances

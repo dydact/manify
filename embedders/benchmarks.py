@@ -22,6 +22,8 @@ from .predictors.perceptron import ProductSpacePerceptron
 from .predictors.svm import ProductSpaceSVM
 from .predictors.mlp import MLP
 from .predictors.gnn import GNN, get_nonzero
+from .predictors.kappa_gcn import KappaGCN, get_A_hat
+
 
 def _fix_X(X, signature):
     # Use numpy since it's going to the legacy ProductDT anyway
@@ -72,6 +74,7 @@ def benchmark(
         "ambient_mlp",
         "tangent_gnn",
         "ambient_gnn",
+        "kappa_gcn",
     ],
     max_depth: int = 3,
     n_estimators: int = 12,
@@ -121,7 +124,7 @@ def benchmark(
     Returns:
         Dict[str, float]: Dictionary of model names and their corresponding evaluation scores.
 
-    """    
+    """
     # Input validation on (task, score) pairing
     if task == "classification":
         # assert score in ["accuracy", "f1-micro"]
@@ -173,9 +176,7 @@ def benchmark(
         X = X.to(device)
         y = y.to(device)
 
-        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
-            X, y, np.arange(len(X)), test_size=0.2
-        )
+        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)), test_size=0.2)
     # If we use X_train and X_test, we should make a fake X and y
     if X is None and y is None:
         X = torch.cat([X_train, X_test])
@@ -203,6 +204,9 @@ def benchmark(
     # Restricted X:
     X_train_restricted = _restrict_X(X_train_np, pm.signature)
     X_test_restricted = _restrict_X(X_test_np, pm.signature)
+
+    # Get stereographic version
+    pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
 
     def _score(_X, _y, model, y_pred_override=None, torch=False):
         # Override y_pred
@@ -430,22 +434,38 @@ def benchmark(
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if adj is not None and "tangent_gnn" in models:
-        tangent_gnn = GNN(pm=pm, tangent=True, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task, edge_func=get_nonzero)
+        tangent_gnn = GNN(
+            pm=pm,
+            tangent=True,
+            input_dim=in_dim,
+            hidden_dims=[128, 128],
+            output_dim=out_dim,
+            task=task,
+            edge_func=get_nonzero,
+        )
         tangent_gnn = tangent_gnn.to(device)
         t1 = time.time()
         tangent_gnn.fit(X_tangent, y, adj=adj, train_idx=train_idx)
-        y_pred = tangent_gnn.predict(X_tangent, adj=adj, test_idx=test_idx)
         t2 = time.time()
+        y_pred = tangent_gnn.predict(X_tangent, adj=adj, test_idx=test_idx)
         accs["tangent_gnn_adj"] = _score(None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True)
         accs["tangent_gnn_adj"]["time"] = t2 - t1
 
     if adj is not None and "ambient_gnn" in models:
-        ambient_gnn = GNN(pm=pm, tangent=False, input_dim=in_dim, hidden_dims=[128, 128], output_dim=out_dim, task=task, edge_func=get_nonzero)
+        ambient_gnn = GNN(
+            pm=pm,
+            tangent=False,
+            input_dim=in_dim,
+            hidden_dims=[128, 128],
+            output_dim=out_dim,
+            task=task,
+            edge_func=get_nonzero,
+        )
         ambient_gnn = ambient_gnn.to(device)
         t1 = time.time()
         ambient_gnn.fit(X, y, adj=adj, train_idx=train_idx)
-        y_pred = ambient_gnn.predict(X, adj=adj, test_idx=test_idx)
         t2 = time.time()
+        y_pred = ambient_gnn.predict(X, adj=adj, test_idx=test_idx)
         accs["ambient_gnn_adj"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn_adj"]["time"] = t2 - t1
 
@@ -454,8 +474,8 @@ def benchmark(
         tangent_gnn = tangent_gnn.to(device)
         t1 = time.time()
         tangent_gnn.fit(X_tangent, y, adj=pdists, train_idx=train_idx)
-        y_pred = tangent_gnn.predict(X_tangent, adj=pdists, test_idx=test_idx)
         t2 = time.time()
+        y_pred = tangent_gnn.predict(X_tangent, adj=pdists, test_idx=test_idx)
         accs["tangent_gnn"] = _score(None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True)
         accs["tangent_gnn"]["time"] = t2 - t1
 
@@ -464,9 +484,27 @@ def benchmark(
         ambient_gnn = ambient_gnn.to(device)
         t1 = time.time()
         ambient_gnn.fit(X, y, adj=pdists, train_idx=train_idx)
-        y_pred = tangent_gnn.predict(X, adj=pdists, test_idx=test_idx)
         t2 = time.time()
+        y_pred = tangent_gnn.predict(X, adj=pdists, test_idx=test_idx)
         accs["ambient_gnn"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn"]["time"] = t2 - t1
+
+    if "kappa_gcn" in models:
+        # Get A_hat
+        dists = pdists**2
+        dists = dists / dists.max().sqrt()
+        A_hat = get_A_hat(dists)
+        A_train = A_hat[train_idx][:, train_idx]
+        A_test = A_hat[test_idx][:, test_idx]
+
+        kappa_gcn = KappaGCN(pm=pm_stereo, n_layers=1, output_dim=out_dim, task=task)
+        kappa_gcn = kappa_gcn.to(device)
+        t1 = time.time()
+        kappa_gcn.fit(X_train_stereo, y_train, A_train, use_tqdm=True, epochs=200, lr=1e-2)
+        t2 = time.time()
+        y_pred = kappa_gcn.predict(X_test_stereo, A_test)
+        # print(y_pred)
+        accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
+        accs["kappa_gcn"]["time"] = t2 - t1
 
     return accs

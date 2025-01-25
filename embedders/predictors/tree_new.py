@@ -1,6 +1,7 @@
 """Product space decision tree and random forest implementation"""
 from typing import Tuple, Optional, Literal
 import torch
+
 # from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -8,8 +9,6 @@ from tqdm.notebook import tqdm
 from torchtyping import TensorType as TT
 from .midpoint import midpoint
 from ..manifolds import ProductManifold
-
-
 
 
 def _angular_greater(queries: TT["query_batch"], keys: TT["key_batch"]) -> TT["query_batch key_batch"]:
@@ -268,6 +267,7 @@ def _get_split(
 # Copied over from hyperdt.torch.tree
 class DecisionNode:
     """Class for nodes in a decision tree."""
+
     def __init__(self, value=None, probs=None, feature=None, theta=None):
         self.value = value
         self.probs = probs  # predicted class probabilities of all samples in the leaf
@@ -278,7 +278,8 @@ class DecisionNode:
 
 
 class ProductSpaceDT(BaseEstimator, ClassifierMixin):
-    """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""    
+    """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""
+
     def __init__(
         self,
         pm,
@@ -292,6 +293,10 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         n_features: Literal["d", "d_choose_2"] = "d",
         ablate_midpoints=False,
     ):
+        # Raise error if manifold is stereographic
+        if pm.is_stereographic:
+            raise ValueError("Stereographic manifolds are not supported. Use a different representation.")
+
         # Store hyperparameters
         self.pm = pm
         if max_depth is None:
@@ -632,6 +637,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
 class ProductSpaceRF(BaseEstimator, ClassifierMixin):
     """Random Forest in the product space"""
+
     def __init__(
         self,
         pm,

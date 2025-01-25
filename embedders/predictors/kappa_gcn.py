@@ -3,7 +3,37 @@ Kappa GCN implementation
 """
 import torch
 import geoopt
+from tqdm.notebook import tqdm
 from ..manifolds import Manifold, ProductManifold
+
+
+def get_A_hat(A, make_symmetric=False, add_self_loops=False):
+    """
+    Normalize adjacency matrix.
+
+    Args:
+        A (torch.Tensor): Adjacency matrix.
+
+    Returns:
+        torch.Tensor: Normalized adjacency matrix.
+    """
+
+    # Optional steps to make symmetric and add self-loops
+    if make_symmetric:
+        A = A + A.T
+    if add_self_loops:
+        A = A + torch.eye(A.shape[0])
+
+    # Get degree matrix
+    D = torch.diag(torch.sum(A, axis=1))
+
+    # Compute D^(-1/2)
+    D_inv_sqrt = torch.inverse(torch.sqrt(D))
+
+    # Normalize adjacency matrix
+    A_hat = D_inv_sqrt @ A @ D_inv_sqrt
+
+    return A_hat.detach()
 
 
 # A kappa-GCN layer
@@ -52,7 +82,7 @@ class KappaGCNLayer(torch.nn.Module):
             out.append(M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i))
         return torch.stack(out, dim=0)
 
-    def forward(self, X, A_hat):
+    def forward(self, X, A_hat=None):
         """
         Forward pass for the Kappa GCN layer.
 
@@ -67,7 +97,9 @@ class KappaGCNLayer(torch.nn.Module):
         XW = self.manifold.manifold.mobius_matvec(m=self.W, x=X)
 
         # 2. left-multiply (X @ W) by A_hat - we need our own implementation for this
-        if isinstance(self.manifold, ProductManifold):
+        if A_hat is None:
+            AXW = XW
+        elif isinstance(self.manifold, ProductManifold):
             XWs = self.manifold.factorize(XW)
             AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
         else:
@@ -85,24 +117,24 @@ class KappaGCN(torch.nn.Module):
 
     Parameters
     ----------
-    in_features: Number of input features
+    pm: ProductManifold object for the Kappa GCN
     out_features: Number of output features
-    manifold: Manifold object for the Kappa GCN
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(self, in_features, out_features, manifold, n_layers=2, nonlinearity=torch.relu):
+    def __init__(self, pm, output_dim, n_layers=2, nonlinearity=torch.relu, task="classification"):
         super().__init__()
-        self.layers = torch.nn.ModuleList(
-            [KappaGCNLayer(in_features, in_features, manifold, nonlinearity) for _ in range(n_layers)]
-        )
-        self.manifold = manifold
+        self.pm = pm
+        self.task = task
+
+        # Hidden layers
+        self.layers = torch.nn.ModuleList([KappaGCNLayer(pm.dim, pm.dim, pm, nonlinearity) for _ in range(n_layers)])
 
         # Final layer params
-        self.W_logits = torch.nn.Parameter(torch.randn(in_features, out_features) * 0.01)
-        self.p_ks = geoopt.ManifoldParameter(torch.zeros(out_features, in_features), manifold=manifold.manifold)
+        self.W_logits = torch.nn.Parameter(torch.randn(pm.dim, output_dim) * 0.01)
+        self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
 
-    def forward(self, X, A_hat, aggregate_logits=True, softmax=False):
+    def forward(self, X, A_hat=None, aggregate_logits=True, softmax=False):
         """
         Forward pass for the Kappa GCN.
 
@@ -121,13 +153,13 @@ class KappaGCN(torch.nn.Module):
 
         # Final layer is to get logits
         logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
-        if aggregate_logits:
+        if A_hat is not None and aggregate_logits:
             logits = A_hat @ logits
 
         if softmax:
             logits = torch.softmax(logits, dim=1)
 
-        return logits
+        return logits.squeeze()
 
     def _get_logits_single_manifold(self, X, W, b, M, return_inner_products=False):
         """Helper function for get_logits"""
@@ -219,9 +251,72 @@ class KappaGCN(torch.nn.Module):
         if b is None:
             b = self.p_ks
 
-        if isinstance(self.manifold, ProductManifold):
-            return self._get_logits_product_manifold(X, W, b, self.manifold)
-        elif isinstance(self.manifold, Manifold):
-            return self._get_logits_single_manifold(X, W, b, self.manifold)
+        if isinstance(self.pm, ProductManifold):
+            return self._get_logits_product_manifold(X, W, b, self.pm)
+        elif isinstance(self.pm, Manifold):
+            return self._get_logits_single_manifold(X, W, b, self.pm)
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
+
+    def fit(self, X, y, A, epochs=200, lr=1e-2, use_tqdm=False):
+        """
+        Fit the Kappa GCN model.
+
+        Args:
+            X (torch.Tensor): Feature matrix.
+            y (torch.Tensor): Labels for training nodes.
+            adj (torch.Tensor): Adjacency or distance matrix.
+            train_idx (torch.Tensor): Indices of nodes for training.
+            epochs: Number of training epochs (default=200).
+            lr: Learning rate (default=1e-2).
+        """
+
+        # Standard fit
+        opt = torch.optim.Adam([self.W_logits] + [layer.W for layer in self.layers], lr=lr)
+        ropt = geoopt.optim.RiemannianAdam([self.p_ks], lr=lr)
+
+        if self.task == "classification":
+            loss_fn = torch.nn.CrossEntropyLoss()
+            y = y.long()
+        elif self.task == "regression":
+            loss_fn = torch.nn.MSELoss()
+            y = y.float()
+        elif self.task == "link_prediction":
+            loss_fn = torch.nn.BCEWithLogitsLoss()
+            y = y.float()
+
+        self.train()
+        if use_tqdm:
+            my_tqdm = tqdm(total=epochs)
+
+        for i in range(epochs):
+            opt.zero_grad()
+            ropt.zero_grad()
+            y_pred = self(X, A)
+            loss = loss_fn(y_pred, y)
+            loss.backward()
+            opt.step()
+            ropt.step()
+
+            if use_tqdm:
+                my_tqdm.update(1)
+                my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
+
+    def predict(self, X, A):
+        """
+        Make predictions using the trained Kappa GCN.
+
+        Args:
+            X (torch.Tensor): Feature matrix (NxD).
+            A (torch.Tensor): Adjacency or distance matrix (NxN).
+
+        Returns:
+            torch.Tensor: Predicted labels or outputs.
+        """
+        # Get edges for test set
+        self.eval()
+        y_pred = self(X, A)
+        if self.task == "classification":
+            return y_pred.argmax(dim=1).detach()
+        else:
+            return y_pred.detach()
