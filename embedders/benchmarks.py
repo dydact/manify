@@ -70,10 +70,10 @@ def benchmark(
         "ps_perceptron",
         # "ps_svm"
         # "svm",
-        "tangent_mlp",
-        "ambient_mlp",
-        "tangent_gnn",
-        "ambient_gnn",
+        # "tangent_mlp",
+        # "ambient_mlp",
+        # "tangent_gnn",
+        # "ambient_gnn",
         "kappa_gcn",
     ],
     max_depth: int = 3,
@@ -497,10 +497,10 @@ def benchmark(
         A_train = A_hat[train_idx][:, train_idx]
         A_test = A_hat[test_idx][:, test_idx]
 
-        kappa_gcn = KappaGCN(pm=pm_stereo, n_layers=1, output_dim=out_dim, task=task)
+        kappa_gcn = KappaGCN(pm=pm_stereo, n_layers=1, output_dim=out_dim, task=task).to(device)
         kappa_gcn = kappa_gcn.to(device)
         t1 = time.time()
-        kappa_gcn.fit(X_train_stereo, y_train, A_train, use_tqdm=True, epochs=200, lr=1e-2)
+        kappa_gcn.fit(X_train_stereo, y_train, A_train, use_tqdm=False, epochs=200, lr=1e-2)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A_test)
         # print(y_pred)
