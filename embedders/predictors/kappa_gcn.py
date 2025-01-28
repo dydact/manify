@@ -171,10 +171,11 @@ class KappaGCN(torch.nn.Module):
         Returns:
             logits_agg: output of Kappa GCN network
         """
+        H = X
 
         # Pass through kappa-GCN layers
         for layer in self.layers:
-            X = layer(X, A_hat)
+            H = layer(H, A_hat)
 
         # Final layer is to get logits
         logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
@@ -283,7 +284,7 @@ class KappaGCN(torch.nn.Module):
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
 
-    def fit(self, X, y, A, epochs=200, lr=1e-2, use_tqdm=False):
+    def fit(self, X, y, A, epochs=2_000, lr=1e-2, use_tqdm=True):
         """
         Fit the Kappa GCN model.
 
@@ -295,6 +296,10 @@ class KappaGCN(torch.nn.Module):
             epochs: Number of training epochs (default=200).
             lr: Learning rate (default=1e-2).
         """
+        # Copy everything
+        X = X.clone()
+        y = y.clone()
+        A = A.clone() if A is not None else None
 
         # Standard fit
         opt = torch.optim.Adam([self.W_logits] + [layer.W for layer in self.layers], lr=lr)
@@ -323,9 +328,15 @@ class KappaGCN(torch.nn.Module):
             opt.step()
             ropt.step()
 
+            # Progress bar
             if use_tqdm:
                 my_tqdm.update(1)
                 my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
+            
+            # # Failure case
+            # if torch.isnan(loss).any():
+            #     print("NaN loss detected")
+            #     return
 
     def predict(self, X, A):
         """
@@ -338,6 +349,10 @@ class KappaGCN(torch.nn.Module):
         Returns:
             torch.Tensor: Predicted labels or outputs.
         """
+        # Copy everything
+        X = X.clone()
+        A = A.clone() if A is not None else None
+
         # Get edges for test set
         self.eval()
         y_pred = self(X, A)

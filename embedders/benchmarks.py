@@ -63,8 +63,8 @@ def benchmark(
     batch_size=None,
     adj=None,
     hidden_dims=[128, 128],
-    epochs=1_000,
-    lr=1e-3,
+    epochs=2_000,
+    lr=1e-2,
     kappa_gcn_layers=2,
 ) -> Dict[str, float]:
     """
@@ -172,6 +172,8 @@ def benchmark(
 
     # Get stereographic version
     pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
+    X_train_stereo = X_train_stereo.detach()
+    X_test_stereo = X_test_stereo.detach()
 
     # Also euclidean """PM"""
     pm_euc = ProductManifold(signature=[(0, X.shape[1])], device=device, stereographic=True)
@@ -226,6 +228,7 @@ def benchmark(
     nn_outdim = 1 if task == "regression" else len(torch.unique(y))
     nn_kwargs = {"task": task, "output_dim": nn_outdim, "hidden_dims": hidden_dims}
     nn_train_kwargs = {"epochs": epochs, "lr": lr}
+    # nn_train_kwargs = {"min_epochs": min_epochs, "max_epochs": max_epochs, "lr": lr}
 
     # Define your models
     if task == "classification":
@@ -441,7 +444,7 @@ def benchmark(
         d = X_test_stereo.shape[1] # Shape can't change between layers
         kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
-        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs, use_tqdm=True)
+        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
