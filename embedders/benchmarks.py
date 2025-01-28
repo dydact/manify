@@ -55,7 +55,7 @@ def benchmark(
     task: Literal["classification", "regression"] = "classification",
     seed: Optional[int] = None,
     use_special_dims: bool = False,
-    n_features: Literal["d", "d_choose_2"] = "d",
+    n_features: Literal["d", "d_choose_2"] = "d_choose_2",
     X_train=None,
     X_test=None,
     y_train=None,
