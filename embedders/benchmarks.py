@@ -39,11 +39,11 @@ def benchmark(
         "tangent_rf",
         "knn",
         "ps_perceptron",
-        "svm",
-        "ps_svm",
-        "tangent_mlp",
+        # "svm",
+        # "ps_svm",
+        # "tangent_mlp",
         "ambient_mlp",
-        "tangent_gnn",
+        # "tangent_gnn",
         "ambient_gnn",
         "kappa_gcn",
         "product_mlr",
@@ -446,9 +446,9 @@ def benchmark(
     if "product_mlr" in models:
         mlr_model = KappaGCN(pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
-        mlr_model.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
+        mlr_model.fit(X_train_stereo, y_train, A=None, **nn_train_kwargs)
         t2 = time.time()
-        y_pred = mlr_model.predict(X_test_stereo, A=A_test)
+        y_pred = mlr_model.predict(X_test_stereo, A=None)
         accs["product_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
         accs["product_mlr"]["time"] = t2 - t1
 
