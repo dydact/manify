@@ -65,6 +65,7 @@ def benchmark(
     hidden_dims=[128, 128],
     epochs=400,
     lr=1e-2,
+    kappa_gcn_layers=2,
 ) -> Dict[str, float]:
     """
     Benchmarks various machine learning models on a dataset using a product manifold structure.
@@ -434,8 +435,10 @@ def benchmark(
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
+        print(X_train_stereo.isnan().any())
+        print(X_test_stereo.isnan().any())
         d = X_test_stereo.shape[1] # Shape can't change between layers
-        kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d, d], task=task, output_dim=nn_outdim).to(device)
+        kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
         kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs, use_tqdm=True)
         t2 = time.time()
