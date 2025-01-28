@@ -111,6 +111,8 @@ def benchmark(
         if y is not None:
             y = torch.unique(y, return_inverse=True)[1]
         if y_train is not None and y_test is not None:
+            y_train = torch.tensor(y_train)
+            y_test = torch.tensor(y_test)
             y_concat = torch.cat([y_train, y_test])
             y_train = torch.unique(y_concat, return_inverse=True)[1][: len(y_train)]
             y_test = torch.unique(y_concat, return_inverse=True)[1][len(y_train) :]

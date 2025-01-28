@@ -69,8 +69,11 @@ def load_cs_phds(
 
     phd_dists, idx = _top_cc_dists(G)
     labels = [G.nodes[i]["year"] for i in idx]
-
     return torch.tensor(phd_dists), torch.tensor(labels), torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
+
+    # phd_dists = nx.floyd_warshall_numpy(G)
+    # labels = [G.nodes[i]["year"] for i in range(len(G))]
+    # return torch.tensor(phd_dists), torch.tensor(labels), torch.tensor(nx.to_numpy_array(G))
 
 
 def load_facebook():
@@ -87,15 +90,18 @@ def load_polblogs(
 ) -> Tuple[TT["n_points", "n_points"], TT["n_points"], TT["n_points", "n_points"]]:
     # Load the graph
     G = nx.from_scipy_sparse_array(mmread(polblogs_path))
-    dists, idx = _top_cc_dists(G)
 
     # Load the labels
     polblogs_labels = pd.read_table(polblogs_labels_path, header=None)[0]
 
     # Filter to match G
+    dists, idx = _top_cc_dists(G)
     polblogs_labels = polblogs_labels[idx].tolist()
-
     return torch.tensor(dists), torch.tensor(polblogs_labels), torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
+
+    # dists = nx.floyd_warshall_numpy(G)
+    # polblogs_labels = polblogs_labels.tolist()
+    # return torch.tensor(dists), torch.tensor(polblogs_labels), torch.tensor(nx.to_numpy_array(G))
 
 
 def load_polbooks(
@@ -126,6 +132,9 @@ def _load_network_repository(
 
     labels = [G.nodes[i]["label"] for i in idx]
     return torch.tensor(dists), torch.tensor(labels), torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
+    # dists = nx.floyd_warshall_numpy(G)
+    # labels = [node["label"] for node in G.nodes.values()]
+    # return torch.tensor(dists), torch.tensor(labels), torch.tensor(nx.to_numpy_array(G))
 
 
 def load_cora(

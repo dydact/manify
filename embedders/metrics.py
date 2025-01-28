@@ -29,6 +29,11 @@ def distortion_loss(
     else:
         D_true = D_true.flatten()
         D_est = D_est.flatten()
+    
+    # Mask out any infinite or nan values
+    mask = torch.isfinite(D_true) & ~torch.isnan(D_true)
+    D_true = D_true[mask]
+    D_est = D_est[mask]
 
     return torch.sum(torch.abs((D_est / D_true) ** 2 - 1))
 
@@ -55,6 +60,11 @@ def d_avg(
     else:
         D_true = D_true.flatten()
         D_est = D_est.flatten()
+    
+    # Mask out any infinite or nan values
+    mask = torch.isfinite(D_true) & ~torch.isnan(D_true)
+    D_true = D_true[mask]
+    D_est = D_est[mask]
 
     # Note that D_avg uses nonsquared distances:
     return torch.mean(torch.abs(D_est - D_true) / D_true)

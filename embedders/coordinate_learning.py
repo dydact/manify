@@ -60,8 +60,14 @@ def train_coords(
 
     # Initialize optimizer
     X = geoopt.ManifoldParameter(X, manifold=pm.manifold)
-    ropt = geoopt.optim.RiemannianAdam(params=[X], lr=burn_in_learning_rate)
-    opt = torch.optim.Adam(params=[x._log_scale for x in pm.manifold.manifolds], lr=0)
+    ropt = geoopt.optim.RiemannianAdam(
+        [
+            {"params": [X], "lr": burn_in_learning_rate},
+            {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
+        ]
+    )
+    # ropt = geoopt.optim.RiemannianAdam(params=[X] + [x._log_scale for x in pm.manifold.manifolds], lr=burn_in_learning_rate)
+    # opt = torch.optim.Adam(params=[x._log_scale for x in pm.manifold.manifolds], lr=0)
 
     # Init TQDM
     my_tqdm = tqdm(total=burn_in_iterations + training_iterations, leave=False)
@@ -73,12 +79,14 @@ def train_coords(
         for i in range(n_iters):
             if i == burn_in_iterations:
                 # Optimize curvature by changing lr
-                opt.lr = scale_factor_learning_rate
-                ropt.lr = learning_rate
+                # opt.lr = scale_factor_learning_rate
+                # ropt.lr = learning_rate
+                ropt.param_groups[0]["lr"] = learning_rate
+                ropt.param_groups[1]["lr"] = scale_factor_learning_rate
             
             # Zero grad
             ropt.zero_grad()
-            opt.zero_grad()
+            # opt.zero_grad()
 
             # 1. Train-train loss
             X_t = X[train]
@@ -106,7 +114,7 @@ def train_coords(
                 L_tq = 0
 
             # Step
-            opt.step()
+            # opt.step()
             ropt.step()
             L = L_tt + L_qq + L_tq
             losses["total"].append(L.item())
@@ -130,5 +138,9 @@ def train_coords(
                 d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
                 d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
                 my_tqdm.set_postfix(d)
+            
+            # Early stopping for errors
+            if torch.isnan(L):
+                raise Exception("Loss is NaN")
 
-    return X, losses
+    return X.detach(), losses
