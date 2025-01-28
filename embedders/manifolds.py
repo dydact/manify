@@ -359,7 +359,7 @@ class Manifold:
         num = [X[:, 1:] for X in points]
         denom = [1 + abs(self.curvature) ** 0.5 * X[:, 0:1] for X in points]
         for X in denom:
-            X[X.abs() < 1e-8] = 1e-8  # Avoid division by zero
+            X[X.abs() < 1e-6] = 1e-6  # Avoid division by zero
         stereo_points = [n / d for n, d in zip(num, denom)]
         assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
 

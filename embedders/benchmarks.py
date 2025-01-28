@@ -48,7 +48,7 @@ def benchmark(
         "kappa_gcn",
         "product_mlr",
     ],
-    max_depth: int = 3,
+    max_depth: int = 5,
     n_estimators: int = 12,
     min_samples_split: int = 2,
     min_samples_leaf: int = 1,
@@ -63,8 +63,8 @@ def benchmark(
     batch_size=None,
     adj=None,
     hidden_dims=[128, 128],
-    epochs=400,
-    lr=1e-2,
+    epochs=1_000,
+    lr=1e-3,
     kappa_gcn_layers=2,
 ) -> Dict[str, float]:
     """
@@ -202,18 +202,21 @@ def benchmark(
         # Score handling
         out = {}
         for s in score:
-            if s == "accuracy":
-                out[s] = accuracy_score(_y, y_pred)
-            elif s == "f1-micro":
-                out[s] = f1_score(_y, y_pred, average="micro")
-            elif s == "mse":
-                out[s] = mean_squared_error(_y, y_pred)
-            elif s == "rmse":
-                out[s] = root_mean_squared_error(_y, y_pred)
-            elif s == "percent_rmse":
-                out[s] = (root_mean_squared_error(_y, y_pred, multioutput="raw_values") / np.abs(_y)).mean()
-            else:
-                raise ValueError(f"Unknown score: {s}")
+            try:
+                if s == "accuracy":
+                    out[s] = accuracy_score(_y, y_pred)
+                elif s == "f1-micro":
+                    out[s] = f1_score(_y, y_pred, average="micro")
+                elif s == "mse":
+                    out[s] = mean_squared_error(_y, y_pred)
+                elif s == "rmse":
+                    out[s] = root_mean_squared_error(_y, y_pred)
+                elif s == "percent_rmse":
+                    out[s] = (root_mean_squared_error(_y, y_pred, multioutput="raw_values") / np.abs(_y)).mean()
+                else:
+                    raise ValueError(f"Unknown score: {s}")
+            except Exception as e:
+                out[s] = np.nan
         return out
 
     # Aggregate arguments
@@ -435,8 +438,6 @@ def benchmark(
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
-        print(X_train_stereo.isnan().any())
-        print(X_test_stereo.isnan().any())
         d = X_test_stereo.shape[1] # Shape can't change between layers
         kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()

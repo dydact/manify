@@ -192,12 +192,12 @@ class KappaGCN(torch.nn.Module):
         # For convenience, get curvature and manifold
         kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
 
+        # # Need transposes because column vectors live in the tangent space
+        # W = M.manifold.transp0(b, W.T).T  # (d, k)
+
         # Change shapes
         b = b[None, :]  # (1, k)
         X = X[:, None]  # (n, 1, d)
-
-        # Need transposes because column vectors live in the tangent space
-        # W = M.manifold.transp0(b, W.T).T  # (d, k)
 
         # 1. Get z_k = -p_k \oplus_\kappa x (vectorized)
         # This works for the Euclidean case too - it becomes a simple subtraction
