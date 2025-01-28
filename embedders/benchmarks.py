@@ -161,7 +161,6 @@ def benchmark(
     pdists = pm.pdist(X).detach()
 
     # Get tangent plane
-    X_tangent = pm.logmap(X).detach()
     X_train_tangent = pm.logmap(X_train).detach()
     X_test_tangent = pm.logmap(X_test).detach()
 
@@ -181,7 +180,8 @@ def benchmark(
         A_hat = get_A_hat(adj).detach()
     else:
         dists = pdists**2
-        dists /= dists.max()
+        dists_train = dists[train_idx][:, train_idx]
+        dists /= dists_train[torch.isfinite(dists_train)].max()
         A_hat = get_A_hat(dists).detach()
     A_hat = A_hat.to(device)
     A_train = A_hat[train_idx][:, train_idx]
@@ -437,7 +437,7 @@ def benchmark(
         d = X_test_stereo.shape[1] # Shape can't change between layers
         kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d, d], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
-        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
+        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs, use_tqdm=True)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)

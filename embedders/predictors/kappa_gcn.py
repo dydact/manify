@@ -146,7 +146,7 @@ class KappaGCN(torch.nn.Module):
 
         # Hidden layers
         if hidden_dims is None:
-            dims = [pm.dim] * (n_layers + 1)
+            dims = [pm.dim, pm.dim, pm.dim] # 2 hidden layers
         elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
             raise ValueError("Only fully Euclidean manifolds can change hidden dimension size")
         else:
@@ -155,7 +155,7 @@ class KappaGCN(torch.nn.Module):
         self.layers = torch.nn.ModuleList([KappaGCNLayer(dims[i], dims[i+1], pm, nonlinearity) for i in range(len(dims) - 1)])
 
         # Final layer params
-        self.W_logits = torch.nn.Parameter(torch.randn(pm.dim, output_dim) * 0.01)
+        self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
         self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
 
 
