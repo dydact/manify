@@ -7,7 +7,7 @@ from tqdm.notebook import tqdm
 from ..manifolds import Manifold, ProductManifold
 
 
-def get_A_hat(A, make_symmetric=False, add_self_loops=False):
+def get_A_hat(A, make_symmetric=True, add_self_loops=True):
     """
     Normalize adjacency matrix.
 
@@ -18,11 +18,14 @@ def get_A_hat(A, make_symmetric=False, add_self_loops=False):
         torch.Tensor: Normalized adjacency matrix.
     """
 
+    # Fix nans
+    A[torch.isnan(A)] = 0
+
     # Optional steps to make symmetric and add self-loops
-    if make_symmetric:
+    if make_symmetric and not torch.allclose(A, A.T):
         A = A + A.T
-    if add_self_loops:
-        A = A + torch.eye(A.shape[0])
+    if add_self_loops and not torch.allclose(torch.diag(A), torch.ones(A.shape[0], device=A.device)):
+        A = A + torch.eye(A.shape[0], device=A.device)
 
     # Get degree matrix
     D = torch.diag(torch.sum(A, axis=1))
@@ -76,11 +79,25 @@ class KappaGCNLayer(torch.nn.Module):
             out: result of the Kappa left matrix multiplication.
         """
         # out = torch.zeros_like(X)
-        out = []
-        for A_i in A:
-            m_i = M.manifold.weighted_midpoint(xs=X, weights=A_i)
-            out.append(M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i))
-        return torch.stack(out, dim=0)
+        # out = []
+        # out = torch.zeros_like(X)
+        # for i, A_i in enumerate(A):
+        #     m_i = M.manifold.weighted_midpoint(xs=X, weights=A_i)
+        #     out[i] = M.manifold.mobius_scalar_mul(r=A_i.sum(), x=m_i)
+        # return out
+
+        # Vectorized version:
+        return M.manifold.weighted_midpoint(
+            xs=X.unsqueeze(0), # (1, N, D)
+            weights=A, # (N, N)
+            reducedim=[1],    # Sum over the N points dimension (dim 1)
+            dim=-1,            # Compute conformal factors along the points dimension
+            keepdim=False,    # Squeeze the batch dimension out
+            lincomb=True,     # Scale by sum of weights (A.sum(dim=1))
+            # posweight=self.posweight if hasattr(self, 'posweight') else False
+            posweight=False
+        )
+
 
     def forward(self, X, A_hat=None):
         """
@@ -122,17 +139,25 @@ class KappaGCN(torch.nn.Module):
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(self, pm, output_dim, n_layers=2, nonlinearity=torch.relu, task="classification"):
+    def __init__(self, pm, output_dim, hidden_dims=None, nonlinearity=torch.relu, task="classification"):
         super().__init__()
         self.pm = pm
         self.task = task
 
         # Hidden layers
-        self.layers = torch.nn.ModuleList([KappaGCNLayer(pm.dim, pm.dim, pm, nonlinearity) for _ in range(n_layers)])
+        if hidden_dims is None:
+            dims = [pm.dim] * (n_layers + 1)
+        elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
+            raise ValueError("Only fully Euclidean manifolds can change hidden dimension size")
+        else:
+            dims = [pm.dim] + hidden_dims
+        
+        self.layers = torch.nn.ModuleList([KappaGCNLayer(dims[i], dims[i+1], pm, nonlinearity) for i in range(len(dims) - 1)])
 
         # Final layer params
         self.W_logits = torch.nn.Parameter(torch.randn(pm.dim, output_dim) * 0.01)
         self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
+
 
     def forward(self, X, A_hat=None, aggregate_logits=True, softmax=False):
         """

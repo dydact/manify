@@ -50,21 +50,18 @@ def train_coords(
         losses: List of loss values at each iteration during training.
     """
     # Move everything to the device
-    pm.x_embed = pm.initialize_embeddings(n_points=len(dists)).to(device)
+    X = pm.initialize_embeddings(n_points=len(dists)).to(device)
     dists = dists.to(device)
 
     # Get train and test indices set up
+    use_test = len(test_indices) > 0
     test = torch.tensor([i in test_indices for i in range(len(dists))]).to(device)
     train = ~test
 
     # Initialize optimizer
-    pm.x_embed = geoopt.ManifoldParameter(pm.x_embed, manifold=pm.manifold)
-    pm.opt = geoopt.optim.RiemannianAdam(
-        [
-            {"params": [pm.x_embed], "lr": burn_in_learning_rate},
-            {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
-        ]
-    )
+    X = geoopt.ManifoldParameter(X, manifold=pm.manifold)
+    ropt = geoopt.optim.RiemannianAdam(params=[X], lr=burn_in_learning_rate)
+    opt = torch.optim.Adam(params=[x._log_scale for x in pm.manifold.manifolds], lr=0)
 
     # Init TQDM
     my_tqdm = tqdm(total=burn_in_iterations + training_iterations, leave=False)
@@ -72,43 +69,45 @@ def train_coords(
     # Outer training loop - mostly setting optimizer learning rates up here
     losses = {"train_train": [], "test_test": [], "train_test": [], "total": []}
     for lr, n_iters in ((burn_in_learning_rate, burn_in_iterations), (learning_rate, training_iterations)):
-        # Set the learning rate
-        pm.opt.param_groups[0]["lr"] = lr
-        if lr == learning_rate:
-            pm.opt.param_groups[1]["lr"] = scale_factor_learning_rate
-
         # Actual training loop
         for i in range(n_iters):
-            pm.opt.zero_grad()
-            # dist_est = pm.pdist(pm.x_embed)
-            # L = distortion_loss(dist_est, dists)
-            # L.backward()
-            # losses.append(L.item())
-            # pm.opt.step()
+            if i == burn_in_iterations:
+                # Optimize curvature by changing lr
+                opt.lr = scale_factor_learning_rate
+                ropt.lr = learning_rate
+            
+            # Zero grad
+            ropt.zero_grad()
+            opt.zero_grad()
 
             # 1. Train-train loss
-            X_t = pm.x_embed[train]
+            X_t = X[train]
             D_tt = pm.pdist(X_t)
             L_tt = distortion_loss(D_tt, dists[train][:, train], pairwise=True)
             L_tt.backward(retain_graph=True)
             losses["train_train"].append(L_tt.item())
 
+            if use_test:
             # 2. Test-test loss
-            X_q = pm.x_embed[test]
-            D_qq = pm.pdist(X_q)
-            L_qq = distortion_loss(D_qq, dists[test][:, test], pairwise=True)
-            L_qq.backward(retain_graph=True)
-            losses["test_test"].append(L_qq.item())
+                X_q = X[test]
+                D_qq = pm.pdist(X_q)
+                L_qq = distortion_loss(D_qq, dists[test][:, test], pairwise=True)
+                L_qq.backward(retain_graph=True)
+                losses["test_test"].append(L_qq.item())
 
-            # 3. Train-test loss
-            X_t_detached = pm.x_embed[train].detach()
-            D_tq = pm.dist(X_t_detached, X_q)  # Note 'dist' not 'pdist', as we're comparing different sets
-            L_tq = distortion_loss(D_tq, dists[train][:, test], pairwise=False)
-            L_tq.backward()
-            losses["train_test"].append(L_tq.item())
+                # 3. Train-test loss
+                X_t_detached = X[train].detach()
+                D_tq = pm.dist(X_t_detached, X_q)  # Note 'dist' not 'pdist', as we're comparing different sets
+                L_tq = distortion_loss(D_tq, dists[train][:, test], pairwise=False)
+                L_tq.backward()
+                losses["train_test"].append(L_tq.item())
+            else:
+                L_qq = 0
+                L_tq = 0
 
             # Step
-            pm.opt.step()
+            opt.step()
+            ropt.step()
             L = L_tt + L_qq + L_tq
             losses["total"].append(L.item())
 
@@ -120,15 +119,16 @@ def train_coords(
             if i % logging_interval == 0:
                 d = {f"r{i}": f"{x._log_scale.item():.3f}" for i, x in enumerate(pm.manifold.manifolds)}
                 # d_avg_this_iter = d_avg(dist_est, dists)
-                d_avg_this_iter = (
-                    d_avg(D_tt, dists[train][:, train], pairwise=True) * len(train) * (len(train) - 1) / 2  # triu
-                    + d_avg(D_qq, dists[test][:, test], pairwise=True) * len(test) * (len(test) - 1)  # triu
-                    + d_avg(D_tq, dists[train][:, test], pairwise=False) * len(train) * len(test)  # full
-                ) / (
-                    len(pm.x_embed) * (len(pm.x_embed) - 1) / 2
-                )  # triu
-                d["D_avg"] = f"{d_avg_this_iter:.4f}"
+                # d_avg_this_iter = (
+                #     d_avg(D_tt, dists[train][:, train], pairwise=True) * len(train) * (len(train) - 1) / 2  # triu
+                #     + d_avg(D_qq, dists[test][:, test], pairwise=True) * len(test) * (len(test) - 1)  # triu
+                #     + d_avg(D_tq, dists[train][:, test], pairwise=False) * len(train) * len(test)  # full
+                # ) / (
+                #     len(pm.x_embed) * (len(pm.x_embed) - 1) / 2
+                # )  # triu
+                # d["D_avg"] = f"{d_avg_this_iter:.4f}"
+                d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
                 d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
                 my_tqdm.set_postfix(d)
 
-    return pm.x_embed, losses
+    return X, losses

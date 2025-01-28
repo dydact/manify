@@ -616,7 +616,7 @@ class ProductManifold(Manifold):
         ]
         return torch.cat(component_lls, axis=1).sum(axis=1)
 
-    def stereographic(self, *points) -> Tuple[Manifold | List[TT]]:
+    def stereographic(self, *points) -> Tuple[Manifold, List[TT]]:
         if self.is_stereographic:
             print("Manifold is already in stereographic coordinates.")
             return self, *points
