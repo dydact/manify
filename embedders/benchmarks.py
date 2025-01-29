@@ -157,6 +157,10 @@ def benchmark(
         y = torch.cat([y_train, y_test])
         train_idx = np.arange(len(X_train))
         test_idx = np.arange(len(X_train), len(X))
+    
+    # Make sure everything is detached
+    X, X_train, X_test = X.detach(), X_train.detach(), X_test.detach()
+    y, y_train, y_test = y.detach(), y_train.detach(), y_test.detach()
 
     # Get pdists
     pdists = pm.pdist(X).detach()
