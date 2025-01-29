@@ -62,10 +62,10 @@ def benchmark(
     y_test=None,
     batch_size=None,
     adj=None,
-    hidden_dims=[128, 128],
-    epochs=2_000,
-    lr=1e-2,
-    kappa_gcn_layers=2,
+    hidden_dims=[32, 32],
+    epochs=4_000,
+    lr=1e-4,
+    kappa_gcn_layers=1,
 ) -> Dict[str, float]:
     """
     Benchmarks various machine learning models on a dataset using a product manifold structure.
