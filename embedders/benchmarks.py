@@ -20,8 +20,8 @@ from .manifolds import ProductManifold
 from .predictors.tree_new import ProductSpaceDT, ProductSpaceRF
 from .predictors.perceptron import ProductSpacePerceptron
 from .predictors.svm import ProductSpaceSVM
-from .predictors.mlp import MLP
-from .predictors.gnn import GNN, get_nonzero
+# from .predictors.mlp import MLP
+# from .predictors.gnn import GNN, get_nonzero
 from .predictors.kappa_gcn import KappaGCN, get_A_hat
 
 def benchmark(
@@ -62,6 +62,8 @@ def benchmark(
     y_test=None,
     batch_size=None,
     adj=None,
+    A_train=None,
+    A_test=None,
     hidden_dims=[32, 32],
     epochs=4_000,
     lr=1e-4,
@@ -107,17 +109,6 @@ def benchmark(
     elif task == "regression":
         assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
 
-    # Make sure classification labels are formatted correctly
-    if task == "classification":
-        if y is not None:
-            y = torch.unique(y, return_inverse=True)[1]
-        if y_train is not None and y_test is not None:
-            y_train = torch.tensor(y_train)
-            y_test = torch.tensor(y_test)
-            y_concat = torch.cat([y_train, y_test])
-            y_train = torch.unique(y_concat, return_inverse=True)[1][: len(y_train)]
-            y_test = torch.unique(y_concat, return_inverse=True)[1][len(y_train) :]
-
     # Make sure we're on the right device
     pm = pm.to(device)
 
@@ -139,6 +130,12 @@ def benchmark(
         y_train = y_train.to(device)
         y_test = y_test.to(device)
 
+        # Get X and y
+        X = torch.cat([X_train, X_test])
+        y = torch.cat([y_train, y_test])
+        train_idx = np.arange(len(X_train))
+        test_idx = np.arange(len(X_train), len(X))
+
     else:
         # Coerce to tensor as needed
         if not torch.is_tensor(X):
@@ -151,12 +148,11 @@ def benchmark(
 
         X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)), test_size=0.2)
 
-    # If we use X_train and X_test, we should make a fake X and y
-    if X is None and y is None:
-        X = torch.cat([X_train, X_test])
-        y = torch.cat([y_train, y_test])
-        train_idx = np.arange(len(X_train))
-        test_idx = np.arange(len(X_train), len(X))
+    # Make sure classification labels are formatted correctly
+    if task == "classification":
+        y = torch.unique(y, return_inverse=True)[1]
+        y_train = y[train_idx]
+        y_test = y[test_idx]
     
     # Make sure everything is detached
     X, X_train, X_test = X.detach(), X_train.detach(), X_test.detach()
@@ -191,8 +187,13 @@ def benchmark(
         dists /= dists_train[torch.isfinite(dists_train)].max()
         A_hat = get_A_hat(dists).detach()
     A_hat = A_hat.to(device)
-    A_train = A_hat[train_idx][:, train_idx]
-    A_test = A_hat[test_idx][:, test_idx]
+
+    if A_train is None and A_test is None:
+        A_train = A_hat[train_idx][:, train_idx].detach()
+        A_test = A_hat[test_idx][:, test_idx].detach()
+    else:
+        A_train = A_train.to(device).detach()
+        A_test = A_test.to(device).detach()
 
     def _score(_X, _y, model, y_pred_override=None, torch=False):
         # Override y_pred
