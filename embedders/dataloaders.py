@@ -363,7 +363,7 @@ def load_landmasses(n_points: int = 400, seed=None) -> Tuple[TT["n_points", "n_d
 
 def _load_neuron(
     neuron_idx,
-    n_coefficients=20,
+    n_coefficients=10,
     threshold=0,
     n_samples=1000,
     seed=None,
