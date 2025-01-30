@@ -155,8 +155,12 @@ class KappaGCN(torch.nn.Module):
         self.layers = torch.nn.ModuleList([KappaGCNLayer(dims[i], dims[i+1], pm, nonlinearity) for i in range(len(dims) - 1)])
 
         # Final layer params
-        self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
-        self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
+        if task == "link_prediction":
+            self.fermi_dirac_temperature = torch.nn.Parameter(torch.tensor(1.0))
+            self.fermi_dirac_bias = torch.nn.Parameter(torch.tensor(0.0))
+        elif task == "classification" or task == "regression":
+            self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
+            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
 
 
     def forward(self, X, A_hat=None, aggregate_logits=True, softmax=False):
@@ -170,7 +174,7 @@ class KappaGCN(torch.nn.Module):
 
         Returns:
             logits_agg: output of Kappa GCN network
-        """
+        """        
         H = X
 
         # Pass through kappa-GCN layers
@@ -178,14 +182,18 @@ class KappaGCN(torch.nn.Module):
             H = layer(H, A_hat)
 
         # Final layer is to get logits
-        logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
-        if A_hat is not None and aggregate_logits:
-            logits = A_hat @ logits
+        if self.task == "link_prediction":
+            # Taken from https://arxiv.org/pdf/1910.12933
+            return (-(self.pm.pdist2(H) - self.fermi_dirac_bias) / self.fermi_dirac_temperature).flatten()
+        else:
+            logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
+            if A_hat is not None and aggregate_logits:
+                logits = A_hat @ logits
 
-        if softmax:
-            logits = torch.softmax(logits, dim=1)
+            if softmax:
+                logits = torch.softmax(logits, dim=1)
 
-        return logits.squeeze()
+            return logits.squeeze()
 
     def _get_logits_single_manifold(self, X, W, b, M, return_inner_products=False):
         """Helper function for get_logits"""
@@ -284,7 +292,7 @@ class KappaGCN(torch.nn.Module):
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
 
-    def fit(self, X, y, A, epochs=2_000, lr=1e-2, use_tqdm=True):
+    def fit(self, X, y, A, epochs=2_000, lr=1e-2, use_tqdm=True, lp_indices=None):
         """
         Fit the Kappa GCN model.
 
@@ -296,14 +304,25 @@ class KappaGCN(torch.nn.Module):
             epochs: Number of training epochs (default=200).
             lr: Learning rate (default=1e-2).
         """
+        if lp_indices is None and self.task == "link_prediction":
+            raise ValueError("Must provide indices for link prediction task!")
+
         # Copy everything
         X = X.clone()
         y = y.clone()
         A = A.clone() if A is not None else None
 
         # Standard fit
-        opt = torch.optim.Adam([self.W_logits] + [layer.W for layer in self.layers], lr=lr)
-        ropt = geoopt.optim.RiemannianAdam([self.p_ks], lr=lr)
+        opt_params = [layer.W for layer in self.layers]
+        ropt_params = []
+        if self.task == "link_prediction":
+            opt_params += [self.fermi_dirac_temperature, self.fermi_dirac_bias]
+        else:
+            opt_params += [self.W_logits]
+            ropt_params += [self.p_ks]
+        opt = torch.optim.Adam(opt_params, lr=lr)
+        if ropt_params:
+            ropt = geoopt.optim.RiemannianAdam(ropt_params, lr=lr)
 
         if self.task == "classification":
             loss_fn = torch.nn.CrossEntropyLoss()
@@ -313,7 +332,7 @@ class KappaGCN(torch.nn.Module):
             y = y.float()
         elif self.task == "link_prediction":
             loss_fn = torch.nn.BCEWithLogitsLoss()
-            y = y.float()
+            y = y.flatten().float()
 
         self.train()
         if use_tqdm:
@@ -321,12 +340,16 @@ class KappaGCN(torch.nn.Module):
 
         for i in range(epochs):
             opt.zero_grad()
-            ropt.zero_grad()
+            if ropt_params:
+                ropt.zero_grad()
             y_pred = self(X, A)
+            if self.task == "link_prediction":
+                y_pred = y_pred[lp_indices]
             loss = loss_fn(y_pred, y)
             loss.backward()
             opt.step()
-            ropt.step()
+            if ropt_params:
+                ropt.step()
 
             # Progress bar
             if use_tqdm:
@@ -358,5 +381,8 @@ class KappaGCN(torch.nn.Module):
         y_pred = self(X, A)
         if self.task == "classification":
             return y_pred.argmax(dim=1).detach()
+        elif self.task == "link_prediction":
+            # Binarize the logits
+            return (y_pred > 0).long().detach()
         else:
             return y_pred.detach()

@@ -52,7 +52,7 @@ def benchmark(
     n_estimators: int = 12,
     min_samples_split: int = 2,
     min_samples_leaf: int = 1,
-    task: Literal["classification", "regression"] = "classification",
+    task: Literal["classification", "regression", "link_prediction"] = "classification",
     seed: Optional[int] = None,
     use_special_dims: bool = False,
     n_features: Literal["d", "d_choose_2"] = "d_choose_2",
