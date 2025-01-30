@@ -1,10 +1,12 @@
 \begin{tabular}{lllllll}
 \toprule
-& Dataset & Signature & \col{product_dt}{Product RF} & \col{euclidean_dt}{Euclidean RF} & \col{tangent_dt}{Tangent RF} 
+Dataset & \col{product_dt}{Product RF} & \col{euclidean_dt}{Ambient RF} & \col{tangent_dt}{Tangent RF} 
 & \col{knn}{$k$-Neighbors} & \col{mlp}{MLP} & \col{kgcn}{$\kappa$-GCN}\\
 \midrule
+AdjNoun & 92.5 ± .5 & 92.5 ± .5 & 92.5 ± .5 & 92.1 ± .5 & \textbf{92.6 ± .5} & 92.5 ± .5 \\
 Dolphins & 91.7 ± .3 & 91.7 ± .4 & 91.7 ± .3 & 91.4 ± .3 & 91.6 ± .3 & 91.8 ± .2 \\
 Football & \textbf{79.5 ± .8} & 79.1 ± .7 & \underline{79.3 ± .8} & 77.9 ± .8 & 79.1 ± .7 & 51.6 ± 7.9 \\
 Karate Club & 87.4 ± .8 & 88.3 ± .7 & 87.7 ± .8 & 87.1 ± 1.4 & 85.5 ± .6 & 86.1 ± 1.1 \\
+Les Mis & 91.9 ± .2 & 92.7 ± .5 & 92.5 ± .5 & \textbf{93.5 ± .3} & 91.7 ± .2 & 91.0 ± .3 \\
 \bottomrule
 \end{tabular}

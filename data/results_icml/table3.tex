@@ -1,6 +1,6 @@
 \begin{tabular}{lllllll}
 \toprule
-& Dataset & Signature & \col{product_dt}{Product RF} & \col{euclidean_dt}{Euclidean RF} & \col{tangent_dt}{Tangent RF} 
+& Dataset & Signature & \col{product_dt}{Product RF} & \col{euclidean_dt}{Ambient RF} & \col{tangent_dt}{Tangent RF} 
 & \col{knn}{$k$-Neighbors}\\
 \midrule
 \multirow[t]{8}{*}{\rotatebox{90}{\hspace{-2.4cm}Synthetic (multi-$K$)}} & \multirow[t]{8}{*}{Gaussian} & $(\S{2})^2$ & \textbf{.192 ± .006} & \underline{.194 ± .007} & \underline{.194 ± .007} & .200 ± .006 \\
@@ -13,5 +13,9 @@
  &  & ($\H{2})^2$ & \textbf{.174 ± .007} & \underline{.176 ± .006} & \underline{.176 ± .006} & .177 ± .007 \\
 \cline{1-7} \cline{2-7}
 \rotatebox{90}{\hspace{-.8cm}Graphs} & CS PhDs & $\H{4}$ & \underline{13.986 ± .629} & 14.001 ± .687 & 14.123 ± .697 & \textbf{13.135 ± .497} \\
+\cline{1-7} \cline{2-7}
+\multirow[t]{2}{*}{\rotatebox{90}{\hspace{-1cm}Other}} & Temperature & $\S{2}\S{1}$ & 8.128 ± .682 & \textbf{5.506 ± .821} & 8.841 ± .579 & 11.590 ± .628 \\
+\cline{2-7}
+ & Traffic & $\E{1}(\S{1})^4$ & .549 ± .012 & \textbf{.470 ± .011} & \underline{.474 ± .009} & .503 ± .010 \\
 \bottomrule
 \end{tabular}
