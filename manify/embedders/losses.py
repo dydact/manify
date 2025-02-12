@@ -1,16 +1,19 @@
 """Implementation of different measurement metrics"""
 
+from typing import List
+from torchtyping import TensorType as TT
+
 import torch
 import networkx as nx
 
-from torchtyping import TensorType
+from ..manifolds import ProductManifold
 
 
 def distortion_loss(
-    D_est: TensorType["n_points", "n_points"],
-    D_true: TensorType["n_points", "n_points"],
+    D_est: TT["n_points", "n_points"],
+    D_true: TT["n_points", "n_points"],
     pairwise: bool = False,
-) -> float:
+) -> TT[1]:
     """
     Compute the distortion loss between estimated SQUARED distances and true SQUARED distances.
     Args:
@@ -20,7 +23,7 @@ def distortion_loss(
 
     Returns:
         float: A float indicating the distortion loss, calculated as the sum of the squared relative
-               errors between the estimated and true squared distances.
+         errors between the estimated and true squared distances.
     """
 
     # Turn into flat vectors of pairwise distances. For pairwise distances, we only consider the upper triangle.
@@ -42,8 +45,8 @@ def distortion_loss(
 
 
 def d_avg(
-    D_est: TensorType["n_points", "n_points"],
-    D_true: TensorType["n_points", "n_points"],
+    D_est: TT["n_points", "n_points"],
+    D_true: TT["n_points", "n_points"],
     pairwise: bool = False,
 ) -> float:
     """Average distance error D_av
@@ -75,12 +78,12 @@ def d_avg(
     return torch.mean(torch.abs(D_est - D_true) / D_true)
 
 
-def mean_average_precision(x_embed: TensorType["n_points", "n_dim"], graph: nx.Graph) -> float:
+def mean_average_precision(x_embed: TT["n_points", "n_dim"], graph: nx.Graph) -> float:
     """Mean averae precision (mAP) from the Gu et al paper."""
     raise NotImplementedError
 
 
-def dist_component_by_manifold(pm: ProductManifold, x_embed: TensorType["n_points", "n_dim"]) -> List[float]:
+def dist_component_by_manifold(pm: ProductManifold, x_embed: TT["n_points", "n_dim"]) -> List[float]:
     """
     Compute the variance in pairwise distances explained by each manifold component.
 

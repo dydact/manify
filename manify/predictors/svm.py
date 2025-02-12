@@ -1,8 +1,11 @@
+from typing import List
+from torchtyping import TensorType as TT
+
+import numpy as np
 import cvxpy
 import torch
-import numpy as np
-
 from sklearn.base import BaseEstimator, ClassifierMixin
+
 from .kernel import product_kernel
 
 
@@ -26,12 +29,17 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         if weights is None:
             self.weights = torch.ones(len(pm.P), dtype=torch.float32)
         else:
-            assert len(weights) == len(
-                pm.P
-            ), "Number of weights must match the number of manifolds."
+            assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X, y):
+    def fit(self, X: TT["n_samples", "n_features"], y: TT["n_samples"]) -> None:
+        """
+        Trains the SVM model using the provided data and labels.
+
+        Args:
+            X: The training data of shape (n_samples, n_features).
+            y: The class labels for the training data of shape (n_samples,).
+        """
         # Identify unique classes for multiclass classification
         self.classes_ = torch.unique(y).tolist()
         n_samples = X.shape[0]
@@ -76,20 +84,14 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
                 norm = norm.item()
                 if M.type == "E" and self.e_constraints:
                     alpha_E = 1.0  # TODO: make this flexible
-                    constraints.append(
-                        cvxpy.quad_form(beta, K_component) <= alpha_E**2
-                    )
+                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E**2)
                 elif M.type == "S" and self.s_constraints:
                     constraints.append(cvxpy.quad_form(beta, K_component) <= np.pi / 2)
                 elif M.type == "H" and self.h_constraints:
                     K_component_pos = K_component.clip(0, None)
                     K_component_neg = K_component.clip(None, 0)
-                    constraints.append(
-                        cvxpy.quad_form(beta, K_component_neg) <= self.eps
-                    )
-                    constraints.append(
-                        cvxpy.quad_form(beta, K_component_pos) <= self.eps + norm
-                    )
+                    constraints.append(cvxpy.quad_form(beta, K_component_neg) <= self.eps)
+                    constraints.append(cvxpy.quad_form(beta, K_component_pos) <= self.eps + norm)
 
             # CVXPY solver
             cvxpy.Problem(
@@ -104,7 +106,16 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             # Need to store X for prediction
             self.X_train_ = torch.tensor(X, dtype=torch.float32)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: TT["n_samples", "n_features"]) -> TT["n_samples", "n_classes"]:
+        """
+        Predicts the probability of each class for the given test data.
+
+        Args:
+            X: The test data of shape (n_samples, n_features).
+
+        Returns:
+            probs: The probability of each class for the given test data of shape (n_samples, n_classes).
+        """
         # Ensure X is a torch tensor
         if not isinstance(X, torch.Tensor):
             X = torch.tensor(X, dtype=torch.float32)
@@ -117,9 +128,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
 
         # Compute the kernel between training data and test data
         Ks_test, _ = product_kernel(self.pm, self.X_train_, X)
-        K_test = torch.ones(
-            (self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device
-        )
+        K_test = torch.ones((self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device)
         for K_m, w in zip(Ks_test, self.weights):
             K_test += w * K_m
 
@@ -135,13 +144,17 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             decision_function[:, idx] = f
 
         # Convert decision function values to probabilities using softmax
-        exp_scores = np.exp(
-            decision_function - np.max(decision_function, axis=1, keepdims=True)
-        )
+        exp_scores = np.exp(decision_function - np.max(decision_function, axis=1, keepdims=True))
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
 
-    def predict(self, X):
+    def predict(self, X: TT["n_samples", "n_features"]) -> TT["n_samples"]:
+        """
+        Predicts the class for the given test data.
+
+        Args:
+            X: The test data of shape (n_samples, n_features).
+        """
         probs = self.predict_proba(X)
         class_indices = np.argmax(probs, axis=1)
         predictions = np.array([self.classes_[idx] for idx in class_indices])

@@ -1,11 +1,13 @@
 """Implementation for coordinate training and optimization"""
-from typing import Optional, Tuple, List, Dict
-from torchtyping import TensorType
 
 import sys
-import torch
+from typing import Tuple, List, Dict
+from torchtyping import TensorType
+
 import numpy as np
+import torch
 import geoopt
+
 from .losses import distortion_loss, d_avg
 from ..manifolds import ProductManifold
 
@@ -19,7 +21,7 @@ else:
 def train_coords(
     pm: ProductManifold,
     dists: TensorType["n_points", "n_points"],
-    test_indices: Optional[TensorType["n_test"]] = torch.tensor([]),
+    test_indices: TensorType["n_test"] = torch.tensor([]),
     device: str = "cpu",
     burn_in_learning_rate: float = 1e-3,
     burn_in_iterations: int = 2_000,
@@ -73,72 +75,64 @@ def train_coords(
 
     # Outer training loop - mostly setting optimizer learning rates up here
     losses = {"train_train": [], "test_test": [], "train_test": [], "total": []}
-    for lr, n_iters in (
-        (burn_in_learning_rate, burn_in_iterations),
-        (learning_rate, training_iterations),
-    ):
-        # Actual training loop
-        for i in range(n_iters):
-            if i == burn_in_iterations:
-                # Optimize curvature by changing lr
-                # opt.lr = scale_factor_learning_rate
-                # ropt.lr = learning_rate
-                ropt.param_groups[0]["lr"] = learning_rate
-                ropt.param_groups[1]["lr"] = scale_factor_learning_rate
 
-            # Zero grad
-            ropt.zero_grad()
-            # opt.zero_grad()
+    # Actual training loop
+    for i in range(burn_in_iterations + training_iterations):
+        if i == burn_in_iterations:
+            # Optimize curvature by changing lr
+            # opt.lr = scale_factor_learning_rate
+            # ropt.lr = learning_rate
+            ropt.param_groups[0]["lr"] = learning_rate
+            ropt.param_groups[1]["lr"] = scale_factor_learning_rate
 
-            # 1. Train-train loss
-            X_t = X[train]
-            D_tt = pm.pdist(X_t)
-            L_tt = distortion_loss(D_tt, dists[train][:, train], pairwise=True)
-            L_tt.backward(retain_graph=True)
-            losses["train_train"].append(L_tt.item())
+        # Zero grad
+        ropt.zero_grad()
+        # opt.zero_grad()
 
-            if use_test:
-                # 2. Test-test loss
-                X_q = X[test]
-                D_qq = pm.pdist(X_q)
-                L_qq = distortion_loss(D_qq, dists[test][:, test], pairwise=True)
-                L_qq.backward(retain_graph=True)
-                losses["test_test"].append(L_qq.item())
+        # 1. Train-train loss
+        X_t = X[train]
+        D_tt = pm.pdist(X_t)
+        L_tt = distortion_loss(D_tt, dists[train][:, train], pairwise=True)
+        L_tt.backward(retain_graph=True)
+        losses["train_train"].append(L_tt.item())
 
-                # 3. Train-test loss
-                X_t_detached = X[train].detach()
-                D_tq = pm.dist(
-                    X_t_detached, X_q
-                )  # Note 'dist' not 'pdist', as we're comparing different sets
-                L_tq = distortion_loss(D_tq, dists[train][:, test], pairwise=False)
-                L_tq.backward()
-                losses["train_test"].append(L_tq.item())
-            else:
-                L_qq = 0
-                L_tq = 0
+        if use_test:
+            # 2. Test-test loss
+            X_q = X[test]
+            D_qq = pm.pdist(X_q)
+            L_qq = distortion_loss(D_qq, dists[test][:, test], pairwise=True)
+            L_qq.backward(retain_graph=True)
+            losses["test_test"].append(L_qq.item())
 
-            # Step
-            # opt.step()
-            ropt.step()
-            L = L_tt + L_qq + L_tq
-            losses["total"].append(L.item())
+            # 3. Train-test loss
+            X_t_detached = X[train].detach()
+            D_tq = pm.dist(X_t_detached, X_q)  # Note 'dist' not 'pdist', as we're comparing different sets
+            L_tq = distortion_loss(D_tq, dists[train][:, test], pairwise=False)
+            L_tq.backward()
+            losses["train_test"].append(L_tq.item())
+        else:
+            L_qq = 0
+            L_tq = 0
 
-            # TQDM management
-            my_tqdm.update(1)
-            my_tqdm.set_description(f"Loss: {L.item():.3e}")
+        # Step
+        # opt.step()
+        ropt.step()
+        L = L_tt + L_qq + L_tq
+        losses["total"].append(L.item())
 
-            # Logging
-            if i % logging_interval == 0:
-                d = {
-                    f"r{i}": f"{x._log_scale.item():.3f}"
-                    for i, x in enumerate(pm.manifold.manifolds)
-                }
-                d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
-                d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
-                my_tqdm.set_postfix(d)
+        # TQDM management
+        my_tqdm.update(1)
+        my_tqdm.set_description(f"Loss: {L.item():.3e}")
 
-            # Early stopping for errors
-            if torch.isnan(L):
-                raise Exception("Loss is NaN")
+        # Logging
+        if i % logging_interval == 0:
+            d = {f"r{i}": f"{x._log_scale.item():.3f}" for i, x in enumerate(pm.manifold.manifolds)}
+            d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
+            d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
+            my_tqdm.set_postfix(d)
+
+        # Early stopping for errors
+        if torch.isnan(L):
+            raise Exception("Loss is NaN")
 
     return X.detach(), losses

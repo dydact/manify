@@ -1,4 +1,5 @@
 """Compute the angular midpoints between two angular coordinates in different geometric spaces"""
+
 import torch
 
 
@@ -36,12 +37,8 @@ def is_hyperbolic_midpoint(u, v, m):
     Returns:
         bool: True if m is the true hyperbolic midpoint between u and v, otherwise False.
     """
-    a = lambda x: torch.sqrt(
-        -1.0 / torch.cos(2.0 * x)
-    )  # Alpha coefficient to reach manifold
-    d = (
-        lambda x, y: a(x) * a(y) * torch.cos(x - y)
-    )  # Hyperbolic distance function (angular)
+    a = lambda x: torch.sqrt(-1.0 / torch.cos(2.0 * x))  # Alpha coefficient to reach manifold
+    d = lambda x, y: a(x) * a(y) * torch.cos(x - y)  # Hyperbolic distance function (angular)
     return torch.isclose(d(u, m), d(m, v))
 
 

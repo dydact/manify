@@ -1,0 +1,25 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+fail-under=8.0
+ignore=__pycache__,.git,venv
+
+[MESSAGES CONTROL]
+# Enforce docstring requirements for clarity
+# (We expect Google style docstrings in all modules, classes, and functions)
+
+[REPORTS]
+output-format=colorized
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,fp
+argument-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{2,30}$
+class-rgx=[A-Z][a-zA-Z0-9]+$
+const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
+module-rgx=([a-z_][a-z0-9_]*)
+
+[FORMAT]
+max-line-length=88
+
+[TYPECHECK]
+generated-members=torch.*,nn.* 

@@ -1,7 +1,9 @@
 """Implementation for kernel matrix calculation"""
+
 from typing import Optional, Tuple
-import torch
 from torchtyping import TensorType as TT
+
+import torch
 
 from ..manifolds import Manifold, ProductManifold
 
@@ -86,9 +88,7 @@ def product_kernel(
     # Compute the kernel matrix and norm for each manifold
     Ks = []
     norms = []
-    for M, x_source, x_target in zip(
-        pm.P, pm.factorize(X_source), pm.factorize(X_target)
-    ):
+    for M, x_source, x_target in zip(pm.P, pm.factorize(X_source), pm.factorize(X_target)):
         K_m, norm_m = compute_kernel_and_norm_manifold(M, x_source, x_target)
         Ks.append(K_m)
         norms.append(norm_m)

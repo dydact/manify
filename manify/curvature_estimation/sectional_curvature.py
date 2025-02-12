@@ -1,6 +1,8 @@
+import random
+
 import numpy as np
 import scipy as sp
-import random
+
 import torch
 
 

@@ -1,10 +1,11 @@
 """Tools for visualization"""
+
 from torchtyping import TensorType
 import torch
 
 
 def hyperboloid_to_poincare(
-    X: TensorType["n_points", "n_dim"]
+    X: TensorType["n_points", "n_dim"],
 ) -> TensorType["n_points", "n_dim_minus_1"]:
     """
     Convert hyperboloid coordinates to Poincaré ball coordinates.
@@ -28,7 +29,7 @@ def hyperboloid_to_poincare(
 
 
 def spherical_to_polar(
-    X: TensorType["n_points", "n_dim"]
+    X: TensorType["n_points", "n_dim"],
 ) -> TensorType["n_points", "n_dim_minus_1"]:
     """
     Convert spherical coordinates to polar coordinates.

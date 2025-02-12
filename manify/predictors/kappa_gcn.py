@@ -7,12 +7,20 @@ from torchtyping import TensorType as TT
 
 import torch
 import geoopt
-from tqdm.notebook import tqdm
+
 from ..manifolds import Manifold, ProductManifold
+
+# TQDM: notebook or regular
+if "ipykernel" in sys.modules:
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 def get_A_hat(
-    A: TT["n_nodes", "n_nodes"], make_symmetric: bool = True, add_self_loops: bool = True
+    A: TT["n_nodes", "n_nodes"],
+    make_symmetric: bool = True,
+    add_self_loops: bool = True,
 ) -> TT["n_nodes", "n_nodes"]:
     """
     Normalize adjacency matrix.
@@ -60,7 +68,13 @@ class KappaGCNLayer(torch.nn.Module):
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(self, in_features: int, out_features: int, manifold: Manifold, nonlinearity: callable = torch.relu):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        manifold: Manifold,
+        nonlinearity: callable = torch.relu,
+    ):
         super().__init__()
 
         # Parameters are Euclidean, straightforardly
@@ -218,7 +232,10 @@ class KappaGCN(torch.nn.Module):
         b: TT["n_classes"],
         M: Manifold,
         return_inner_products: bool = False,
-    ) -> Union[Tuple[TT["n_nodes", "n_classes"], TT["n_nodes", "n_classes"]], TT["n_nodes", "n_classes"]]:
+    ) -> Union[
+        Tuple[TT["n_nodes", "n_classes"], TT["n_nodes", "n_classes"]],
+        TT["n_nodes", "n_classes"],
+    ]:
         """Helper function for get_logits"""
 
         # For convenience, get curvature and manifold
@@ -263,7 +280,11 @@ class KappaGCN(torch.nn.Module):
             return logits
 
     def _get_logits_product_manifold(
-        self, X: TT["n_nodes", "dims"], W: TT["dims", "n_classes"], b: TT["n_classes"], M: Manifold
+        self,
+        X: TT["n_nodes", "dims"],
+        W: TT["dims", "n_classes"],
+        b: TT["n_classes"],
+        M: Manifold,
     ) -> TT["n_nodes", "n_classes"]:
         """Helper function for get_logits"""
 
@@ -291,7 +312,10 @@ class KappaGCN(torch.nn.Module):
         return logits * signs
 
     def get_logits(
-        self, X: TT["n_nodes", "dims"], W: TT["dims", "n_classes"] = None, b: TT["n_classes"] = None
+        self,
+        X: TT["n_nodes", "dims"],
+        W: TT["dims", "n_classes"] = None,
+        b: TT["n_classes"] = None,
     ) -> TT["n_nodes", "n_classes"]:
         """
         Computes logits given the manifold.
