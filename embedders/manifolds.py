@@ -420,10 +420,6 @@ class ProductManifold(Manifold):
         self.P = [Manifold(curvature, dim, device=device, stereographic=stereographic) for curvature, dim in signature]
         manifold_class = geoopt.StereographicProductManifold if stereographic else geoopt.ProductManifold
         self.manifold = manifold_class(*[(M.manifold, M.ambient_dim) for M in self.P]).to(device)
-        # if stereographic:
-        #     self.manifold = geoopt.StereographicProductManifold(*[(M.manifold, for M in self.P]).to(self.device)
-        # else:
-        #     self.manifold = geoopt.ProductManifold(*[(M.manifold, M.ambient_dim) for M in self.P])
         self.name = " x ".join([M.name for M in self.P])
 
         # Origin
@@ -568,10 +564,6 @@ class ProductManifold(Manifold):
         assert z_mean.shape[-1] == self.ambient_dim
 
         # Sample initial vector from N(0, sigma)
-        # x = torch.cat(
-        #     [M.sample(z_M, sigma_M) for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)],
-        #     dim=1,2
-        # )
         samples = [
             M.sample(z_M, sigma_M, return_tangent=True)
             for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)
@@ -629,18 +621,6 @@ class ProductManifold(Manifold):
         stereo_manifold = ProductManifold(self.signature, device=self.device, stereographic=True)
 
         # Convert points
-        # stereo_points = []
-        # for X in points:
-        #     X_factorized = self.factorize(X)
-        #     X_stereo_by_manifold = []
-        #     for x, M in zip(X_factorized, self.P):
-        #         _, x_out = M.stereographic(x)
-        #         X_stereo_by_manifold.append(x_out)
-        #     # X_stereo_by_manifold = [M.stereographic(M, x) for x, M in zip(X_factorized, self.P)]
-        #     print([x.shape for x in X_stereo_by_manifold])
-        #     X_stereographic = torch.hstack(X_stereo_by_manifold)
-        #     print("X_stereographic shape:", X_stereographic.shape)
-        #     stereo_points.append(X_stereographic)
         stereo_points = [
             torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
         ]

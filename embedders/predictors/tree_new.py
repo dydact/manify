@@ -1,4 +1,5 @@
 """Product space decision tree and random forest implementation"""
+
 from typing import Tuple, Optional, Literal
 import torch
 
@@ -131,30 +132,17 @@ def _get_info_gains_nobatch(
         pos_labels = torch.zeros((angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device)
         neg_labels = torch.zeros((angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device)
 
-        # my_tqdm = tqdm(total=angles.shape[0] * angles.shape[1], desc="Calculating information gains", leave=False)
         for d in range(angles.shape[1]):
-            # mask_all = _angular_greater(angles[:, d], angles[:, d])
-            # pos_labels_d = mask_all.float().T @ labels  # Shape: [batch_size, num_labels]
-            # neg_labels_d = (~mask_all).float().T @ labels  # Shape: [batch_size, num_labels]
-
-            # pos_labels[:, d, :] = pos_labels_d
-            # neg_labels[:, d, :] = neg_labels_d
             for j in range(0, angles.shape[0]):
                 mask = _angular_greater(angles[:, d], angles[j, d])
-                # mask = mask_all[:, j].unsqueeze(1)
 
                 # Expanding the labels to match the broadcasting needs of the mask
                 pos_labels_entry = mask.float() * labels  # [batch_size, labels.shape[1]]
                 neg_labels_entry = ~mask * labels  # [batch_size, labels.shape[1]]
-                # pos_labels_entry = pos_labels_entry_all[j]
-                # neg_labels_entry = neg_labels_entry_all[j]
-                # print(pos_labels_entry.shape, pos_labels[j, d, :].shape)
 
                 # Assign the calculated values to the respective positions in the final tensors
                 pos_labels[j, d, :] = pos_labels_entry.sum(dim=0)
                 neg_labels[j, d, :] = neg_labels_entry.sum(dim=0)
-
-                # my_tqdm.update(1)
 
         # Total counts are sums of label counts
         n_pos = pos_labels.sum(dim=-1) + eps
@@ -213,8 +201,6 @@ def _get_split(
     angles: TT["query_batch dims"],
     comparisons: TT["query_batch dims key_batch"],
     labels: TT["query_batch n_classes"],
-    n: int,
-    d: int,
 ) -> Tuple[
     Tuple[TT["query_batch_neg dims"], TT["query_batch_neg dims key_batch"], TT["query_batch_neg n_classes"]],
     Tuple[TT["query_batch_pos dims"], TT["query_batch_pos dims key_batch"], TT["query_batch_pos n_classes"]],
@@ -227,8 +213,6 @@ def _get_split(
         angles: (query_batch, dims) tensor of angles
         comparisons: (query_batch, dims, key_batch) tensor of comparisons
         labels: (query_batch, n_classes) tensor of one-hot labels
-        n: scalar index of split
-        d: scalar dimension of split
 
     Returns:
         neg = (
@@ -437,9 +421,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             classes = torch.tensor([])
             labels = torch.tensor([])
         labels = labels.to(dtype=X.dtype)
-        # labels = labels.to_sparse()
         comparisons_reshaped = comparisons_reshaped.to(dtype=X.dtype)
-        # comparisons_reshaped = comparisons_reshaped.to_sparse()
 
         return angles, labels, classes, comparisons_reshaped
 
@@ -487,7 +469,6 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             active_dim = self.permutations[d].item()
         else:
             active_dim = d.item()
-        # manifold = self.pm.P[self.pm.intrinsic2man[active_dim]]
         manifold = self.pm.P[self.angle2man[active_dim]]
         special_first_bool = self.special_first[active_dim]
 
@@ -743,7 +724,6 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
             tree.tree = tree._fit_node(
                 angles=angles[idx_sample][:, idx_dim],
                 labels=labels[idx_sample],
-                # comparisons=comparisons[idx_sample][:, idx_dim][:, :, idx_sample],
                 comparisons=comparisons_subsample,
                 depth=self.max_depth,
             )
@@ -756,7 +736,6 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
     def predict(self, X: TT["batch intrinsic_dim"]) -> TT["batch"]:
         """Predict class labels for samples in X"""
-        # return self.classes_[self.predict_proba(X).argmax(dim=1)]
         if self.task == "classification":
             return self.classes_[self.predict_proba(X).argmax(dim=1)]
         else:
@@ -764,7 +743,6 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
     def score(self, X: TT["batch intrinsic_dim"], y: TT["batch"]) -> TT["batch"]:
         """Return the mean accuracy on the given test data and labels"""
-        # return self.predict(X) == y
         if self.task == "classification":
             return self.predict(X) == y
         else:

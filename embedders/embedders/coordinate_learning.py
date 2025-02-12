@@ -127,15 +127,6 @@ def train_coords(
             # Logging
             if i % logging_interval == 0:
                 d = {f"r{i}": f"{x._log_scale.item():.3f}" for i, x in enumerate(pm.manifold.manifolds)}
-                # d_avg_this_iter = d_avg(dist_est, dists)
-                # d_avg_this_iter = (
-                #     d_avg(D_tt, dists[train][:, train], pairwise=True) * len(train) * (len(train) - 1) / 2  # triu
-                #     + d_avg(D_qq, dists[test][:, test], pairwise=True) * len(test) * (len(test) - 1)  # triu
-                #     + d_avg(D_tq, dists[train][:, test], pairwise=False) * len(train) * len(test)  # full
-                # ) / (
-                #     len(pm.x_embed) * (len(pm.x_embed) - 1) / 2
-                # )  # triu
-                # d["D_avg"] = f"{d_avg_this_iter:.4f}"
                 d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
                 d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
                 my_tqdm.set_postfix(d)
