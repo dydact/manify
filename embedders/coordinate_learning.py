@@ -28,6 +28,7 @@ def train_coords(
     training_iterations: int = 18_000,
     loss_window_size: int = 100,
     logging_interval: int = 10,
+    scale=1.0,
 ) -> Tuple[TensorType["n_points", "n_dim"], Dict[str, List[float]]]:
     """
     Coordinate training and optimization
@@ -50,7 +51,7 @@ def train_coords(
         losses: List of loss values at each iteration during training.
     """
     # Move everything to the device
-    X = pm.initialize_embeddings(n_points=len(dists)).to(device)
+    X = pm.initialize_embeddings(n_points=len(dists), scales=scale).to(device)
     dists = dists.to(device)
 
     # Get train and test indices set up
@@ -83,7 +84,7 @@ def train_coords(
                 # ropt.lr = learning_rate
                 ropt.param_groups[0]["lr"] = learning_rate
                 ropt.param_groups[1]["lr"] = scale_factor_learning_rate
-            
+
             # Zero grad
             ropt.zero_grad()
             # opt.zero_grad()
@@ -96,7 +97,7 @@ def train_coords(
             losses["train_train"].append(L_tt.item())
 
             if use_test:
-            # 2. Test-test loss
+                # 2. Test-test loss
                 X_q = X[test]
                 D_qq = pm.pdist(X_q)
                 L_qq = distortion_loss(D_qq, dists[test][:, test], pairwise=True)
@@ -138,7 +139,7 @@ def train_coords(
                 d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
                 d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
                 my_tqdm.set_postfix(d)
-            
+
             # Early stopping for errors
             if torch.isnan(L):
                 raise Exception("Loss is NaN")

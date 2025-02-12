@@ -570,7 +570,7 @@ class ProductManifold(Manifold):
         # Sample initial vector from N(0, sigma)
         # x = torch.cat(
         #     [M.sample(z_M, sigma_M) for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)],
-        #     dim=1,
+        #     dim=1,2
         # )
         samples = [
             M.sample(z_M, sigma_M, return_tangent=True)
