@@ -2,7 +2,10 @@
 from torchtyping import TensorType
 import torch
 
-def hyperboloid_to_poincare(X: TensorType["n_points", "n_dim"]) -> TensorType["n_points", "n_dim_minus_1"]:
+
+def hyperboloid_to_poincare(
+    X: TensorType["n_points", "n_dim"]
+) -> TensorType["n_points", "n_dim_minus_1"]:
     """
     Convert hyperboloid coordinates to Poincaré ball coordinates.
 
@@ -24,7 +27,9 @@ def hyperboloid_to_poincare(X: TensorType["n_points", "n_dim"]) -> TensorType["n
     return poincare_coords
 
 
-def spherical_to_polar(X: TensorType["n_points", "n_dim"]) -> TensorType["n_points", "n_dim_minus_1"]:
+def spherical_to_polar(
+    X: TensorType["n_points", "n_dim"]
+) -> TensorType["n_points", "n_dim_minus_1"]:
     """
     Convert spherical coordinates to polar coordinates.
 
@@ -50,7 +55,9 @@ def spherical_to_polar(X: TensorType["n_points", "n_dim"]) -> TensorType["n_poin
             # Compute angle from the higher dimension 'hypotenuse'
             hypotenuse = torch.norm(X[:, i:], dim=1, keepdim=True)
             # Prevent division by zero
-            safe_hypotenuse = torch.where(hypotenuse > 0, hypotenuse, torch.tensor(1.0).to(X.device))
+            safe_hypotenuse = torch.where(
+                hypotenuse > 0, hypotenuse, torch.tensor(1.0).to(X.device)
+            )
             # Ensure acos receives values within [-1, 1] and preserve dimensions
             angle = torch.acos(torch.clamp(X[:, i : i + 1] / safe_hypotenuse, -1, 1))
             out[:, i] = angle.squeeze()
@@ -69,4 +76,3 @@ def S2_to_polar(X: TensorType["n_points", 3]) -> TensorType["n_points", 2]:
         polar_coords: (n_points, 2) Tensor, coordinates in polar form (elevation, azimuth).
     """
     return torch.stack([torch.acos(X[:, 2]), torch.atan2(X[:, 1], X[:, 0])], dim=1)
-

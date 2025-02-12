@@ -5,7 +5,8 @@ from .kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
-    """A product-space perceptron model for multiclass classification in the product manifold space. """
+    """A product-space perceptron model for multiclass classification in the product manifold space."""
+
     def __init__(self, pm, max_epochs=1_000, patience=5, weights=None):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
@@ -14,7 +15,9 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         if weights is None:
             self.weights = torch.ones(len(pm.P), dtype=torch.float32)
         else:
-            assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
+            assert len(weights) == len(
+                pm.P
+            ), "Number of weights must match the number of manifolds."
             self.weights = weights
 
     def fit(self, X, y):
@@ -91,24 +94,30 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             X: The test data.
 
         Returns:
-            torch.Tensor: The decision values for each test sample and each class, 
+            torch.Tensor: The decision values for each test sample and each class,
             of shape (n_samples_test, n_classes).
         """
 
         n_samples = X.shape[0]
         n_classes = len(self.classes_)
-        decision_values = torch.zeros((n_samples, n_classes), dtype=X.dtype, device=X.device)
+        decision_values = torch.zeros(
+            (n_samples, n_classes), dtype=X.dtype, device=X.device
+        )
 
         # Compute kernel matrix between training data and test data
         Ks, _ = product_kernel(self.pm, self.X_train_, X)
-        K_test = torch.ones((self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device)
+        K_test = torch.ones(
+            (self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device
+        )
         for K_m, w in zip(Ks, self.weights):
             K_test += w * K_m
         # K_test = self.X_train_ @ X.T
 
         for idx, class_label in enumerate(self.classes_):
             alpha = self.alpha[class_label]  # Shape: (n_samples_train,)
-            y_binary = torch.where(self.y_train_ == class_label, 1, -1)  # Shape: (n_samples_train,)
+            y_binary = torch.where(
+                self.y_train_ == class_label, 1, -1
+            )  # Shape: (n_samples_train,)
 
             # Compute decision function for test samples
             f = (alpha * y_binary) @ K_test  # Shape: (n_samples_test,)
@@ -119,7 +128,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         """
         Predicts the class labels for the given test data X.
-        
+
         Args:
             X: The test data.
 

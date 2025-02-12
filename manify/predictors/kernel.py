@@ -17,10 +17,10 @@ def compute_kernel_and_norm_manifold(
     Args:
         manifold: The manifold in which the computation occurs.
         X_source((n_points_source, n_dim)): A tensor of the source points
-        X_target("n_points_target", "n_dim"): A tensor of target points 
+        X_target("n_points_target", "n_dim"): A tensor of target points
 
     Return:
-        Tuple("n_points_source", "n_points_target"): A tuple of two tensors. The first tensor 
+        Tuple("n_points_source", "n_points_target"): A tuple of two tensors. The first tensor
         is the kernel matrix of shape computed based on the manifold type. And the second tensor
         A scalar normalization constant for the kernel, determined by the manifold's curvature or scale.
     """
@@ -65,7 +65,7 @@ def product_kernel(
         pm: The product manifold in which the computation occurs.
         X_source((n_points_source, n_dim)): A tensor of the source points
         X_target("n_points_target", "n_dim"): A tensor of target points
-        
+
     Returns:
         Tuple("n_points_source", "n_points_target"): A tuple of two tensors. The first tensor is the
         kernel matrix of shape computed based on the product manifold type. And the second tensor is a
@@ -76,15 +76,21 @@ def product_kernel(
         X_target = X_source
 
     # Initialize the kernel matrix and norm
-    K = torch.ones(X_source.shape[0], X_target.shape[0], dtype=X_source.dtype, device=X_source.device)
+    K = torch.ones(
+        X_source.shape[0],
+        X_target.shape[0],
+        dtype=X_source.dtype,
+        device=X_source.device,
+    )
 
     # Compute the kernel matrix and norm for each manifold
     Ks = []
     norms = []
-    for M, x_source, x_target in zip(pm.P, pm.factorize(X_source), pm.factorize(X_target)):
+    for M, x_source, x_target in zip(
+        pm.P, pm.factorize(X_source), pm.factorize(X_target)
+    ):
         K_m, norm_m = compute_kernel_and_norm_manifold(M, x_source, x_target)
         Ks.append(K_m)
         norms.append(norm_m)
 
     return Ks, norms
-

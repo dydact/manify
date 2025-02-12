@@ -12,7 +12,9 @@ from .midpoint import midpoint
 from ..manifolds import ProductManifold
 
 
-def _angular_greater(queries: TT["query_batch"], keys: TT["key_batch"]) -> TT["query_batch key_batch"]:
+def _angular_greater(
+    queries: TT["query_batch"], keys: TT["key_batch"]
+) -> TT["query_batch key_batch"]:
     """
     Given an angle theta, check whether a tensor of inputs is in [theta, theta + pi)
 
@@ -129,15 +131,21 @@ def _get_info_gains_nobatch(
     """
     # Matrix-multiply to get counts of labels in left and right splits
     if criterion == "gini":
-        pos_labels = torch.zeros((angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device)
-        neg_labels = torch.zeros((angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device)
+        pos_labels = torch.zeros(
+            (angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device
+        )
+        neg_labels = torch.zeros(
+            (angles.shape[0], angles.shape[1], labels.shape[1]), device=angles.device
+        )
 
         for d in range(angles.shape[1]):
             for j in range(0, angles.shape[0]):
                 mask = _angular_greater(angles[:, d], angles[j, d])
 
                 # Expanding the labels to match the broadcasting needs of the mask
-                pos_labels_entry = mask.float() * labels  # [batch_size, labels.shape[1]]
+                pos_labels_entry = (
+                    mask.float() * labels
+                )  # [batch_size, labels.shape[1]]
                 neg_labels_entry = ~mask * labels  # [batch_size, labels.shape[1]]
 
                 # Assign the calculated values to the respective positions in the final tensors
@@ -202,8 +210,16 @@ def _get_split(
     comparisons: TT["query_batch dims key_batch"],
     labels: TT["query_batch n_classes"],
 ) -> Tuple[
-    Tuple[TT["query_batch_neg dims"], TT["query_batch_neg dims key_batch"], TT["query_batch_neg n_classes"]],
-    Tuple[TT["query_batch_pos dims"], TT["query_batch_pos dims key_batch"], TT["query_batch_pos n_classes"]],
+    Tuple[
+        TT["query_batch_neg dims"],
+        TT["query_batch_neg dims key_batch"],
+        TT["query_batch_neg n_classes"],
+    ],
+    Tuple[
+        TT["query_batch_pos dims"],
+        TT["query_batch_pos dims key_batch"],
+        TT["query_batch_pos n_classes"],
+    ],
 ]:
     """
     Split comparisons and labels into negative and positive classes
@@ -245,7 +261,11 @@ def _get_split(
     labels_neg = labels[neg_indices]
     labels_pos = labels[pos_indices]
 
-    return (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos)
+    return (angles_neg, comparisons_neg, labels_neg), (
+        angles_pos,
+        comparisons_pos,
+        labels_pos,
+    )
 
 
 # Copied over from hyperdt.torch.tree
@@ -279,7 +299,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     ):
         # Raise error if manifold is stereographic
         if pm.is_stereographic:
-            raise ValueError("Stereographic manifolds are not supported. Use a different representation.")
+            raise ValueError(
+                "Stereographic manifolds are not supported. Use a different representation."
+            )
 
         # Store hyperparameters
         self.pm = pm
@@ -313,7 +335,12 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self,
         X: TT["batch ambient_dim"],
         y: Optional[TT["batch"]] = None,
-    ) -> Tuple[TT["batch intrinsic_dim"], TT["batch n_classes"], TT["n_classes"], TT["batch intrinsic_dim", "batch"]]:
+    ) -> Tuple[
+        TT["batch intrinsic_dim"],
+        TT["batch n_classes"],
+        TT["n_classes"],
+        TT["batch intrinsic_dim", "batch"],
+    ]:
         """
         Preprocessing function for the new version of ProductDT
 
@@ -501,9 +528,16 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.classes_ = classes
 
         # Fit node
-        self.tree = self._fit_node(angles=angles, labels=labels, comparisons=comparisons_reshaped, depth=self.max_depth)
+        self.tree = self._fit_node(
+            angles=angles,
+            labels=labels,
+            comparisons=comparisons_reshaped,
+            depth=self.max_depth,
+        )
 
-    def _aggregate_special_dims(self, X: TT["batch ambient_dim"]) -> Tuple[TT["batch ambient_dim"], ProductManifold]:
+    def _aggregate_special_dims(
+        self, X: TT["batch ambient_dim"]
+    ) -> Tuple[TT["batch ambient_dim"], ProductManifold]:
         special_dims = []
         for i, M in enumerate(self.pm.P):
             if M.type in ["H", "S"]:
@@ -542,10 +576,15 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
         # The main loop is just the functions we've already defined
         if self.batched:
-            ig = _get_info_gains(comparisons=comparisons, labels=labels, criterion=self.criterion)
+            ig = _get_info_gains(
+                comparisons=comparisons, labels=labels, criterion=self.criterion
+            )
         else:
             ig = _get_info_gains_nobatch(
-                angles=angles, labels=labels, criterion=self.criterion, batch_size=self.batch_size
+                angles=angles,
+                labels=labels,
+                criterion=self.criterion,
+                batch_size=self.batch_size,
             )
 
         # Check if we have a valid split
@@ -553,23 +592,41 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             return _halt(labels)
 
         # Get the best split
-        n, d, theta = self._get_best_split(ig=ig, angles=angles, comparisons=comparisons)
+        n, d, theta = self._get_best_split(
+            ig=ig, angles=angles, comparisons=comparisons
+        )
         if self.batched:
             mask = comparisons[n, d].bool()
         else:
             mask = _angular_greater(angles[:, d], theta).flatten()
-        (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos) = _get_split(
+        (angles_neg, comparisons_neg, labels_neg), (
+            angles_pos,
+            comparisons_pos,
+            labels_pos,
+        ) = _get_split(
             mask=mask, angles=angles, comparisons=comparisons, labels=labels, n=n, d=d
         )
         node = DecisionNode(feature=d.item(), theta=theta.item())
         self.nodes.append(node)
 
         # Do left and right recursion after appending node to self.nodes (ensures order of self.nodes is correct)
-        node.left = self._fit_node(angles=angles_neg, labels=labels_neg, comparisons=comparisons_neg, depth=depth - 1)
-        node.right = self._fit_node(angles=angles_pos, labels=labels_pos, comparisons=comparisons_pos, depth=depth - 1)
+        node.left = self._fit_node(
+            angles=angles_neg,
+            labels=labels_neg,
+            comparisons=comparisons_neg,
+            depth=depth - 1,
+        )
+        node.right = self._fit_node(
+            angles=angles_pos,
+            labels=labels_pos,
+            comparisons=comparisons_pos,
+            depth=depth - 1,
+        )
         return node
 
-    def _leaf_values(self, y: TT["batch"]) -> Tuple[TT["batch", "n_classes"], TT["batch"]]:
+    def _leaf_values(
+        self, y: TT["batch"]
+    ) -> Tuple[TT["batch", "n_classes"], TT["batch"]]:
         """Get majority class and class probabilities"""
         if self.task == "regression":
             return y.mean(), y.mean()
@@ -580,7 +637,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     def _left(self, angles_row: TT["intrinsic_dim"], node: DecisionNode) -> bool:
         """Boolean: Go left? Works on a preprocessed input vector."""
         return _angular_greater(
-            torch.tensor(node.theta, device=angles_row.device).flatten(), angles_row[node.feature].flatten()
+            torch.tensor(node.theta, device=angles_row.device).flatten(),
+            angles_row[node.feature].flatten(),
         ).item()
 
     def _traverse(self, x: TT["intrinsic_dim"], node: DecisionNode) -> DecisionNode:
@@ -589,7 +647,11 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         if node.value is not None:
             return node
 
-        return self._traverse(x, node.left) if self._left(x, node) else self._traverse(x, node.right)
+        return (
+            self._traverse(x, node.left)
+            if self._left(x, node)
+            else self._traverse(x, node.right)
+        )
 
     @torch.no_grad()
     def predict_proba(self, X: TT["batch intrinsic_dim"]) -> TT["batch n_classes"]:
@@ -599,7 +661,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         angles, _, _, _ = self._preprocess(X=X)
         if self.permutations is not None:
             angles = angles[:, self.permutations]
-        return torch.vstack([self._traverse(angles_row, self.tree).probs for angles_row in angles])
+        return torch.vstack(
+            [self._traverse(angles_row, self.tree).probs for angles_row in angles]
+        )
 
     def predict(self, X: TT["batch intrinsic_dim"]) -> TT["batch"]:
         """Predict class labels for samples in X"""
@@ -647,7 +711,9 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
             self.max_depth = tree_kwargs["max_depth"] = max_depth
         self.min_samples_leaf = tree_kwargs["min_samples_leaf"] = min_samples_leaf
         self.min_samples_split = tree_kwargs["min_samples_split"] = min_samples_split
-        self.min_impurity_decrease = tree_kwargs["min_impurity_decrease"] = min_impurity_decrease
+        self.min_impurity_decrease = tree_kwargs[
+            "min_impurity_decrease"
+        ] = min_impurity_decrease
         self.use_special_dims = tree_kwargs["use_special_dims"] = use_special_dims
         self.n_features = tree_kwargs["n_features"] = n_features
         self.batch_size = tree_kwargs["batch_size"] = batch_size
@@ -683,7 +749,9 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
         # Subsample - returns indices
         idx_sample = torch.randint(0, n_rows, (n_trees, n_rows))
-        idx_dim = torch.stack([torch.randperm(n_cols)[:n_cols_sample] for _ in range(n_trees)])
+        idx_dim = torch.stack(
+            [torch.randperm(n_cols)[:n_cols_sample] for _ in range(n_trees)]
+        )
 
         return idx_sample, idx_dim
 
@@ -711,14 +779,18 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
         # Subsample - just the indices
         n, d = angles.shape
-        idx_sample_all, idx_dim_all = self._generate_subsample(n_rows=n, n_cols=d, n_trees=self.n_estimators)
+        idx_sample_all, idx_dim_all = self._generate_subsample(
+            n_rows=n, n_cols=d, n_trees=self.n_estimators
+        )
 
         # Fit trees
         for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all):
             tree.permutations = idx_dim
             tree.classes_ = classes
             if self.batched:
-                comparisons_subsample = comparisons[idx_sample][:, idx_dim][:, :, idx_sample]
+                comparisons_subsample = comparisons[idx_sample][:, idx_dim][
+                    :, :, idx_sample
+                ]
             else:
                 comparisons_subsample = comparisons
             tree.tree = tree._fit_node(

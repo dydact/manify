@@ -73,7 +73,10 @@ def train_coords(
 
     # Outer training loop - mostly setting optimizer learning rates up here
     losses = {"train_train": [], "test_test": [], "train_test": [], "total": []}
-    for lr, n_iters in ((burn_in_learning_rate, burn_in_iterations), (learning_rate, training_iterations)):
+    for lr, n_iters in (
+        (burn_in_learning_rate, burn_in_iterations),
+        (learning_rate, training_iterations),
+    ):
         # Actual training loop
         for i in range(n_iters):
             if i == burn_in_iterations:
@@ -104,7 +107,9 @@ def train_coords(
 
                 # 3. Train-test loss
                 X_t_detached = X[train].detach()
-                D_tq = pm.dist(X_t_detached, X_q)  # Note 'dist' not 'pdist', as we're comparing different sets
+                D_tq = pm.dist(
+                    X_t_detached, X_q
+                )  # Note 'dist' not 'pdist', as we're comparing different sets
                 L_tq = distortion_loss(D_tq, dists[train][:, test], pairwise=False)
                 L_tq.backward()
                 losses["train_test"].append(L_tq.item())
@@ -124,7 +129,10 @@ def train_coords(
 
             # Logging
             if i % logging_interval == 0:
-                d = {f"r{i}": f"{x._log_scale.item():.3f}" for i, x in enumerate(pm.manifold.manifolds)}
+                d = {
+                    f"r{i}": f"{x._log_scale.item():.3f}"
+                    for i, x in enumerate(pm.manifold.manifolds)
+                }
                 d["D_avg"] = f"{d_avg(D_tt, dists[train][:, train], pairwise=True):.4f}"
                 d["L_avg"] = f"{np.mean(losses['total'][-loss_window_size:]):.3e}"
                 my_tqdm.set_postfix(d)

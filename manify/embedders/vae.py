@@ -38,10 +38,14 @@ class ProductSpaceVAE(torch.nn.Module):
         else:
             raise ValueError(f"Unknown reconstruction loss: {reconstruction_loss}")
 
-    def encode(self, x: TT["batch_size", "n_features"]) -> (TT["batch_size", "n_latent"], TT["batch_size", "n_latent"]):
+    def encode(
+        self, x: TT["batch_size", "n_features"]
+    ) -> (TT["batch_size", "n_latent"], TT["batch_size", "n_latent"]):
         """Must return z_mean, z_logvar"""
         z_mean_tangent, z_logvar = self.encoder(x)
-        z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
+        z_mean_ambient = (
+            z_mean_tangent @ self.pm.projection_matrix
+        )  # Adds zeros in the right places
         z_mean = self.pm.expmap(u=z_mean_ambient, base=None)
         return z_mean, z_logvar
 
@@ -49,7 +53,9 @@ class ProductSpaceVAE(torch.nn.Module):
         """Decoding in product space VAE"""
         return self.decoder(z)
 
-    def forward(self, x: TT["batch_size", "n_features"]) -> TT["batch_size", "n_features"]:
+    def forward(
+        self, x: TT["batch_size", "n_features"]
+    ) -> TT["batch_size", "n_features"]:
         """
         Performs the forward pass of the VAE.
 
@@ -63,7 +69,10 @@ class ProductSpaceVAE(torch.nn.Module):
         """
         z_means, z_logvars = self.encode(x)
         sigma_factorized = self.pm.factorize(z_logvars, intrinsic=True)
-        sigmas = [torch.diag_embed(torch.exp(z_logvar) + 1e-8) for z_logvar in sigma_factorized]
+        sigmas = [
+            torch.diag_embed(torch.exp(z_logvar) + 1e-8)
+            for z_logvar in sigma_factorized
+        ]
         z = self.pm.sample(z_means, sigmas)
         x_reconstructed = self.decode(z)
         return x_reconstructed, z_means, sigmas
@@ -88,7 +97,8 @@ class ProductSpaceVAE(torch.nn.Module):
         # See http://joschu.net/blog/kl-approx.html for more info
         means = torch.repeat_interleave(z_mean, self.n_samples, dim=0)
         sigmas_factorized_interleaved = [
-            torch.repeat_interleave(sigma, self.n_samples, dim=0) for sigma in sigma_factorized
+            torch.repeat_interleave(sigma, self.n_samples, dim=0)
+            for sigma in sigma_factorized
         ]
         z_samples = self.pm.sample(means, sigmas_factorized_interleaved)
         log_qz = self.pm.log_likelihood(z_samples, means, sigmas_factorized_interleaved)
@@ -107,5 +117,7 @@ class ProductSpaceVAE(torch.nn.Module):
         """
         x_reconstructed, z_means, sigma_factorized = self(x)
         kld = self.kl_divergence(z_means, sigma_factorized)
-        ll = -self.reconstruction_loss(x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)).sum(dim=1)
+        ll = -self.reconstruction_loss(
+            x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)
+        ).sum(dim=1)
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()

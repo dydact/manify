@@ -8,6 +8,7 @@ import torch
 # https://github.com/HazyResearch/hyperbolics
 # Paper: https://openreview.net/pdf?id=HJxeWnCcF7
 
+
 def Ka(D, m, b, c, a):
     if a == m:
         return 0.0

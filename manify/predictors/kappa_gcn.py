@@ -25,7 +25,9 @@ def get_A_hat(A, make_symmetric=True, add_self_loops=True):
     # Optional steps to make symmetric and add self-loops
     if make_symmetric and not torch.allclose(A, A.T):
         A = A + A.T
-    if add_self_loops and not torch.allclose(torch.diag(A), torch.ones(A.shape[0], dtype=A.dtype, device=A.device)):
+    if add_self_loops and not torch.allclose(
+        torch.diag(A), torch.ones(A.shape[0], dtype=A.dtype, device=A.device)
+    ):
         A = A + torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
 
     # Get degree matrix
@@ -118,7 +120,12 @@ class KappaGCNLayer(torch.nn.Module):
             AXW = XW
         elif isinstance(self.manifold, ProductManifold):
             XWs = self.manifold.factorize(XW)
-            AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
+            AXW = torch.hstack(
+                [
+                    self._left_multiply(A_hat, XW, M)
+                    for XW, M in zip(XWs, self.manifold.P)
+                ]
+            )
         else:
             AXW = self._left_multiply(A_hat, XW)
 
@@ -139,7 +146,14 @@ class KappaGCN(torch.nn.Module):
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(self, pm, output_dim, hidden_dims=None, nonlinearity=torch.relu, task="classification"):
+    def __init__(
+        self,
+        pm,
+        output_dim,
+        hidden_dims=None,
+        nonlinearity=torch.relu,
+        task="classification",
+    ):
         super().__init__()
         self.pm = pm
         self.task = task
@@ -147,13 +161,21 @@ class KappaGCN(torch.nn.Module):
         # Hidden layers
         if hidden_dims is None:
             dims = [pm.dim, pm.dim, pm.dim]  # 2 hidden layers
-        elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
-            raise ValueError("Only fully Euclidean manifolds can change hidden dimension size")
+        elif not (
+            all([M.curvature == 0] for M in pm.P)
+            or all([d == pm.dim for d in hidden_dims])
+        ):
+            raise ValueError(
+                "Only fully Euclidean manifolds can change hidden dimension size"
+            )
         else:
             dims = [pm.dim] + hidden_dims
 
         self.layers = torch.nn.ModuleList(
-            [KappaGCNLayer(dims[i], dims[i + 1], pm, nonlinearity) for i in range(len(dims) - 1)]
+            [
+                KappaGCNLayer(dims[i], dims[i + 1], pm, nonlinearity)
+                for i in range(len(dims) - 1)
+            ]
         )
 
         # Final layer params
@@ -162,7 +184,9 @@ class KappaGCN(torch.nn.Module):
             self.fermi_dirac_bias = torch.nn.Parameter(torch.tensor(0.0))
         elif task == "classification" or task == "regression":
             self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
-            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
+            self.p_ks = geoopt.ManifoldParameter(
+                torch.zeros(output_dim, pm.dim), manifold=pm.manifold
+            )
 
     def forward(self, X, A_hat=None, aggregate_logits=True, softmax=False):
         """
@@ -185,7 +209,10 @@ class KappaGCN(torch.nn.Module):
         # Final layer is to get logits
         if self.task == "link_prediction":
             # Taken from https://arxiv.org/pdf/1910.12933
-            return (-(self.pm.pdist2(H) - self.fermi_dirac_bias) / self.fermi_dirac_temperature).flatten()
+            return (
+                -(self.pm.pdist2(H) - self.fermi_dirac_bias)
+                / self.fermi_dirac_temperature
+            ).flatten()
         else:
             logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
             if A_hat is not None and aggregate_logits:
@@ -249,7 +276,9 @@ class KappaGCN(torch.nn.Module):
         bs = M.factorize(b)
         Ws = [w.T for w in M.factorize(W.T)]
         res = [
-            self._get_logits_single_manifold(X_man, W_man, b_man, man, return_inner_products=True)
+            self._get_logits_single_manifold(
+                X_man, W_man, b_man, man, return_inner_products=True
+            )
             for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P)
         ]
 
@@ -355,7 +384,9 @@ class KappaGCN(torch.nn.Module):
             # Progress bar
             if use_tqdm:
                 my_tqdm.update(1)
-                my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
+                my_tqdm.set_description(
+                    f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}"
+                )
 
             # # Failure case
             # if torch.isnan(loss).any():

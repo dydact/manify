@@ -5,15 +5,19 @@ import torch
 from torchtyping import TensorType as TT
 from ..manifolds import ProductManifold
 
+
 def make_link_prediction_dataset(
-    X_embed: TT["batch", "n_dim"], pm: ProductManifold, adj: TT["batch", "batch"], add_dists: bool = True
+    X_embed: TT["batch", "n_dim"],
+    pm: ProductManifold,
+    adj: TT["batch", "batch"],
+    add_dists: bool = True,
 ) -> Tuple[TT["batch**2", "2*n_dim"], TT["batch**2"], ProductManifold]:
     """
     Generate a dataset for link prediction tasks with product manifold
 
-    This function constructs a dataset for link prediction by creating pairwise 
-    embeddings from the input node embeddings, optionally appending pairwise 
-    distances, and returning labels from an adjacency matrix. It also updates the 
+    This function constructs a dataset for link prediction by creating pairwise
+    embeddings from the input node embeddings, optionally appending pairwise
+    distances, and returning labels from an adjacency matrix. It also updates the
     manifold signature correspondingly.
 
     Args:
@@ -23,8 +27,8 @@ def make_link_prediction_dataset(
         add_dists: If True, appends pairwise distances to the feature vectors. Default is True.
 
     Returns:
-        Tuple[Tensor, Tensor, ProductManifold]: 
-            - `X` (batch**2, 2*n_dim): A tensor of pairwise embeddings 
+        Tuple[Tensor, Tensor, ProductManifold]:
+            - `X` (batch**2, 2*n_dim): A tensor of pairwise embeddings
             - `y` (batch**2,).: A tensor of labels derived from the adjacency matrix with.
             - `new_pm`: A new ProductManifold instance with an updated signature reflecting the feature space.
 

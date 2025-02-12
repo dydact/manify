@@ -1,14 +1,15 @@
 """Compute the angular midpoints between two angular coordinates in different geometric spaces"""
 import torch
 
+
 def hyperbolic_midpoint(u, v, assert_hyperbolic=False):
     """
     Compute the hyperbolic midpoint between two angular coordinates u and v.
-    
+
     Args:
         u: The first angular coordinate.
         v: The second angular coordinate.
-        assert_hyperbolic: A boolean value. If True, verifies that the midpoint satisfies the hyperbolic 
+        assert_hyperbolic: A boolean value. If True, verifies that the midpoint satisfies the hyperbolic
         distance property. Defaults to False.
 
     Returns:
@@ -35,8 +36,12 @@ def is_hyperbolic_midpoint(u, v, m):
     Returns:
         bool: True if m is the true hyperbolic midpoint between u and v, otherwise False.
     """
-    a = lambda x: torch.sqrt(-1.0 / torch.cos(2.0 * x))  # Alpha coefficient to reach manifold
-    d = lambda x, y: a(x) * a(y) * torch.cos(x - y)  # Hyperbolic distance function (angular)
+    a = lambda x: torch.sqrt(
+        -1.0 / torch.cos(2.0 * x)
+    )  # Alpha coefficient to reach manifold
+    d = (
+        lambda x, y: a(x) * a(y) * torch.cos(x - y)
+    )  # Hyperbolic distance function (angular)
     return torch.isclose(d(u, m), d(m, v))
 
 
@@ -72,7 +77,7 @@ def midpoint(u, v, manifold, special_first=False):
     """
     Driver code to compute the midpoint between two angular coordinates give the manifold type.
 
-    This function automatically selects the appropriate midpoint calculation depending 
+    This function automatically selects the appropriate midpoint calculation depending
     on the manifold type. It supports hyperbolic, Euclidean, and spherical geometries.
 
     Args:
@@ -99,4 +104,3 @@ def midpoint(u, v, manifold, special_first=False):
     # *AND* any angles that don't involve figuring out where you hit the manifold
     else:
         return spherical_midpoint(u, v)
-

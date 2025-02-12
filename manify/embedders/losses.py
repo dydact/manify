@@ -6,7 +6,9 @@ from torchtyping import TensorType
 
 
 def distortion_loss(
-    D_est: TensorType["n_points", "n_points"], D_true: TensorType["n_points", "n_points"], pairwise: bool = False
+    D_est: TensorType["n_points", "n_points"],
+    D_true: TensorType["n_points", "n_points"],
+    pairwise: bool = False,
 ) -> float:
     """
     Compute the distortion loss between estimated SQUARED distances and true SQUARED distances.
@@ -29,7 +31,7 @@ def distortion_loss(
     else:
         D_true = D_true.flatten()
         D_est = D_est.flatten()
-    
+
     # Mask out any infinite or nan values
     mask = torch.isfinite(D_true) & ~torch.isnan(D_true)
     D_true = D_true[mask]
@@ -39,7 +41,9 @@ def distortion_loss(
 
 
 def d_avg(
-    D_est: TensorType["n_points", "n_points"], D_true: TensorType["n_points", "n_points"], pairwise: bool = False
+    D_est: TensorType["n_points", "n_points"],
+    D_true: TensorType["n_points", "n_points"],
+    pairwise: bool = False,
 ) -> float:
     """Average distance error D_av
     Args:
@@ -60,7 +64,7 @@ def d_avg(
     else:
         D_true = D_true.flatten()
         D_est = D_est.flatten()
-    
+
     # Mask out any infinite or nan values
     mask = torch.isfinite(D_true) & ~torch.isnan(D_true)
     D_true = D_true[mask]
@@ -70,7 +74,9 @@ def d_avg(
     return torch.mean(torch.abs(D_est - D_true) / D_true)
 
 
-def mean_average_precision(x_embed: TensorType["n_points", "n_dim"], graph: nx.Graph) -> float:
+def mean_average_precision(
+    x_embed: TensorType["n_points", "n_dim"], graph: nx.Graph
+) -> float:
     """Mean averae precision (mAP) from the Gu et al paper."""
     raise NotImplementedError
 
@@ -88,9 +94,12 @@ def dist_component_by_manifold(pm, x_embed):
                      of total distance variance explained by the corresponding
                      manifold component.
     """
-    sq_dists_by_manifold = [M.pdist2(x_embed[:, pm.man2dim[i]]) for i, M in enumerate(pm.P)]
+    sq_dists_by_manifold = [
+        M.pdist2(x_embed[:, pm.man2dim[i]]) for i, M in enumerate(pm.P)
+    ]
     total_sq_dist = pm.pdist2(x_embed)
 
     return [
-        torch.sum(D.triu(diagonal=1) / torch.sum(total_sq_dist.triu(diagonal=1))).item() for D in sq_dists_by_manifold
+        torch.sum(D.triu(diagonal=1) / torch.sum(total_sq_dist.triu(diagonal=1))).item()
+        for D in sq_dists_by_manifold
     ]
