@@ -1,0 +1,6 @@
+[tool.pylint.format]
+max-line-length = 120
+
+# Ignore invalid-name warnings to enable more mathematical variable names
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["invalid-name"]

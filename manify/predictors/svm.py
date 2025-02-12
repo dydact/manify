@@ -1,5 +1,4 @@
-from typing import List
-from torchtyping import TensorType as TT
+from jaxtyping import Float, Int
 
 import numpy as np
 import cvxpy
@@ -32,7 +31,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: TT["n_samples", "n_features"], y: TT["n_samples"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
         """
         Trains the SVM model using the provided data and labels.
 
@@ -106,7 +105,9 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             # Need to store X for prediction
             self.X_train_ = torch.tensor(X, dtype=torch.float32)
 
-    def predict_proba(self, X: TT["n_samples", "n_features"]) -> TT["n_samples", "n_classes"]:
+    def predict_proba(
+        self, X: Float[torch.Tensor, "n_samples n_manifolds"]
+    ) -> Float[torch.Tensor, "n_samples n_classes"]:
         """
         Predicts the probability of each class for the given test data.
 
@@ -148,7 +149,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
 
-    def predict(self, X: TT["n_samples", "n_features"]) -> TT["n_samples"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
         """
         Predicts the class for the given test data.
 

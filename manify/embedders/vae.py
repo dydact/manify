@@ -1,7 +1,7 @@
 """Product space variational autoencoder implementation"""
 
-from typing import List
-from torchtyping import TensorType as TT
+from typing import List, Tuple
+from jaxtyping import Float
 
 import torch
 
@@ -23,7 +23,7 @@ class ProductSpaceVAE(torch.nn.Module):
         beta: float = 1.0,
         reconstruction_loss: str = "mse",
         device: str = "cpu",
-        n_samples=16,
+        n_samples: int = 16,
     ):
         super(ProductSpaceVAE, self).__init__()
         self.encoder = encoder.to(device)
@@ -38,18 +38,24 @@ class ProductSpaceVAE(torch.nn.Module):
         else:
             raise ValueError(f"Unknown reconstruction loss: {reconstruction_loss}")
 
-    def encode(self, x: TT["batch_size", "n_features"]) -> (TT["batch_size", "n_latent"], TT["batch_size", "n_latent"]):
+    def encode(
+        self, x: Float[torch.Tensor, "batch_size n_features"]
+    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"]]:
         """Must return z_mean, z_logvar"""
         z_mean_tangent, z_logvar = self.encoder(x)
         z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
         z_mean = self.pm.expmap(u=z_mean_ambient, base=None)
         return z_mean, z_logvar
 
-    def decode(self, z: TT["batch_size", "n_latent"]) -> TT["batch_size", "n_features"]:
+    def decode(self, z: Float[torch.Tensor, "batch_size n_latent"]) -> Float[torch.Tensor, "batch_size n_features"]:
         """Decoding in product space VAE"""
         return self.decoder(z)
 
-    def forward(self, x: TT["batch_size", "n_features"]) -> TT["batch_size", "n_features"]:
+    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
+        Float[torch.Tensor, "batch_size n_features"],
+        Float[torch.Tensor, "batch_size n_latent"],
+        Float[torch.Tensor, "batch_size n_latent n_latent"],
+    ]:
         """
         Performs the forward pass of the VAE.
 
@@ -70,10 +76,10 @@ class ProductSpaceVAE(torch.nn.Module):
 
     def kl_divergence(
         self,
-        z_mean: TT["batch_size", "n_latent"],
+        z_mean: Float[torch.Tensor, "batch_size n_latent"],
         # sigma: TT["n_latent", "n_latent"],
-        sigma_factorized: List[TT["batch_size", "n_latent", "n_latent"]],
-    ) -> TT["batch_size"]:
+        sigma_factorized: List[Float[torch.Tensor, "batch_size n_latent n_latent"]],
+    ) -> Float[torch.Tensor, "batch_size"]:
         """
         Computes the KL divergence between posterior and prior distributions.
 
@@ -95,7 +101,7 @@ class ProductSpaceVAE(torch.nn.Module):
         log_pz = self.pm.log_likelihood(z_samples)
         return (log_qz - log_pz).view(-1, self.n_samples).mean(dim=1)
 
-    def elbo(self, x: TT["batch_size", "n_features"]) -> TT["batch_size"]:
+    def elbo(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Float[torch.Tensor, "batch_size"]:
         """
         Computes the Evidence Lower Bound (ELBO).
 

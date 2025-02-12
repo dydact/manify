@@ -1,9 +1,6 @@
 import random
 
 import numpy as np
-import scipy as sp
-
-import torch
 
 
 # The next couple functions are taken from this repo:

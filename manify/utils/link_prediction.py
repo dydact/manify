@@ -2,16 +2,16 @@
 
 from typing import Tuple
 import torch
-from torchtyping import TensorType as TT
+from jaxtyping import Float, Int
 from ..manifolds import ProductManifold
 
 
 def make_link_prediction_dataset(
-    X_embed: TT["batch", "n_dim"],
+    X_embed: Float[torch.Tensor, "batch n_dim"],
     pm: ProductManifold,
-    adj: TT["batch", "batch"],
+    adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[TT["batch**2", "2*n_dim"], TT["batch**2"], ProductManifold]:
+) -> Tuple[Float[torch.Tensor, "batch_sq 2 * n_dim"], Float[torch.Tensor, "batch_sq"], ProductManifold]:
     """
     Generate a dataset for link prediction tasks with product manifold
 
@@ -27,21 +27,13 @@ def make_link_prediction_dataset(
         add_dists: If True, appends pairwise distances to the feature vectors. Default is True.
 
     Returns:
-        Tuple[Tensor, Tensor, ProductManifold]:
+        Tuple[Float[torch.Tensor, "batch**2 2*n_dim"], Float[torch.Tensor, "batch**2"], ProductManifold]:
             - `X` (batch**2, 2*n_dim): A tensor of pairwise embeddings
             - `y` (batch**2,).: A tensor of labels derived from the adjacency matrix with.
             - `new_pm`: A new ProductManifold instance with an updated signature reflecting the feature space.
 
     """
     # Stack embeddings
-    # emb = []
-    # for X_i in X_embed:
-    #     for X_j in X_embed:
-    #         joint_embed = torch.cat([X_embed[i], X_embed[j]])
-    #         emb.append(joint_embed)
-    # embed = [[torch.cat([X_i, X_j]) for X_j in X_embed] for X_i in X_embed]
-
-    # X = torch.stack(emb)
     X = torch.stack([torch.cat([X_i, X_j]) for X_i in X_embed for X_j in X_embed])
 
     # Add distances
@@ -49,7 +41,6 @@ def make_link_prediction_dataset(
         dists = pm.pdist(X_embed)
         X = torch.cat([X, dists.flatten().unsqueeze(1)], dim=1)
 
-    # y = torch.tensor(adj.flatten())
     y = adj.flatten()
 
     # Make a new signature

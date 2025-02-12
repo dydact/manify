@@ -1,15 +1,25 @@
 """Product space perceptron implementation"""
 
+from typing import Optional
+from jaxtyping import Float, Int
+
 import torch
 from sklearn.base import BaseEstimator, ClassifierMixin
 
+from ..manifolds import ProductManifold
 from .kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
     """A product-space perceptron model for multiclass classification in the product manifold space."""
 
-    def __init__(self, pm, max_epochs=1_000, patience=5, weights=None):
+    def __init__(
+        self,
+        pm: ProductManifold,
+        max_epochs: int = 1_000,
+        patience: int = 5,
+        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
+    ):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
@@ -20,7 +30,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X, y):
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
         """
         Trains the perceptron model using the provided data and labels.
         Args:
@@ -84,9 +94,9 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             # Store the alpha coefficients for the current class
             self.alpha[class_label] = alpha
 
-        return self
-
-    def predict_proba(self, X):
+    def predict_proba(
+        self, X: Float[torch.Tensor, "n_samples n_manifolds"]
+    ) -> Float[torch.Tensor, "n_samples n_classes"]:
         """
         Predicts the decision values for each class.
 
@@ -119,7 +129,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
 
         return decision_values
 
-    def predict(self, X):
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
         """
         Predicts the class labels for the given test data X.
 

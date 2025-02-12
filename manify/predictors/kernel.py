@@ -1,7 +1,7 @@
 """Implementation for kernel matrix calculation"""
 
 from typing import Optional, Tuple
-from torchtyping import TensorType as TT
+from jaxtyping import Float, Int
 
 import torch
 
@@ -10,9 +10,9 @@ from ..manifolds import Manifold, ProductManifold
 
 def compute_kernel_and_norm_manifold(
     manifold: Manifold,
-    X_source: TT["n_points_source", "n_dim"],
-    X_target: Optional[TT["n_points_target", "n_dim"]],
-) -> Tuple[TT["n_points_source", "n_points_target"], TT[1]]:
+    X_source: Float[torch.Tensor, "n_points_source n_dim"],
+    X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
+) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, "1"]]:
     """
     Compute the kernel matrix between two sets of points in a given manifold.
 
@@ -57,9 +57,9 @@ def compute_kernel_and_norm_manifold(
 
 def product_kernel(
     pm: ProductManifold,
-    X_source: TT["n_points_source", "n_dim"],
-    X_target: Optional[TT["n_points_target", "n_dim"]],
-) -> Tuple[TT["n_points_source", "n_points_target"], TT[1]]:
+    X_source: Float[torch.Tensor, "n_points_source n_dim"],
+    X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
+) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, "1"]]:
     """
     Compute the kernel matrix between two sets of points in a product manifold.
 

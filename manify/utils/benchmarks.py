@@ -2,7 +2,7 @@
 
 from typing import List, Literal, Dict, Optional
 import time
-from torchtyping import TensorType as TT
+from jaxtyping import Float, Num
 
 import torch
 import numpy as np
@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.svm import SVC, SVR
-
+from sklearn.base import BaseEstimator
 from ..manifolds import ProductManifold
 
 from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
@@ -28,15 +28,52 @@ from ..predictors.svm import ProductSpaceSVM
 from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 
 
+def _score(
+    _X: Float[torch.Tensor, "n_samples n_dims"],
+    _y: Num[torch.Tensor, "n_samples"],
+    model: BaseEstimator,
+    y_pred_override: Optional[Num[torch.Tensor, "n_samples"]] = None,
+    torch: bool = False,
+    score: List[Literal["accuracy", "f1-micro", "mse", "percent_rmse"]] = ["accuracy", "f1-micro"],
+):
+    """Helper function: score model on a dataset"""
+    # Override y_pred
+    if y_pred_override is not None:
+        y_pred = y_pred_override
+    else:
+        y_pred = model.predict(_X)
+
+    # Convert to numpy
+    if torch:
+        y_pred = y_pred.detach().cpu().numpy()
+
+    # Score handling
+    out = {}
+    for s in score:
+        try:
+            if s == "accuracy":
+                out[s] = accuracy_score(_y, y_pred)
+            elif s == "f1-micro":
+                out[s] = f1_score(_y, y_pred, average="micro")
+            elif s == "mse":
+                out[s] = mean_squared_error(_y, y_pred)
+            elif s == "rmse":
+                out[s] = root_mean_squared_error(_y, y_pred)
+            elif s == "percent_rmse":
+                out[s] = (root_mean_squared_error(_y, y_pred, multioutput="raw_values") / np.abs(_y)).mean()
+            else:
+                raise ValueError(f"Unknown score: {s}")
+        except Exception as e:
+            out[s] = np.nan
+    return out
+
+
 def benchmark(
-    X: TT["batch", "dim"],
-    y: TT["batch"],
+    X: Float[torch.Tensor, "batch dim"],
+    y: Num[torch.Tensor, "batch"],
     pm: ProductManifold,
     device: Literal["cpu", "cuda", "mps"] = "cpu",
-    score: List[Literal["accuracy", "f1-micro", "mse", "percent_rmse"]] = [
-        "accuracy",
-        "f1-micro",
-    ],
+    score: List[Literal["accuracy", "f1-micro", "mse", "percent_rmse"]] = ["accuracy", "f1-micro"],
     models: List[str] = [
         "sklearn_dt",
         "sklearn_rf",
@@ -63,18 +100,18 @@ def benchmark(
     seed: Optional[int] = None,
     use_special_dims: bool = False,
     n_features: Literal["d", "d_choose_2"] = "d_choose_2",
-    X_train=None,
-    X_test=None,
-    y_train=None,
-    y_test=None,
-    batch_size=None,
-    adj=None,
-    A_train=None,
-    A_test=None,
-    hidden_dims=[32, 32],
-    epochs=4_000,
-    lr=1e-4,
-    kappa_gcn_layers=1,
+    X_train: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
+    X_test: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
+    y_train: Optional[Num[torch.Tensor, "n_samples"]] = None,
+    y_test: Optional[Num[torch.Tensor, "n_samples"]] = None,
+    batch_size: Optional[int] = None,
+    adj: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
+    A_train: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
+    A_test: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
+    hidden_dims: List[int] = [32, 32],
+    epochs: int = 4_000,
+    lr: float = 1e-4,
+    kappa_gcn_layers: int = 1,
 ) -> Dict[str, float]:
     """
     Benchmarks various machine learning models on a dataset using a product manifold structure.
@@ -120,12 +157,7 @@ def benchmark(
     pm = pm.to(device)
 
     # Split data
-    if (
-        X_train is not None
-        and X_test is not None
-        and y_train is not None
-        and y_test is not None
-    ):
+    if X_train is not None and X_test is not None and y_train is not None and y_test is not None:
         # Coerce to tensor as needed
         if not torch.is_tensor(X_train):
             X_train = torch.tensor(X_train)
@@ -158,9 +190,7 @@ def benchmark(
         X = X.to(device)
         y = y.to(device)
 
-        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
-            X, y, np.arange(len(X)), test_size=0.2
-        )
+        X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)), test_size=0.2)
 
     # Make sure classification labels are formatted correctly
     if task == "classification":
@@ -180,18 +210,9 @@ def benchmark(
     X_test_tangent = pm.logmap(X_test).detach()
 
     # Get numpy versions
-    X_train_np, X_test_np = (
-        X_train.detach().cpu().numpy(),
-        X_test.detach().cpu().numpy(),
-    )
-    y_train_np, y_test_np = (
-        y_train.detach().cpu().numpy(),
-        y_test.detach().cpu().numpy(),
-    )
-    X_train_tangent_np, X_test_tangent_np = (
-        X_train_tangent.cpu().numpy(),
-        X_test_tangent.cpu().numpy(),
-    )
+    X_train_np, X_test_np = X_train.detach().cpu().numpy(), X_test.detach().cpu().numpy()
+    y_train_np, y_test_np = y_train.detach().cpu().numpy(), y_test.detach().cpu().numpy()
+    X_train_tangent_np, X_test_tangent_np = X_train_tangent.cpu().numpy(), X_test_tangent.cpu().numpy()
 
     # Get stereographic version
     pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
@@ -199,9 +220,7 @@ def benchmark(
     X_test_stereo = X_test_stereo.detach()
 
     # Also euclidean """PM"""
-    pm_euc = ProductManifold(
-        signature=[(0, X.shape[1])], device=device, stereographic=True
-    )
+    pm_euc = ProductManifold(signature=[(0, X.shape[1])], device=device, stereographic=True)
 
     # Get A_hat
     if adj is not None:
@@ -220,56 +239,13 @@ def benchmark(
         A_train = A_train.to(device).detach()
         A_test = A_test.to(device).detach()
 
-    def _score(_X, _y, model, y_pred_override=None, torch=False):
-        # Override y_pred
-        if y_pred_override is not None:
-            y_pred = y_pred_override
-        else:
-            y_pred = model.predict(_X)
-
-        # Convert to numpy
-        if torch:
-            y_pred = y_pred.detach().cpu().numpy()
-
-        # Score handling
-        out = {}
-        for s in score:
-            try:
-                if s == "accuracy":
-                    out[s] = accuracy_score(_y, y_pred)
-                elif s == "f1-micro":
-                    out[s] = f1_score(_y, y_pred, average="micro")
-                elif s == "mse":
-                    out[s] = mean_squared_error(_y, y_pred)
-                elif s == "rmse":
-                    out[s] = root_mean_squared_error(_y, y_pred)
-                elif s == "percent_rmse":
-                    out[s] = (
-                        root_mean_squared_error(_y, y_pred, multioutput="raw_values")
-                        / np.abs(_y)
-                    ).mean()
-                else:
-                    raise ValueError(f"Unknown score: {s}")
-            except Exception as e:
-                out[s] = np.nan
-        return out
-
     # Aggregate arguments
-    tree_kwargs = {
-        "max_depth": max_depth,
-        "min_samples_leaf": min_samples_leaf,
-        "min_samples_split": min_samples_split,
-    }
-    prod_kwargs = {
-        "use_special_dims": use_special_dims,
-        "n_features": n_features,
-        "batch_size": batch_size,
-    }
+    tree_kwargs = {"max_depth": max_depth, "min_samples_leaf": min_samples_leaf, "min_samples_split": min_samples_split}
+    prod_kwargs = {"use_special_dims": use_special_dims, "n_features": n_features, "batch_size": batch_size}
     rf_kwargs = {"n_estimators": n_estimators, "n_jobs": -1, "random_state": seed}
     nn_outdim = 1 if task == "regression" else len(torch.unique(y))
     nn_kwargs = {"task": task, "output_dim": nn_outdim, "hidden_dims": hidden_dims}
     nn_train_kwargs = {"epochs": epochs, "lr": lr}
-    # nn_train_kwargs = {"min_epochs": min_epochs, "max_epochs": max_epochs, "lr": lr}
 
     # Define your models
     if task == "classification":
@@ -305,12 +281,7 @@ def benchmark(
         accs["sklearn_rf"]["time"] = t2 - t1
 
     if "product_dt" in models:
-        psdt = ProductSpaceDT(
-            pm=pm,
-            task=task,
-            **tree_kwargs,
-            **prod_kwargs,
-        )
+        psdt = ProductSpaceDT(pm=pm, task=task, **tree_kwargs, **prod_kwargs)
         t1 = time.time()
         psdt.fit(X_train, y_train)
         t2 = time.time()
@@ -318,13 +289,7 @@ def benchmark(
         accs["product_dt"]["time"] = t2 - t1
 
     if "product_rf" in models:
-        psrf = ProductSpaceRF(
-            pm=pm,
-            task=task,
-            **tree_kwargs,
-            **rf_kwargs,
-            **prod_kwargs,
-        )
+        psrf = ProductSpaceRF(pm=pm, task=task, **tree_kwargs, **rf_kwargs, **prod_kwargs)
         t1 = time.time()
         psrf.fit(X_train, y_train)
         t2 = time.time()
@@ -351,9 +316,7 @@ def benchmark(
         # Get dists - max imputation is a workaround for some nan values we occasionally get
         t1 = time.time()
         train_dists = pm.pdist(X_train)
-        train_dists = torch.nan_to_num(
-            train_dists, nan=train_dists[~train_dists.isnan()].max().item()
-        )
+        train_dists = torch.nan_to_num(train_dists, nan=train_dists[~train_dists.isnan()].max().item())
         train_test_dists = pm.dist(X_test, X_train)
         train_test_dists = torch.nan_to_num(
             train_test_dists,
@@ -399,12 +362,8 @@ def benchmark(
     if "svm" in models:
         # Get inner products for precomputed kernel matrix
         t1 = time.time()
-        train_ips = pm.manifold.component_inner(X_train[:, None], X_train[None, :]).sum(
-            dim=-1
-        )
-        train_test_ips = pm.manifold.component_inner(
-            X_test[:, None], X_train[None, :]
-        ).sum(dim=-1)
+        train_ips = pm.manifold.component_inner(X_train[:, None], X_train[None, :]).sum(dim=-1)
+        train_test_ips = pm.manifold.component_inner(X_test[:, None], X_train[None, :]).sum(dim=-1)
 
         # Convert to numpy
         train_ips = train_ips.detach().cpu().numpy()
@@ -421,9 +380,7 @@ def benchmark(
 
     if "ps_svm" in models:
         try:
-            ps_svm = ProductSpaceSVM(
-                pm=pm, task=task, h_constraints=False, e_constraints=False
-            )
+            ps_svm = ProductSpaceSVM(pm=pm, task=task, h_constraints=False, e_constraints=False)
             t1 = time.time()
             ps_svm.fit(X_train, y_train)
             t2 = time.time()
@@ -433,40 +390,13 @@ def benchmark(
             pass
             #     accs["ps_svm"] = {"accuracy": 0.0, "f1-micro": 0.0, "time": 0.0}
 
-    # if "tangent_mlp" in models:
-    #     tangent_mlp = MLP(pm=pm, tangent=True, **nn_kwargs).to(device)
-    #     t1 = time.time()
-    #     tangent_mlp.fit(X_train_tangent, y_train, **nn_train_kwargs)
-    #     t2 = time.time()
-    #     accs["tangent_mlp"] = _score(X_test_tangent, y_test_np, tangent_mlp, torch=True)
-    #     accs["tangent_mlp"]["time"] = t2 - t1
-
-    # if "ambient_mlp" in models:
-    #     ambient_mlp = MLP(pm=pm, tangent=False, **nn_kwargs).to(device)
-    #     t1 = time.time()
-    #     ambient_mlp.fit(X_train, y_train, **nn_train_kwargs)
-    #     t2 = time.time()
-    #     accs["ambient_mlp"] = _score(X_test, y_test_np, ambient_mlp, torch=True)
-    #     accs["ambient_mlp"]["time"] = t2 - t1
-
-    # if "tangent_gnn" in models:
-    #     tangent_gnn = GNN(pm=pm, tangent=True, **nn_kwargs).to(device)
-    #     t1 = time.time()
-    #     tangent_gnn.fit(X_tangent, y, adj=A_hat, train_idx=train_idx, **nn_train_kwargs)
-    #     t2 = time.time()
-    #     y_pred = tangent_gnn.predict(X_tangent, adj=A_hat, test_idx=test_idx)
-    #     accs["tangent_gnn"] = _score(None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True)
-    #     accs["tangent_gnn"]["time"] = t2 - t1
-
     if "ambient_mlp" in models:
         ambient_mlp = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
         ambient_mlp.fit(X_train, y_train, A=None, **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_mlp.predict(X_test, A=None)
-        accs["ambient_mlp"] = _score(
-            None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True
-        )
+        accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True)
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if "tangent_mlp" in models:
@@ -475,9 +405,7 @@ def benchmark(
         tangent_mlp.fit(X_train_tangent, y_train, A=None, **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_mlp.predict(X_test_tangent, A=None)
-        accs["tangent_mlp"] = _score(
-            None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True
-        )
+        accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True)
         accs["tangent_mlp"]["time"] = t2 - t1
 
     if "ambient_gnn" in models:
@@ -486,9 +414,7 @@ def benchmark(
         ambient_gnn.fit(X_train, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_gnn.predict(X_test, A=A_test)
-        accs["ambient_gnn"] = _score(
-            None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True
-        )
+        accs["ambient_gnn"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "tangent_gnn" in models:
@@ -497,9 +423,7 @@ def benchmark(
         tangent_gnn.fit(X_train_tangent, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_gnn.predict(X_test_tangent, A=A_test)
-        accs["ambient_gnn"] = _score(
-            None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True
-        )
+        accs["ambient_gnn"] = _score(None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True)
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
@@ -514,22 +438,16 @@ def benchmark(
         kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
-        accs["kappa_gcn"] = _score(
-            None, y_test_np, None, y_pred_override=y_pred, torch=True
-        )
+        accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
         accs["kappa_gcn"]["time"] = t2 - t1
 
     if "product_mlr" in models:
-        mlr_model = KappaGCN(
-            pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim
-        ).to(device)
+        mlr_model = KappaGCN(pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
         mlr_model.fit(X_train_stereo, y_train, A=None, **nn_train_kwargs)
         t2 = time.time()
         y_pred = mlr_model.predict(X_test_stereo, A=None)
-        accs["product_mlr"] = _score(
-            None, y_test_np, None, y_pred_override=y_pred, torch=True
-        )
+        accs["product_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
         accs["product_mlr"]["time"] = t2 - t1
 
     # return accs

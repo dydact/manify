@@ -13,6 +13,6 @@ setup(
         "pandas",
         "matplotlib",
         "scipy",
-        "torchtyping",
+        "jaxtyping",
     ],
 )

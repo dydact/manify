@@ -2,8 +2,9 @@
 Kappa GCN implementation
 """
 
-from typing import List, Optional, Literal, Union, Tuple
-from torchtyping import TensorType as TT
+import sys
+from typing import List, Optional, Literal, Union, Tuple, Callable
+from jaxtyping import Float
 
 import torch
 import geoopt
@@ -18,10 +19,10 @@ else:
 
 
 def get_A_hat(
-    A: TT["n_nodes", "n_nodes"],
+    A: Float[torch.Tensor, "n_nodes n_nodes"],
     make_symmetric: bool = True,
     add_self_loops: bool = True,
-) -> TT["n_nodes", "n_nodes"]:
+) -> Float[torch.Tensor, "n_nodes n_nodes"]:
     """
     Normalize adjacency matrix.
 
@@ -44,7 +45,7 @@ def get_A_hat(
         A = A + torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
 
     # Get degree matrix
-    D = torch.diag(torch.sum(A, axis=1))
+    D = torch.diag(torch.sum(A, axis=1))  # type: ignore
 
     # Compute D^(-1/2)
     D_inv_sqrt = torch.inverse(torch.sqrt(D))
@@ -73,7 +74,7 @@ class KappaGCNLayer(torch.nn.Module):
         in_features: int,
         out_features: int,
         manifold: Manifold,
-        nonlinearity: callable = torch.relu,
+        nonlinearity: Callable = torch.relu,
     ):
         super().__init__()
 
@@ -88,7 +89,9 @@ class KappaGCNLayer(torch.nn.Module):
         # Also store manifold
         self.manifold = manifold
 
-    def _left_multiply(self, A: TT["n_nodes", "n_nodes"], X: TT["n_nodes", "dim"], M: Manifold):
+    def _left_multiply(
+        self, A: Float[torch.Tensor, "n_nodes n_nodes"], X: Float[torch.Tensor, "n_nodes dim"], M: Manifold
+    ):
         """
         Implementation for Kappa left matrix multiplication for message passing in product space
 
@@ -113,8 +116,8 @@ class KappaGCNLayer(torch.nn.Module):
         )
 
     def forward(
-        self, X: TT["n_nodes", "dim"], A_hat: Optional[TT["n_nodes", "n_nodes"]] = None
-    ) -> TT["n_nodes", "dim"]:
+        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+    ) -> Float[torch.Tensor, "n_nodes dim"]:
         """
         Forward pass for the Kappa GCN layer.
 
@@ -135,7 +138,7 @@ class KappaGCNLayer(torch.nn.Module):
             XWs = self.manifold.factorize(XW)
             AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
         else:
-            AXW = self._left_multiply(A_hat, XW)
+            AXW = self._left_multiply(A_hat, XW, self.manifold)
 
         # 3. Apply nonlinearity - note that sigma is wrapped with our manifold.apply decorator
         AXW = self.sigma(AXW)
@@ -158,8 +161,8 @@ class KappaGCN(torch.nn.Module):
         self,
         pm: ProductManifold,
         output_dim: int,
-        hidden_dims: List[int] = None,
-        nonlinearity: callable = torch.relu,
+        hidden_dims: Optional[List[int]] = None,
+        nonlinearity: Callable = torch.relu,
         task: Literal["classification", "regression", "link_prediction"] = "classification",
     ):
         super().__init__()
@@ -188,8 +191,8 @@ class KappaGCN(torch.nn.Module):
 
     def forward(
         self,
-        X: TT["n_nodes", "dims"],
-        A_hat: Optional["n_nodes", "n_nodes"] = None,
+        X: Float[torch.Tensor, "n_nodes dim"],
+        A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
         aggregate_logits: bool = True,
         softmax: bool = False,
     ):
@@ -227,14 +230,14 @@ class KappaGCN(torch.nn.Module):
 
     def _get_logits_single_manifold(
         self,
-        X: TT["n_nodes", "dim"],
-        W: TT["dim", "n_classes"],
-        b: TT["n_classes"],
+        X: Float[torch.Tensor, "n_nodes dim"],
+        W: Float[torch.Tensor, "dim n_classes"],
+        b: Float[torch.Tensor, "n_classes"],
         M: Manifold,
         return_inner_products: bool = False,
     ) -> Union[
-        Tuple[TT["n_nodes", "n_classes"], TT["n_nodes", "n_classes"]],
-        TT["n_nodes", "n_classes"],
+        Tuple[Float[torch.Tensor, "n_nodes n_classes"], Float[torch.Tensor, "n_nodes n_classes"]],
+        Float[torch.Tensor, "n_nodes n_classes"],
     ]:
         """Helper function for get_logits"""
 
@@ -281,11 +284,11 @@ class KappaGCN(torch.nn.Module):
 
     def _get_logits_product_manifold(
         self,
-        X: TT["n_nodes", "dims"],
-        W: TT["dims", "n_classes"],
-        b: TT["n_classes"],
-        M: Manifold,
-    ) -> TT["n_nodes", "n_classes"]:
+        X: Float[torch.Tensor, "n_nodes dim"],
+        W: Float[torch.Tensor, "dims n_classes"],
+        b: Float[torch.Tensor, "n_classes"],
+        M: ProductManifold,
+    ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """Helper function for get_logits"""
 
         # For convenience, get curvature and manifold
@@ -313,10 +316,10 @@ class KappaGCN(torch.nn.Module):
 
     def get_logits(
         self,
-        X: TT["n_nodes", "dims"],
-        W: TT["dims", "n_classes"] = None,
-        b: TT["n_classes"] = None,
-    ) -> TT["n_nodes", "n_classes"]:
+        X: Float[torch.Tensor, "n_nodes dim"],
+        W: Optional[Float[torch.Tensor, "dims n_classes"]] = None,
+        b: Optional[Float[torch.Tensor, "n_classes"]] = None,
+    ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """
         Computes logits given the manifold.
 
@@ -339,15 +342,15 @@ class KappaGCN(torch.nn.Module):
         if isinstance(self.pm, ProductManifold):
             return self._get_logits_product_manifold(X, W, b, self.pm)
         elif isinstance(self.pm, Manifold):
-            return self._get_logits_single_manifold(X, W, b, self.pm)
+            return self._get_logits_single_manifold(X, W, b, self.pm, return_inner_products=False)  # type: ignore
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
 
     def fit(
         self,
-        X: TT["n_nodes", "dims"],
-        y: TT["n_nodes"],
-        A: TT["n_nodes", "n_nodes"],
+        X: Float[torch.Tensor, "n_nodes dim"],
+        y: Float[torch.Tensor, "n_nodes"],
+        A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
         epochs: int = 2_000,
         lr: float = 1e-2,
         use_tqdm: bool = True,
@@ -418,12 +421,9 @@ class KappaGCN(torch.nn.Module):
                 my_tqdm.update(1)
                 my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
 
-            # # Failure case
-            # if torch.isnan(loss).any():
-            #     print("NaN loss detected")
-            #     return
-
-    def predict(self, X: TT["n_nodes", "dims"], A: Optional[TT["n_nodes", "n_nodes"]] = None) -> TT["n_nodes"]:
+    def predict(
+        self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+    ) -> Float[torch.Tensor, "n_nodes"]:
         """
         Make predictions using the trained Kappa GCN.
 

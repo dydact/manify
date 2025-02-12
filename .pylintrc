@@ -19,7 +19,7 @@ const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
 module-rgx=([a-z_][a-z0-9_]*)
 
 [FORMAT]
-max-line-length=88
+max-line-length=120
 
 [TYPECHECK]
 generated-members=torch.*,nn.* 

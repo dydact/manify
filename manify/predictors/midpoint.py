@@ -1,9 +1,13 @@
 """Compute the angular midpoints between two angular coordinates in different geometric spaces"""
 
+from jaxtyping import Float
+
 import torch
 
+from ..manifolds import Manifold
 
-def hyperbolic_midpoint(u, v, assert_hyperbolic=False):
+
+def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> Float[torch.Tensor, "1"]:
     """
     Compute the hyperbolic midpoint between two angular coordinates u and v.
 
@@ -25,7 +29,7 @@ def hyperbolic_midpoint(u, v, assert_hyperbolic=False):
     return m
 
 
-def is_hyperbolic_midpoint(u, v, m):
+def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
     """
     Verifies if m is the true hyperbolic midpoint between u and v.
 
@@ -42,7 +46,7 @@ def is_hyperbolic_midpoint(u, v, m):
     return torch.isclose(d(u, m), d(m, v))
 
 
-def spherical_midpoint(u, v):
+def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
     """
     Compute the spherical midpoint between two angular coordinates u and v.
 
@@ -56,7 +60,7 @@ def spherical_midpoint(u, v):
     return (u + v) / 2.0
 
 
-def euclidean_midpoint(u, v):
+def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
     """
     Compute the euclidean midpoint between two angular coordinates u and v.
 
@@ -70,7 +74,7 @@ def euclidean_midpoint(u, v):
     return torch.arctan2(torch.tensor(2.0), (1.0 / torch.tan(u) + 1.0 / torch.tan(v)))
 
 
-def midpoint(u, v, manifold, special_first=False):
+def midpoint(u: float, v: float, manifold: Manifold, special_first: bool = False) -> Float[torch.Tensor, "1"]:
     """
     Driver code to compute the midpoint between two angular coordinates give the manifold type.
 

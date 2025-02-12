@@ -2,7 +2,7 @@
 
 import sys
 from typing import Tuple, List, Dict
-from torchtyping import TensorType
+from jaxtyping import Float, Int
 
 import numpy as np
 import torch
@@ -20,8 +20,8 @@ else:
 
 def train_coords(
     pm: ProductManifold,
-    dists: TensorType["n_points", "n_points"],
-    test_indices: TensorType["n_test"] = torch.tensor([]),
+    dists: Float[torch.Tensor, "n_points n_points"],
+    test_indices: Int[torch.Tensor, "n_test"] = torch.tensor([]),
     device: str = "cpu",
     burn_in_learning_rate: float = 1e-3,
     burn_in_iterations: int = 2_000,
@@ -31,7 +31,7 @@ def train_coords(
     loss_window_size: int = 100,
     logging_interval: int = 10,
     scale=1.0,
-) -> Tuple[TensorType["n_points", "n_dim"], Dict[str, List[float]]]:
+) -> Tuple[Float[torch.Tensor, "n_points n_dim"], Dict[str, List[float]]]:
     """
     Coordinate training and optimization
 
@@ -62,11 +62,11 @@ def train_coords(
     train = ~test
 
     # Initialize optimizer
-    X = geoopt.ManifoldParameter(X, manifold=pm.manifold)
+    X = geoopt.ManifoldParameter(X, manifold=pm.manifold)  # type: ignore
     ropt = geoopt.optim.RiemannianAdam(
         [
             {"params": [X], "lr": burn_in_learning_rate},
-            {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
+            {"params": [x.scale for x in pm.manifold.manifolds], "lr": 0},
         ]
     )
 
@@ -133,6 +133,6 @@ def train_coords(
 
         # Early stopping for errors
         if torch.isnan(L):
-            raise Exception("Loss is NaN")
+            raise ValueError("Loss is NaN")
 
-    return X.detach(), losses
+    return X.data.detach(), losses
