@@ -6,7 +6,7 @@ import sys
 import torch
 import numpy as np
 import geoopt
-from .metrics import distortion_loss, d_avg
+from .losses import distortion_loss, d_avg
 from ..manifolds import ProductManifold
 
 # TQDM: notebook or regular
@@ -67,8 +67,6 @@ def train_coords(
             {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
         ]
     )
-    # ropt = geoopt.optim.RiemannianAdam(params=[X] + [x._log_scale for x in pm.manifold.manifolds], lr=burn_in_learning_rate)
-    # opt = torch.optim.Adam(params=[x._log_scale for x in pm.manifold.manifolds], lr=0)
 
     # Init TQDM
     my_tqdm = tqdm(total=burn_in_iterations + training_iterations, leave=False)
