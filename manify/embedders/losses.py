@@ -1,4 +1,5 @@
 """Implementation of different measurement metrics"""
+
 import torch
 import networkx as nx
 
@@ -74,14 +75,12 @@ def d_avg(
     return torch.mean(torch.abs(D_est - D_true) / D_true)
 
 
-def mean_average_precision(
-    x_embed: TensorType["n_points", "n_dim"], graph: nx.Graph
-) -> float:
+def mean_average_precision(x_embed: TensorType["n_points", "n_dim"], graph: nx.Graph) -> float:
     """Mean averae precision (mAP) from the Gu et al paper."""
     raise NotImplementedError
 
 
-def dist_component_by_manifold(pm, x_embed):
+def dist_component_by_manifold(pm: ProductManifold, x_embed: TensorType["n_points", "n_dim"]) -> List[float]:
     """
     Compute the variance in pairwise distances explained by each manifold component.
 
@@ -94,12 +93,9 @@ def dist_component_by_manifold(pm, x_embed):
                      of total distance variance explained by the corresponding
                      manifold component.
     """
-    sq_dists_by_manifold = [
-        M.pdist2(x_embed[:, pm.man2dim[i]]) for i, M in enumerate(pm.P)
-    ]
+    sq_dists_by_manifold = [M.pdist2(x_embed[:, pm.man2dim[i]]) for i, M in enumerate(pm.P)]
     total_sq_dist = pm.pdist2(x_embed)
 
     return [
-        torch.sum(D.triu(diagonal=1) / torch.sum(total_sq_dist.triu(diagonal=1))).item()
-        for D in sq_dists_by_manifold
+        torch.sum(D.triu(diagonal=1) / torch.sum(total_sq_dist.triu(diagonal=1))).item() for D in sq_dists_by_manifold
     ]

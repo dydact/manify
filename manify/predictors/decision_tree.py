@@ -268,7 +268,6 @@ def _get_split(
     )
 
 
-# Copied over from hyperdt.torch.tree
 class DecisionNode:
     """Class for nodes in a decision tree."""
 
