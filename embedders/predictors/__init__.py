@@ -1,4 +1,4 @@
-import embedders.predictors.tree_new
+import embedders.predictors.decision_tree
 import embedders.predictors.svm
 import embedders.predictors.perceptron
 # import embedders.predictors.mlp

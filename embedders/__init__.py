@@ -5,7 +5,7 @@ import embedders.gaussian_mixture
 import embedders.manifolds
 import embedders.metrics
 import embedders.preprocessing
-import embedders.signature_estimation
+import embedders.curvature_estimation.sectional_curvature
 import embedders.vae
 import embedders.visualization
 import embedders.utils.link_prediction
