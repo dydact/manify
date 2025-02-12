@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="embedders",
+    name="manify",
     version="0.1",
     packages=find_packages(where="."),
     package_dir={"": "."},
@@ -14,5 +14,5 @@ setup(
         "matplotlib",
         "scipy",
         "torchtyping",
-    ]
+    ],
 )
