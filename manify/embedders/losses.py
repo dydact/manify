@@ -48,7 +48,7 @@ def d_avg(
     D_est: Float[torch.Tensor, "n_points n_points"],
     D_true: Float[torch.Tensor, "n_points n_points"],
     pairwise: bool = False,
-) -> float:
+) -> Float[torch.Tensor, "1"]:
     """Average distance error D_av
     Args:
         D_est (n_points, n_points): A tensor of estimated pairwise distances.
@@ -78,7 +78,7 @@ def d_avg(
     return torch.mean(torch.abs(D_est - D_true) / D_true)
 
 
-def mean_average_precision(x_embed: Float[torch.Tensor, "n_points n_dim"], graph: nx.Graph) -> float:
+def mean_average_precision(x_embed: Float[torch.Tensor, "n_points n_dim"], graph: nx.Graph) -> Float[torch.Tensor, "1"]:
     """Mean averae precision (mAP) from the Gu et al paper."""
     raise NotImplementedError
 
