@@ -5,6 +5,7 @@ import torch
 from torchtyping import TensorType as TT
 from .manifolds import ProductManifold
 
+
 @torch.no_grad()
 def gaussian_mixture(
     pm: ProductManifold,

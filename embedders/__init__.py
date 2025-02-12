@@ -8,6 +8,6 @@ import embedders.preprocessing
 import embedders.signature_estimation
 import embedders.vae
 import embedders.visualization
-import embedders.link_prediction
+import embedders.utils.link_prediction
 
 

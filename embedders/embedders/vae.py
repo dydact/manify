@@ -1,10 +1,11 @@
 """Product space variational autoencoder implementation"""
+
 from typing import List
 from torchtyping import TensorType as TT
 
 import torch
 
-from .manifolds import ProductManifold
+from ..manifolds import ProductManifold
 
 
 class ProductSpaceVAE(torch.nn.Module):

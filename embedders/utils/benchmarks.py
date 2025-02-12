@@ -15,14 +15,13 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.svm import SVC, SVR
 
-from .manifolds import ProductManifold
+from ..manifolds import ProductManifold
 
-from .predictors.tree_new import ProductSpaceDT, ProductSpaceRF
-from .predictors.perceptron import ProductSpacePerceptron
-from .predictors.svm import ProductSpaceSVM
-# from .predictors.mlp import MLP
-# from .predictors.gnn import GNN, get_nonzero
-from .predictors.kappa_gcn import KappaGCN, get_A_hat
+from ..predictors.tree_new import ProductSpaceDT, ProductSpaceRF
+from ..predictors.perceptron import ProductSpacePerceptron
+from ..predictors.svm import ProductSpaceSVM
+from ..predictors.kappa_gcn import KappaGCN, get_A_hat
+
 
 def benchmark(
     X: TT["batch", "dim"],
@@ -153,7 +152,7 @@ def benchmark(
         y = torch.unique(y, return_inverse=True)[1]
         y_train = y[train_idx]
         y_test = y[test_idx]
-    
+
     # Make sure everything is detached
     X, X_train, X_test = X.detach(), X_train.detach(), X_test.detach()
     y, y_train, y_test = y.detach(), y_train.detach(), y_test.detach()
@@ -242,7 +241,7 @@ def benchmark(
         knn_class = KNeighborsClassifier
         svm_class = SVC
         perceptron_class = SGDClassifier
-    
+
     elif task == "regression":
         dt_class = DecisionTreeRegressor
         rf_class = RandomForestRegressor
@@ -417,7 +416,7 @@ def benchmark(
         y_pred = ambient_mlp.predict(X_test, A=None)
         accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True)
         accs["ambient_mlp"]["time"] = t2 - t1
-    
+
     if "tangent_mlp" in models:
         tangent_mlp = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
@@ -446,15 +445,17 @@ def benchmark(
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
-        d = X_test_stereo.shape[1] # Shape can't change between layers
-        kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(device)
+        d = X_test_stereo.shape[1]  # Shape can't change between layers
+        kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(
+            device
+        )
         t1 = time.time()
         kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True)
         accs["kappa_gcn"]["time"] = t2 - t1
-    
+
     if "product_mlr" in models:
         mlr_model = KappaGCN(pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
@@ -466,6 +467,11 @@ def benchmark(
 
     # return accs
     return {
-        **{f"{model}_{metric}": value for model, metrics in accs.items() if isinstance(metrics, dict) for metric, value in metrics.items()},
-        **{k: v for k, v in accs.items() if not isinstance(v, dict)}
+        **{
+            f"{model}_{metric}": value
+            for model, metrics in accs.items()
+            if isinstance(metrics, dict)
+            for metric, value in metrics.items()
+        },
+        **{k: v for k, v in accs.items() if not isinstance(v, dict)},
     }

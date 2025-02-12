@@ -7,7 +7,7 @@ import torch
 import numpy as np
 import geoopt
 from .metrics import distortion_loss, d_avg
-from .manifolds import ProductManifold
+from ..manifolds import ProductManifold
 
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:

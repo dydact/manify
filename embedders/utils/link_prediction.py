@@ -3,7 +3,7 @@
 from typing import Tuple
 import torch
 from torchtyping import TensorType as TT
-from .manifolds import ProductManifold
+from ..manifolds import ProductManifold
 
 def make_link_prediction_dataset(
     X_embed: TT["batch", "n_dim"], pm: ProductManifold, adj: TT["batch", "batch"], add_dists: bool = True

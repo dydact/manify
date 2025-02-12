@@ -1,6 +1,7 @@
 """
 Kappa GCN implementation
 """
+
 import torch
 import geoopt
 from tqdm.notebook import tqdm
@@ -88,16 +89,15 @@ class KappaGCNLayer(torch.nn.Module):
 
         # Vectorized version:
         return M.manifold.weighted_midpoint(
-            xs=X.unsqueeze(0), # (1, N, D)
-            weights=A, # (N, N)
-            reducedim=[1],    # Sum over the N points dimension (dim 1)
-            dim=-1,            # Compute conformal factors along the points dimension
-            keepdim=False,    # Squeeze the batch dimension out
-            lincomb=True,     # Scale by sum of weights (A.sum(dim=1))
+            xs=X.unsqueeze(0),  # (1, N, D)
+            weights=A,  # (N, N)
+            reducedim=[1],  # Sum over the N points dimension (dim 1)
+            dim=-1,  # Compute conformal factors along the points dimension
+            keepdim=False,  # Squeeze the batch dimension out
+            lincomb=True,  # Scale by sum of weights (A.sum(dim=1))
             # posweight=self.posweight if hasattr(self, 'posweight') else False
-            posweight=False
+            posweight=False,
         )
-
 
     def forward(self, X, A_hat=None):
         """
@@ -146,13 +146,15 @@ class KappaGCN(torch.nn.Module):
 
         # Hidden layers
         if hidden_dims is None:
-            dims = [pm.dim, pm.dim, pm.dim] # 2 hidden layers
+            dims = [pm.dim, pm.dim, pm.dim]  # 2 hidden layers
         elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
             raise ValueError("Only fully Euclidean manifolds can change hidden dimension size")
         else:
             dims = [pm.dim] + hidden_dims
-        
-        self.layers = torch.nn.ModuleList([KappaGCNLayer(dims[i], dims[i+1], pm, nonlinearity) for i in range(len(dims) - 1)])
+
+        self.layers = torch.nn.ModuleList(
+            [KappaGCNLayer(dims[i], dims[i + 1], pm, nonlinearity) for i in range(len(dims) - 1)]
+        )
 
         # Final layer params
         if task == "link_prediction":
@@ -161,7 +163,6 @@ class KappaGCN(torch.nn.Module):
         elif task == "classification" or task == "regression":
             self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
             self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
-
 
     def forward(self, X, A_hat=None, aggregate_logits=True, softmax=False):
         """
@@ -174,7 +175,7 @@ class KappaGCN(torch.nn.Module):
 
         Returns:
             logits_agg: output of Kappa GCN network
-        """        
+        """
         H = X
 
         # Pass through kappa-GCN layers
@@ -355,7 +356,7 @@ class KappaGCN(torch.nn.Module):
             if use_tqdm:
                 my_tqdm.update(1)
                 my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
-            
+
             # # Failure case
             # if torch.isnan(loss).any():
             #     print("NaN loss detected")
