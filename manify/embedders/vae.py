@@ -102,7 +102,7 @@ class ProductSpaceVAE(torch.nn.Module):
 
     def elbo(
         self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[Float[torch.Tensor, "1"], Float[torch.Tensor, "1"], Float[torch.Tensor, "1"]]:
+    ) -> Tuple[Float[torch.Tensor, ""], Float[torch.Tensor, ""], Float[torch.Tensor, ""]]:
         """
         Computes the Evidence Lower Bound (ELBO).
 

@@ -465,7 +465,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         ig: Float[torch.Tensor, "query_batch dims"],
         angles: Float[torch.Tensor, "query_batch intrinsic_dim"],
         comparisons: Bool[torch.Tensor, "query_batch dims key_batch"],
-    ) -> Tuple[Int[torch.Tensor, "1"], Int[torch.Tensor, "1"], Float[torch.Tensor, "1"]]:
+    ) -> Tuple[Int[torch.Tensor, ""], Int[torch.Tensor, ""], Float[torch.Tensor, ""]]:
         """
         All of the postprocessing for an information gain check
 

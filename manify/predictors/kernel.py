@@ -12,7 +12,7 @@ def compute_kernel_and_norm_manifold(
     manifold: Manifold,
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
-) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, "1"]]:
+) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, ""]]:
     """
     Compute the kernel matrix between two sets of points in a given manifold.
 
@@ -61,7 +61,7 @@ def product_kernel(
     pm: ProductManifold,
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
-) -> Tuple[List[Float[torch.Tensor, "n_points_source n_points_target"]], List[Float[torch.Tensor, "1"]]]:
+) -> Tuple[List[Float[torch.Tensor, "n_points_source n_points_target"]], List[Float[torch.Tensor, ""]]]:
     """
     Compute the kernel matrix between two sets of points in a product manifold.
 

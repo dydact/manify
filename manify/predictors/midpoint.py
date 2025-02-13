@@ -7,7 +7,7 @@ import torch
 from ..manifolds import Manifold
 
 
-def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> Float[torch.Tensor, "1"]:
+def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> Float[torch.Tensor, ""]:
     """
     Compute the hyperbolic midpoint between two angular coordinates u and v.
 
@@ -46,7 +46,7 @@ def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
     return torch.isclose(d(u, m), d(m, v))
 
 
-def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
+def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
     """
     Compute the spherical midpoint between two angular coordinates u and v.
 
@@ -60,7 +60,7 @@ def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
     return (u + v) / 2.0
 
 
-def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
+def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
     """
     Compute the euclidean midpoint between two angular coordinates u and v.
 
@@ -75,8 +75,8 @@ def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
 
 
 def midpoint(
-    u: Float[torch.Tensor, "1"], v: Float[torch.Tensor, "1"], manifold: Manifold, special_first: bool = False
-) -> Float[torch.Tensor, "1"]:
+    u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""], manifold: Manifold, special_first: bool = False
+) -> Float[torch.Tensor, ""]:
     """
     Driver code to compute the midpoint between two angular coordinates give the manifold type.
 

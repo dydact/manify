@@ -28,13 +28,7 @@ class Manifold:
     stereographic: (bool) Whether to use stereographic coordinates for the manifold.
     """
 
-    def __init__(
-        self,
-        curvature: float,
-        dim: int,
-        device: str = "cpu",
-        stereographic: bool = False,
-    ):
+    def __init__(self, curvature: float, dim: int, device: str = "cpu", stereographic: bool = False):
         # Device management
         self.device = device
 
@@ -439,12 +433,7 @@ class ProductManifold(Manifold):
     stereographic: (bool) Whether to use stereographic coordinates for the manifold.
     """
 
-    def __init__(
-        self,
-        signature: List[Tuple[float, int]],
-        device: str = "cpu",
-        stereographic: bool = False,
-    ):
+    def __init__(self, signature: List[Tuple[float, int]], device: str = "cpu", stereographic: bool = False):
         # Device management
         self.device = device
 
