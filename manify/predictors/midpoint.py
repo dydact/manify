@@ -74,7 +74,9 @@ def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, "1"]:
     return torch.arctan2(torch.tensor(2.0), (1.0 / torch.tan(u) + 1.0 / torch.tan(v)))
 
 
-def midpoint(u: float, v: float, manifold: Manifold, special_first: bool = False) -> Float[torch.Tensor, "1"]:
+def midpoint(
+    u: Float[torch.Tensor, "1"], v: Float[torch.Tensor, "1"], manifold: Manifold, special_first: bool = False
+) -> Float[torch.Tensor, "1"]:
     """
     Driver code to compute the midpoint between two angular coordinates give the manifold type.
 

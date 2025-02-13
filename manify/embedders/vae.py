@@ -54,7 +54,7 @@ class ProductSpaceVAE(torch.nn.Module):
     def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_latent"],
-        Float[torch.Tensor, "batch_size n_latent n_latent"],
+        List[Float[torch.Tensor, "n_latent n_latent"]],
     ]:
         """
         Performs the forward pass of the VAE.
@@ -70,15 +70,14 @@ class ProductSpaceVAE(torch.nn.Module):
         z_means, z_logvars = self.encode(x)
         sigma_factorized = self.pm.factorize(z_logvars, intrinsic=True)
         sigmas = [torch.diag_embed(torch.exp(z_logvar) + 1e-8) for z_logvar in sigma_factorized]
-        z = self.pm.sample(z_means, sigmas)
+        z, _ = self.pm.sample(z_means, sigmas)
         x_reconstructed = self.decode(z)
         return x_reconstructed, z_means, sigmas
 
     def kl_divergence(
         self,
         z_mean: Float[torch.Tensor, "batch_size n_latent"],
-        # sigma: TT["n_latent", "n_latent"],
-        sigma_factorized: List[Float[torch.Tensor, "batch_size n_latent n_latent"]],
+        sigma_factorized: List[Float[torch.Tensor, "n_latent n_latent"]],
     ) -> Float[torch.Tensor, "batch_size"]:
         """
         Computes the KL divergence between posterior and prior distributions.
@@ -96,12 +95,14 @@ class ProductSpaceVAE(torch.nn.Module):
         sigmas_factorized_interleaved = [
             torch.repeat_interleave(sigma, self.n_samples, dim=0) for sigma in sigma_factorized
         ]
-        z_samples = self.pm.sample(means, sigmas_factorized_interleaved)
+        z_samples, _ = self.pm.sample(means, sigmas_factorized_interleaved)
         log_qz = self.pm.log_likelihood(z_samples, means, sigmas_factorized_interleaved)
         log_pz = self.pm.log_likelihood(z_samples)
         return (log_qz - log_pz).view(-1, self.n_samples).mean(dim=1)
 
-    def elbo(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Float[torch.Tensor, "batch_size"]:
+    def elbo(
+        self, x: Float[torch.Tensor, "batch_size n_features"]
+    ) -> Tuple[Float[torch.Tensor, "1"], Float[torch.Tensor, "1"], Float[torch.Tensor, "1"]]:
         """
         Computes the Evidence Lower Bound (ELBO).
 

@@ -53,7 +53,7 @@ def train_coords(
         losses: List of loss values at each iteration during training.
     """
     # Move everything to the device
-    X = pm.initialize_embeddings(n_points=len(dists), scales=scale).to(device)
+    X = pm.initialize_embeddings(n_points=len(dists), scales=scale).to(device)  # type: ignore
     dists = dists.to(device)
 
     # Get train and test indices set up

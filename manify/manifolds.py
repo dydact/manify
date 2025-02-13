@@ -195,7 +195,6 @@ class Manifold:
         self,
         z_mean: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
-        return_tangent: bool = False,
     ) -> Union[
         Float[torch.Tensor, "n_points n_ambient_dim"],
         Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]],
@@ -206,7 +205,6 @@ class Manifold:
         Args:
             z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
             sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
-            return_tangent: Bool for whether to return the tangent vectors along with the sampled points.
 
         Returns:
             Tensor or tuple of tensor(n_points, n_ambient_dim) representing the sampled points on the manifold.
@@ -245,11 +243,8 @@ class Manifold:
         # Exp map onto the manifold
         x = self.manifold.expmap(x=z_mean, u=z)
 
-        # Different return types
-        if return_tangent:
-            return x, v
-        else:
-            return x
+        # Different samples and tangent vectors
+        return x, v
 
     def log_likelihood(
         self,
@@ -556,7 +551,6 @@ class ProductManifold(Manifold):
         self,
         z_mean: Optional[Float[torch.Tensor, "n_points n_dim"]] = None,
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
-        return_tangent: bool = False,
     ) -> Union[
         Float[torch.Tensor, "n_points n_ambient_dim"],
         Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]],
@@ -567,7 +561,6 @@ class ProductManifold(Manifold):
         Args:
             z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
             sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
-            return_tangent: Bool for whether to return the tangent vectors along with the sampled points.
 
         Returns:
             Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing sampled points on the manifold.
@@ -590,18 +583,13 @@ class ProductManifold(Manifold):
         assert z_mean.shape[-1] == self.ambient_dim
 
         # Sample initial vector from N(0, sigma)
-        samples = [
-            M.sample(z_M, sigma_M, return_tangent=True)
-            for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)
-        ]
+        samples = [M.sample(z_M, sigma_M) for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)]
 
         x = torch.cat([s[0] for s in samples], dim=1)
         v = torch.cat([s[1] for s in samples], dim=1)
 
-        if return_tangent:
-            return x, v
-        else:
-            return x
+        # Different samples and tangent vectors
+        return x, v
 
     def log_likelihood(
         self,
@@ -694,7 +682,7 @@ class ProductManifold(Manifold):
             assert num_clusters >= num_classes
 
         # Generate cluster means
-        cluster_means = self.sample(
+        cluster_means, _ = self.sample(
             z_mean=torch.stack([self.mu0] * num_clusters),
             sigma_factorized=[torch.stack([torch.eye(M.dim)] * num_clusters) * cov_scale_means for M in self.P],
         )
@@ -720,7 +708,7 @@ class ProductManifold(Manifold):
         sample_means = torch.stack([cluster_means[c] for c in cluster_assignments])
         assert sample_means.shape == (num_points, self.ambient_dim)
         sample_covs = [torch.stack([cov_matrix[c] for c in cluster_assignments]) for cov_matrix in cov_matrices]
-        samples, tangent_vals = self.sample(z_mean=sample_means, sigma_factorized=sample_covs, return_tangent=True)
+        samples, tangent_vals = self.sample(z_mean=sample_means, sigma_factorized=sample_covs)
         assert samples.shape == (num_points, self.ambient_dim)
 
         # Map clusters to classes

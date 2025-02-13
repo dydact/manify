@@ -1,4 +1,10 @@
-from typing import Tuple, Optional, Literal
+"""
+Decision tree and random forest predictors for product space manifolds.
+
+For more information, see Chlenski et al. (2024).: https://arxiv.org/abs/2410.13879
+"""
+
+from typing import Tuple, Optional, Literal, Union, List
 from jaxtyping import Float, Int, Bool
 
 import torch
@@ -92,6 +98,8 @@ def _get_info_gains(
 
         # Just reuse these variable names for now
         gini_pos, gini_neg, gini_total = pos_mse, neg_mse, total_mse
+    else:
+        raise ValueError(f"Invalid criterion: {criterion}")
 
     # Information gain is the total gini impurity minus the weighted average of the new gini impurities
     ig = gini_total - (gini_pos * n_pos + gini_neg * n_neg) / n_total
@@ -158,28 +166,31 @@ def _get_info_gains_nobatch(
 
     # For MSE, use the mean of the regression labels to compute MSE (i.e. look at variance)
     elif criterion == "mse":
-        pos_sums = (comparisons @ labels).float()
-        neg_sums = ((1 - comparisons) @ labels).float()
+        # pos_sums = (comparisons @ labels).float()
+        # neg_sums = ((1 - comparisons) @ labels).float()
 
-        # Total counts are sums of comparisons
-        n_pos = comparisons.sum(dim=-1) + eps
-        n_neg = (1 - comparisons).sum(dim=-1) + eps
-        n_total = n_pos + n_neg
+        # # Total counts are sums of comparisons
+        # n_pos = comparisons.sum(dim=-1) + eps
+        # n_neg = (1 - comparisons).sum(dim=-1) + eps
+        # n_total = n_pos + n_neg
 
-        # Means should be computed in a slightly odd way, since we want to use n_pos and n_neg
-        pos_means = pos_sums / n_pos
-        neg_means = neg_sums / n_neg
-        all_means = labels.mean()  # Should be a scalar
+        # # Means should be computed in a slightly odd way, since we want to use n_pos and n_neg
+        # pos_means = pos_sums / n_pos
+        # neg_means = neg_sums / n_neg
+        # all_means = labels.mean()  # Should be a scalar
 
-        # Compute MSE using the comparisons and the means
-        pos_se = ((labels[:, None, None] - pos_means) ** 2).permute(1, 2, 0)
-        neg_se = ((labels[:, None, None] - neg_means) ** 2).permute(1, 2, 0)
-        pos_mse = (comparisons * pos_se).sum(dim=-1) / n_pos
-        neg_mse = ((1 - comparisons) * neg_se).sum(dim=-1) / n_neg
-        total_mse = ((labels - all_means) ** 2).mean()
+        # # Compute MSE using the comparisons and the means
+        # pos_se = ((labels[:, None, None] - pos_means) ** 2).permute(1, 2, 0)
+        # neg_se = ((labels[:, None, None] - neg_means) ** 2).permute(1, 2, 0)
+        # pos_mse = (comparisons * pos_se).sum(dim=-1) / n_pos
+        # neg_mse = ((1 - comparisons) * neg_se).sum(dim=-1) / n_neg
+        # total_mse = ((labels - all_means) ** 2).mean()
 
-        # Just reuse these variable names for now
-        gini_pos, gini_neg, gini_total = pos_mse, neg_mse, total_mse
+        # # Just reuse these variable names for now
+        # gini_pos, gini_neg, gini_total = pos_mse, neg_mse, total_mse
+        raise NotImplementedError("MSE not implemented for no-batch case")
+    else:
+        raise ValueError(f"Invalid criterion: {criterion}")
 
     # Information gain is the total gini impurity minus the weighted average of the new gini impurities
     ig = gini_total - (gini_pos * n_pos + gini_neg * n_neg) / n_total
@@ -250,23 +261,27 @@ def _get_split(
     labels_neg = labels[neg_indices]
     labels_pos = labels[pos_indices]
 
-    return (angles_neg, comparisons_neg, labels_neg), (
-        angles_pos,
-        comparisons_pos,
-        labels_pos,
-    )
+    return (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos)
 
 
 class DecisionNode:
     """Class for nodes in a decision tree."""
 
-    def __init__(self, value=None, probs=None, feature=None, theta=None):
+    def __init__(
+        self,
+        value: Union[float, int] = 0.0,
+        probs: Float[torch.Tensor, "batch n_classes"] = torch.tensor([]),
+        feature: int = 0,
+        theta: float = 0.0,
+        left: Optional["DecisionNode"] = None,
+        right: Optional["DecisionNode"] = None,
+    ):
         self.value = value
         self.probs = probs  # predicted class probabilities of all samples in the leaf
         self.feature = feature  # feature index
         self.theta = theta  # threshold
-        self.left = None
-        self.right = None
+        self.left = left
+        self.right = right
 
 
 class ProductSpaceDT(BaseEstimator, ClassifierMixin):
@@ -313,9 +328,16 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.task = task
         self.criterion = "gini" if task == "classification" else "mse"
 
-        # These will become important later
-        self.nodes = []  # For fitted nodes
-        self.permutations = None  # If used as part of a random forest
+        # These will become important later, when fit is called
+        self.nodes: List[DecisionNode] = []  # For fitted nodes
+        self.permutations: Optional[Int[torch.Tensor, "n_classes"]] = None  # If used as part of a random forest
+        self.angle2man: List[int] = []  # Maps preprocessed angles to manifold indices
+        self.special_first: List[bool] = []  # Whether the first dimension is special in a projection
+        self.angle_dims: List[Tuple[int, int]] = []  # Maps preprocessed angles to dimension indices
+        self.tree: DecisionNode = DecisionNode()  # The root of the tree
+        self.classes_: Float[torch.Tensor, "n_classes"] = torch.tensor([])  # sklearn-style classes
+        self.labels_: Int[torch.Tensor, "batch n_classes"] = torch.tensor([])  # sklearn-style labels
+        self.signature: List[Tuple[float, int]] = pm.signature  # The signature of the manifold
 
     def _preprocess(
         self,
@@ -426,7 +448,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         if y is not None and self.task == "classification":
             classes, y_relabeled = y.unique(return_inverse=True)
             n_classes = len(classes)
-            labels = torch.nn.functional.one_hot(y_relabeled, num_classes=n_classes)
+            labels = torch.nn.functional.one_hot(y_relabeled, num_classes=n_classes)  # type: ignore
         elif y is not None and self.task == "regression":
             classes = torch.tensor([])
             labels = y
@@ -443,7 +465,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         ig: Float[torch.Tensor, "query_batch dims"],
         angles: Float[torch.Tensor, "query_batch intrinsic_dim"],
         comparisons: Bool[torch.Tensor, "query_batch dims key_batch"],
-    ) -> Tuple[int, int, float]:
+    ) -> Tuple[Int[torch.Tensor, "1"], Int[torch.Tensor, "1"], Float[torch.Tensor, "1"]]:
         """
         All of the postprocessing for an information gain check
 
@@ -482,8 +504,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             active_dim = self.permutations[d].item()
         else:
             active_dim = d.item()
-        manifold = self.pm.P[self.angle2man[active_dim]]
-        special_first_bool = self.special_first[active_dim]
+        manifold = self.pm.P[self.angle2man[active_dim]]  # type: ignore
+        special_first_bool = self.special_first[active_dim]  # type: ignore
 
         # Get midpoint
         m = midpoint(theta_pos, theta_neg, manifold, special_first=special_first_bool)
@@ -532,8 +554,6 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         if len(special_dims) > 0:
             X = torch.cat([X] + special_dims, dim=1)
             self.signature = self.pm.signature + [(0, len(special_dims))]
-        else:
-            self.signature = self.pm.signature
         return X, ProductManifold(self.signature)
 
     def _fit_node(
@@ -562,9 +582,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
         # The main loop is just the functions we've already defined
         if self.batched:
-            ig = _get_info_gains(comparisons=comparisons, labels=labels, criterion=self.criterion)
+            ig = _get_info_gains(comparisons=comparisons, labels=labels, criterion=self.criterion)  # type: ignore
         else:
-            ig = _get_info_gains_nobatch(angles=angles, labels=labels, criterion=self.criterion)
+            ig = _get_info_gains_nobatch(angles=angles, labels=labels, criterion=self.criterion)  # type: ignore
 
         # Check if we have a valid split
         if ig.max() <= self.min_impurity_decrease:
@@ -577,9 +597,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         else:
             mask = _angular_greater(angles[:, d], theta).flatten()
         (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos) = _get_split(
-            mask=mask, angles=angles, comparisons=comparisons, labels=labels, n=n, d=d
+            mask=mask, angles=angles, comparisons=comparisons, labels=labels
         )
-        node = DecisionNode(feature=d.item(), theta=theta.item())
+        node = DecisionNode(feature=int(d.item()), theta=float(theta.item()))
         self.nodes.append(node)
 
         # Do left and right recursion after appending node to self.nodes (ensures order of self.nodes is correct)
@@ -602,7 +622,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         return _angular_greater(
             torch.tensor(node.theta, device=angles_row.device).flatten(),
             angles_row[node.feature].flatten(),
-        ).item()
+        ).item()  # type: ignore
 
     def _traverse(self, x: Float[torch.Tensor, "intrinsic_dim"], node: DecisionNode) -> DecisionNode:
         """Traverse a decision tree for a single point"""
@@ -610,7 +630,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         if node.value is not None:
             return node
 
-        return self._traverse(x, node.left) if self._left(x, node) else self._traverse(x, node.right)
+        return self._traverse(x, node.left) if self._left(x, node) else self._traverse(x, node.right)  # type: ignore
 
     @torch.no_grad()
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:
@@ -630,13 +650,16 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             return self.predict_proba(X).flatten()  # Simplified version
 
     def score(
-        self, X: Float[torch.Tensor, "batch intrinsic_dim"], y: Float[torch.Tensor, "batch"]
+        self,
+        X: Float[torch.Tensor, "batch intrinsic_dim"],
+        y: Float[torch.Tensor, "batch"],
+        sample_weight: Union[Float[torch.Tensor, "batch"], float] = 1.0,
     ) -> Float[torch.Tensor, "batch"]:
         """Return the mean accuracy on the given test data and labels"""
         if self.task == "classification":
-            return self.predict(X) == y
+            return ((self.predict(X) == y) * sample_weight).mean()
         else:
-            return ((self.predict(X) - y) ** 2).float().mean()
+            return ((self.predict(X) - y) ** 2 * sample_weight).mean()
 
 
 class ProductSpaceRF(BaseEstimator, ClassifierMixin):
@@ -690,6 +713,11 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.trees = [ProductSpaceDT(**tree_kwargs) for _ in range(n_estimators)]
+
+        # These will become important later - just the sklearn-style stuff
+        # For other special attributes, we just use ProductSpaceDT's attributes
+        self.classes_: Optional[Float[torch.Tensor, "n_classes"]] = None
+        self.labels_: Optional[Int[torch.Tensor, "batch n_classes"]] = None
 
     def _generate_subsample(
         self, n_rows: int, n_cols: int, n_trees: int
@@ -752,7 +780,6 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
                 comparisons=comparisons_subsample,
                 depth=self.max_depth,
             )
-        return self
 
     @torch.no_grad()
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:
@@ -767,10 +794,20 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
             return self.predict_proba(X).flatten()  # Simplified version
 
     def score(
-        self, X: Float[torch.Tensor, "batch intrinsic_dim"], y: Float[torch.Tensor, "batch"]
+        self,
+        X: Float[torch.Tensor, "batch intrinsic_dim"],
+        y: Float[torch.Tensor, "batch"],
+        sample_weight: Union[Float[torch.Tensor, "batch"], float] = 1.0,
     ) -> Float[torch.Tensor, "batch"]:
-        """Return the mean accuracy on the given test data and labels"""
+        """
+        Return the mean accuracy on the given test data and labels
+
+        Args:
+            X: (batch, intrinsic_dim) tensor of test data
+            y: (batch,) tensor of labels
+            sample_weight: (batch,) tensor of sample weights
+        """
         if self.task == "classification":
-            return self.predict(X) == y
+            return ((self.predict(X) == y) * sample_weight).mean()
         else:
-            return ((self.predict(X) == y) ** 2).float().mean()
+            return ((self.predict(X) - y) ** 2 * sample_weight).mean()
