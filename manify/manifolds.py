@@ -8,7 +8,7 @@ combining their geometric properties to create mixed-curvature. Both classes
 includes functions for different key geometric operations.
 """
 
-from typing import List, Optional, Tuple, Callable, Literal
+from typing import List, Optional, Tuple, Callable, Literal, Union
 from jaxtyping import Float
 
 import torch
@@ -196,10 +196,10 @@ class Manifold:
         z_mean: Optional[Float[torch.Tensor, "n_points, n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points, n_dim, n_dim"]] = None,
         return_tangent: bool = False,
-    ) -> (
-        Float[torch.Tensor, "n_points, n_ambient_dim"]
-        | Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]]
-    ):
+    ) -> Union[
+        Float[torch.Tensor, "n_points, n_ambient_dim"],
+        Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]],
+    ]:
         """
         Sample from the variational distribution.
 
@@ -558,10 +558,10 @@ class ProductManifold(Manifold):
         # sigma: Optional[TT["n_points", "n_dim", "n_dim"]] = None
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points, n_dim_manifold, n_dim_manifold"]]] = None,
         return_tangent: bool = False,
-    ) -> (
-        Float[torch.Tensor, "n_points, n_ambient_dim"]
-        | Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]]
-    ):
+    ) -> Union[
+        Float[torch.Tensor, "n_points, n_ambient_dim"],
+        Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]],
+    ]:
         """
         Sample from the variational distribution.
 

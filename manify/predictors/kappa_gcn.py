@@ -19,9 +19,7 @@ else:
 
 
 def get_A_hat(
-    A: Float[torch.Tensor, "n_nodes n_nodes"],
-    make_symmetric: bool = True,
-    add_self_loops: bool = True,
+    A: Float[torch.Tensor, "n_nodes n_nodes"], make_symmetric: bool = True, add_self_loops: bool = True
 ) -> Float[torch.Tensor, "n_nodes n_nodes"]:
     """
     Normalize adjacency matrix.
@@ -69,13 +67,7 @@ class KappaGCNLayer(torch.nn.Module):
     nonlinearity: Function for nonlinear activation.
     """
 
-    def __init__(
-        self,
-        in_features: int,
-        out_features: int,
-        manifold: Manifold,
-        nonlinearity: Callable = torch.relu,
-    ):
+    def __init__(self, in_features: int, out_features: int, manifold: Manifold, nonlinearity: Callable = torch.relu):
         super().__init__()
 
         # Parameters are Euclidean, straightforardly
@@ -185,9 +177,9 @@ class KappaGCN(torch.nn.Module):
         if task == "link_prediction":
             self.fermi_dirac_temperature = torch.nn.Parameter(torch.tensor(1.0))
             self.fermi_dirac_bias = torch.nn.Parameter(torch.tensor(0.0))
-        elif task == "classification" or task == "regression":
+        else:
             self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
-            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
+            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)  # type: ignore
 
     def forward(
         self,
@@ -398,6 +390,8 @@ class KappaGCN(torch.nn.Module):
         elif self.task == "link_prediction":
             loss_fn = torch.nn.BCEWithLogitsLoss()
             y = y.flatten().float()
+        else:
+            raise ValueError("Invalid task!")
 
         self.train()
         if use_tqdm:

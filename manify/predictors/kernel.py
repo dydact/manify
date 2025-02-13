@@ -1,7 +1,7 @@
 """Implementation for kernel matrix calculation"""
 
-from typing import Optional, Tuple
-from jaxtyping import Float, Int
+from typing import Optional, Tuple, List
+from jaxtyping import Float
 
 import torch
 
@@ -51,6 +51,8 @@ def compute_kernel_and_norm_manifold(
         # norm = torch.tensor(C_H)
         # norm is sqrt(-C_H)
         norm = torch.asinh(-(R**2) * C_H)
+    else:
+        raise ValueError("Invalid manifold type!")
 
     return K, norm
 
@@ -59,7 +61,7 @@ def product_kernel(
     pm: ProductManifold,
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
-) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, "1"]]:
+) -> Tuple[List[Float[torch.Tensor, "n_points_source n_points_target"]], List[Float[torch.Tensor, "1"]]]:
     """
     Compute the kernel matrix between two sets of points in a product manifold.
 
@@ -76,14 +78,6 @@ def product_kernel(
     # If X_target is None, set it to X_source
     if X_target is None:
         X_target = X_source
-
-    # Initialize the kernel matrix and norm
-    K = torch.ones(
-        X_source.shape[0],
-        X_target.shape[0],
-        dtype=X_source.dtype,
-        device=X_source.device,
-    )
 
     # Compute the kernel matrix and norm for each manifold
     Ks = []
