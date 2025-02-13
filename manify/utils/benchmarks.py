@@ -2,7 +2,7 @@
 
 from typing import List, Literal, Dict, Optional
 import time
-from jaxtyping import Float, Num
+from jaxtyping import Float, Real
 
 import torch
 import numpy as np
@@ -30,9 +30,9 @@ from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 
 def _score(
     _X: Float[torch.Tensor, "n_samples n_dims"],
-    _y: Num[torch.Tensor, "n_samples"],
+    _y: Real[torch.Tensor, "n_samples"],
     model: BaseEstimator,
-    y_pred_override: Optional[Num[torch.Tensor, "n_samples"]] = None,
+    y_pred_override: Optional[Real[torch.Tensor, "n_samples"]] = None,
     torch: bool = False,
     score: List[Literal["accuracy", "f1-micro", "mse", "percent_rmse"]] = ["accuracy", "f1-micro"],
 ):
@@ -70,7 +70,7 @@ def _score(
 
 def benchmark(
     X: Float[torch.Tensor, "batch dim"],
-    y: Num[torch.Tensor, "batch"],
+    y: Real[torch.Tensor, "batch"],
     pm: ProductManifold,
     device: Literal["cpu", "cuda", "mps"] = "cpu",
     score: List[Literal["accuracy", "f1-micro", "mse", "percent_rmse"]] = ["accuracy", "f1-micro"],
@@ -102,8 +102,8 @@ def benchmark(
     n_features: Literal["d", "d_choose_2"] = "d_choose_2",
     X_train: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
     X_test: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
-    y_train: Optional[Num[torch.Tensor, "n_samples"]] = None,
-    y_test: Optional[Num[torch.Tensor, "n_samples"]] = None,
+    y_train: Optional[Real[torch.Tensor, "n_samples"]] = None,
+    y_test: Optional[Real[torch.Tensor, "n_samples"]] = None,
     batch_size: Optional[int] = None,
     adj: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
     A_train: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,

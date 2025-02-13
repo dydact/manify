@@ -11,7 +11,7 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[Float[torch.Tensor, "batch_sq 2 * n_dim"], Float[torch.Tensor, "batch_sq"], ProductManifold]:
+) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
     """
     Generate a dataset for link prediction tasks with product manifold
 

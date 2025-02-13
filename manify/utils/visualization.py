@@ -4,7 +4,7 @@ from jaxtyping import Float
 import torch
 
 
-def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim_minus_1"]:
+def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim-1"]:
     """
     Convert hyperboloid coordinates to Poincaré ball coordinates.
 
@@ -26,7 +26,7 @@ def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[t
     return poincare_coords
 
 
-def spherical_to_polar(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim_minus_1"]:
+def spherical_to_polar(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim-1"]:
     """
     Convert spherical coordinates to polar coordinates.
 

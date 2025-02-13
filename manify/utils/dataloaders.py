@@ -1,7 +1,7 @@
 """Dataloaders for different datasets"""
 
-from typing import List, Optional, Tuple
-from jaxtyping import Float, Int, Num
+from typing import Tuple
+from jaxtyping import Float, Real
 
 import gzip
 from pathlib import Path
@@ -20,7 +20,7 @@ from scipy.io import mmread
 import torch
 
 
-def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[Num[np.ndarray, "nodes nodes"], list]:
+def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[Real[np.ndarray, "nodes nodes"], list]:
     """Returns the distances between the top connected component of a graph"""
     if to_undirected:
         G = G.to_undirected()
