@@ -7,12 +7,7 @@ from jaxtyping import Float, Real
 import torch
 import numpy as np
 
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    mean_squared_error,
-    root_mean_squared_error,
-)
+from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor

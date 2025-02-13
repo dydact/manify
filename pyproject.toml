@@ -19,7 +19,6 @@ dependencies = [
     "matplotlib",
     "scipy==1.11",
     "jaxtyping",
-    "geomstats",
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
