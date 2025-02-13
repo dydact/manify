@@ -373,15 +373,40 @@ class Manifold:
 
         return stereo_manifold, *stereo_points  # type: ignore
 
-    def inverse_stereographic(
-        self, X: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
-    ) -> Float[torch.Tensor, "n_points n_dim"]:
+    def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple["Manifold", ...]:
         """
-        TODO
+        Convert the manifold from its stereographic coordinates back to the original coordinates.
+        If points are given, convert them as well.
 
-        Reference: https://arxiv.org/pdf/1911.08411
+        Formula for inverse stereographic projection:
+        X0 = (1 + sign(K) * ||y||**2) / (1 - sign(K) * ||y||**2)
+        Xi = 2 * yi / (1 - sign(K) * ||y||**2)
+
+        Source:
+        https://arxiv.org/pdf/1911.08411
         """
-        raise NotImplementedError
+        if not self.is_stereographic:
+            print("Manifold is already in original coordinates.")
+            return self, *points  # type: ignore
+
+        # Convert manifold
+        orig_manifold = Manifold(self.curvature, self.dim, device=self.device, stereographic=False)
+
+        # Euclidean edge case
+        if self.type == "E":
+            return orig_manifold, *points  # type: ignore
+
+        # Inverse projection for points
+        norm_squared = [(Y**2).sum(dim=1, keepdim=True) for Y in points]
+        sign = torch.sign(self.curvature)  # type: ignore
+
+        X0 = (1 + sign * norm_squared) / (1 - sign * norm_squared)
+        Xi = 2 * points / (1 - sign * norm_squared)
+
+        inv_points = [torch.cat([x0, xi], dim=1) for x0, xi in zip(X0, Xi)]
+        assert all([orig_manifold.manifold.check_point(X) for X in inv_points])
+
+        return orig_manifold, *inv_points  # type: ignore
 
     def apply(self, f: Callable) -> Callable:
         """
@@ -701,6 +726,7 @@ class ProductManifold(Manifold):
             ).sample(
                 sample_shape=(num_clusters,)  # type: ignore
             )
+            + torch.eye(M.dim) * 1e-5  # jitter to avoid singularity
             for M in self.P
         ]
 
