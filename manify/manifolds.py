@@ -226,9 +226,9 @@ class Manifold:
 
         # Sample initial vector from N(0, sigma)
         N = torch.distributions.MultivariateNormal(
-            loc=torch.zeros((self.dim), device=self.device), covariance_matrix=sigma
+            loc=torch.zeros((n, self.dim), device=self.device), covariance_matrix=sigma
         )
-        v = N.sample(sample_shape=(n,))  # type: ignore
+        v = N.sample(sample_shape=(1,))  # type: ignore
 
         # Don't need to adjust normal vectors for the Scaled manifold class in geoopt - very cool!
 
@@ -555,7 +555,6 @@ class ProductManifold(Manifold):
     def sample(
         self,
         z_mean: Optional[Float[torch.Tensor, "n_points n_dim"]] = None,
-        # sigma: Optional[TT["n_points", "n_dim", "n_dim"]] = None
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
         return_tangent: bool = False,
     ) -> Union[
@@ -725,7 +724,12 @@ class ProductManifold(Manifold):
         assert samples.shape == (num_points, self.ambient_dim)
 
         # Map clusters to classes
-        cluster_to_class = torch.randint(0, num_classes, (num_clusters,))
+        cluster_to_class = torch.cat(
+            [
+                torch.arange(num_classes, device=self.device),
+                torch.randint(0, num_classes, (num_clusters - num_classes,), device=self.device),
+            ]
+        )
         assert cluster_to_class.shape == (num_clusters,)
         assert torch.unique(cluster_to_class).shape == (num_classes,)
 
