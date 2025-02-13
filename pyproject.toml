@@ -1,6 +1,40 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manify"
+version = "0.0.1"
+description = "Manifold-based machine learning"
+authors = [
+    { name = "Philippe Chlenski", email = "pac@cs.columbia.edu"},
+    { name = "Kaizhu Du", email = "kd2814@columbia.edu"}
+]
+dependencies = [
+    "torch",
+    "geoopt",
+    "networkx",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy==1.11",
+    "jaxtyping",
+    "geomstats",
+    "tqdm",
+    "cvxpy",
+    "scikit-learn==1.5.1",
+    "anndata",
+    "basemap"
+]
+
+[tool.setuptools]
+packages = ["manify"]
+
 [tool.pylint.format]
 max-line-length = 120
 
-# Ignore invalid-name warnings to enable more mathematical variable names
 [tool.pylint."MESSAGES CONTROL"]
 disable = ["invalid-name"]
+
+[tool.pytest.ini_options]
+adopts = "--jaxtyping-packages=beartype.beartype"
