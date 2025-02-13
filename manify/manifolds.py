@@ -8,8 +8,8 @@ combining their geometric properties to create mixed-curvature. Both classes
 includes functions for different key geometric operations.
 """
 
-from typing import List, Optional, Tuple, Union, Callable, Literal
-from jaxtyping import Float, Int
+from typing import List, Optional, Tuple, Callable, Literal
+from jaxtyping import Float
 
 import torch
 import geoopt
@@ -196,10 +196,10 @@ class Manifold:
         z_mean: Optional[Float[torch.Tensor, "n_points, n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points, n_dim, n_dim"]] = None,
         return_tangent: bool = False,
-    ) -> Union[
-        Float[torch.Tensor, "n_points, n_ambient_dim"],
-        Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]],
-    ]:
+    ) -> (
+        Float[torch.Tensor, "n_points, n_ambient_dim"]
+        | Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]]
+    ):
         """
         Sample from the variational distribution.
 
@@ -225,8 +225,10 @@ class Manifold:
         assert z_mean.shape[-1] == self.ambient_dim
 
         # Sample initial vector from N(0, sigma)
-        N = torch.distributions.MultivariateNormal(torch.zeros((n, self.dim), device=self.device), sigma)
-        v = N.sample(sample_shape=(1,)).reshape(n, self.dim)  # TODO: allow for other numbers of samples
+        N = torch.distributions.MultivariateNormal(
+            loc=torch.zeros((self.dim), device=self.device), covariance_matrix=sigma
+        )
+        v = N.sample(sample_shape=(n,))  # type: ignore
 
         # Don't need to adjust normal vectors for the Scaled manifold class in geoopt - very cool!
 
@@ -261,7 +263,7 @@ class Manifold:
         Args:
             z: (n_points", "n_ambient_dim) Tensor of points on the manifold for which the likelihood is computed.
             mu: (n_points", "n_ambient_dim) Tensor representing the mean of the distribution. Defaults to `self.mu0`.
-            sigma: (n_points", "n_dim", "n_dim) Tensor representing the covariance matrix. Defaults to the identity matrix.
+            sigma: (n_points", "n_dim", "n_dim) Tensor representing the covariance matrix. Defaults to identity matrix.
 
         Returns:
             (n_points) Tensor containing the log-likelihood of the points `z` under the distribution
@@ -273,6 +275,7 @@ class Manifold:
         if mu is None:
             mu = self.mu0
         mu = torch.Tensor(mu).reshape(-1, self.ambient_dim).to(self.device)
+        n = mu.shape[0]
         if sigma is None:
             sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device)
         else:
@@ -282,7 +285,7 @@ class Manifold:
         if self.type == "E":
             return torch.distributions.MultivariateNormal(mu, sigma).log_prob(z)
 
-        elif self.type in ["S", "H"]:
+        else:
             u = self.manifold.logmap(x=mu, y=z)  # Map z to tangent space at mu
             v = self.manifold.transp(x=mu, y=self.mu0, v=u)  # Parallel transport to origin
             # assert torch.allclose(v[:, 0], torch.Tensor([0.])) # For tangent vectors at origin this should be true
@@ -302,9 +305,9 @@ class Manifold:
                 sin_M = torch.sin
                 u_norm = self.manifold.norm(x=mu, u=u)
 
-            elif self.type == "H":
+            else:
                 sin_M = torch.sinh
-                u_norm = self.manifold.base.norm(u=u)  # Horrible workaround needed for geoopt bug
+                u_norm = self.manifold.base.norm(u=u)  # Horrible workaround needed for geoopt bug # type: ignore
 
             return ll - (n - 1) * torch.log(R * torch.abs(sin_M(u_norm / R) / u_norm) + 1e-8)
 
@@ -343,7 +346,7 @@ class Manifold:
             base = self.mu0
         return self.manifold.expmap(x=base, u=u)
 
-    def stereographic(self, *points) -> Tuple["Manifold", List[Float[torch.Tensor, "n_points, n_dim"]]]:
+    def stereographic(self, *points: Float[torch.Tensor, "n_points", "n_dim"]) -> Tuple["Manifold", ...]:
         """
         Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
 
@@ -356,14 +359,14 @@ class Manifold:
 
         if self.is_stereographic:
             print("Manifold is already in stereographic coordinates.")
-            return self, *points
+            return self, *points  # type: ignore
 
         # Convert manifold
         stereo_manifold = Manifold(self.curvature, self.dim, device=self.device, stereographic=True)
 
         # Euclidean edge case
         if self.type == "E":
-            return stereo_manifold, *points
+            return stereo_manifold, *points  # type: ignore
 
         # Convert points
         num = [X[:, 1:] for X in points]
@@ -373,7 +376,7 @@ class Manifold:
         stereo_points = [n / d for n, d in zip(num, denom)]
         assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
 
-        return stereo_manifold, *stereo_points
+        return stereo_manifold, *stereo_points  # type: ignore
 
     def inverse_stereographic(
         self, X: Optional[Float[torch.Tensor, "n_points, n_dim"]] = None
@@ -436,20 +439,15 @@ class ProductManifold(Manifold):
         # Actually initialize the geoopt manifolds; other derived properties
         self.P = [Manifold(curvature, dim, device=device, stereographic=stereographic) for curvature, dim in signature]
         manifold_class = geoopt.StereographicProductManifold if stereographic else geoopt.ProductManifold
-        self.manifold = manifold_class(*[(M.manifold, M.ambient_dim) for M in self.P]).to(device)
+        self.manifold = manifold_class(*[(M.manifold, M.ambient_dim) for M in self.P]).to(device)  # type: ignore
         self.name = " x ".join([M.name for M in self.P])
 
         # Origin
-        self.mu0 = torch.cat([M.mu0 for M in self.P], axis=1).to(self.device)
+        self.mu0 = torch.cat([M.mu0 for M in self.P], axis=1).to(self.device)  # type: ignore
 
         # Manifold <-> Dimension mapping
         self.ambient_dim, self.n_manifolds, self.dim = 0, 0, 0
-        self.dim2man, self.man2dim, self.man2intrinsic, self.intrinsic2man = (
-            {},
-            {},
-            {},
-            {},
-        )
+        self.dim2man, self.man2dim, self.man2intrinsic, self.intrinsic2man = {}, {}, {}, {}
 
         for M in self.P:
             for d in range(self.ambient_dim, self.ambient_dim + M.ambient_dim):
@@ -474,9 +472,11 @@ class ProductManifold(Manifold):
                 self.projection_matrix[j, k] = 1.0
 
     def params(self):
-        return [x._log_scale for x in self.manifold.manifolds]
+        """Returns scales for all component manifolds"""
+        return [x.scale() for x in self.manifold.manifolds]
 
     def to(self, device: str):
+        """Move all components to a new device"""
         self.device = device
         self.P = [M.to(device) for M in self.P]
         self.manifold = self.manifold.to(device)
@@ -485,7 +485,7 @@ class ProductManifold(Manifold):
         return self
 
     def initialize_embeddings(
-        self, n_points: int, scales: Union[List[float], float] = 1.0
+        self, n_points: int, scales: Optional[List[float]] = None
     ) -> Float[torch.Tensor, "n_points, n_ambient_dim"]:
         """
         Randomly initialize n_points embeddings on the product manifold.
@@ -506,8 +506,8 @@ class ProductManifold(Manifold):
 
         """
         # Scales management
-        if not isinstance(scales, list):
-            scales = [scales] * len(self.P)
+        if scales is None:
+            scales = [1.0] * len(self.P)
         elif len(scales) != len(self.P):
             raise ValueError("The number of scales must match the number of manifolds.")
 
@@ -532,7 +532,7 @@ class ProductManifold(Manifold):
             else:
                 raise ValueError(f"Unknown manifold type: {M.type}")
 
-        x_embed = torch.cat(x_embed, axis=1).to(self.device)
+        x_embed = torch.cat(x_embed, axis=1).to(self.device)  # type: ignore
         # x_embed = geoopt.ManifoldParameter(x_embed, manifold=self.manifold)
         return x_embed
 
@@ -558,10 +558,10 @@ class ProductManifold(Manifold):
         # sigma: Optional[TT["n_points", "n_dim", "n_dim"]] = None
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points, n_dim_manifold, n_dim_manifold"]]] = None,
         return_tangent: bool = False,
-    ) -> Union[
-        Float[torch.Tensor, "n_points, n_ambient_dim"],
-        Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]],
-    ]:
+    ) -> (
+        Float[torch.Tensor, "n_points, n_ambient_dim"]
+        | Tuple[Float[torch.Tensor, "n_points, n_ambient_dim"], Float[torch.Tensor, "n_points, n_dim"]]
+    ):
         """
         Sample from the variational distribution.
 
@@ -571,7 +571,7 @@ class ProductManifold(Manifold):
             return_tangent: Bool for whether to return the tangent vectors along with the sampled points.
 
         Returns:
-            Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing the sampled points on the manifold.
+            Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing sampled points on the manifold.
             If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
         """
         if z_mean is None:
@@ -637,23 +637,24 @@ class ProductManifold(Manifold):
             M.log_likelihood(z_M, mu_M, sigma_M).unsqueeze(dim=1)
             for M, z_M, mu_M, sigma_M in zip(self.P, z_factorized, mu_factorized, sigma_factorized)
         ]
-        return torch.cat(component_lls, axis=1).sum(axis=1)
+        return torch.cat(component_lls, axis=1).sum(axis=1)  # type: ignore
 
-    def stereographic(self, *points) -> Tuple[Manifold, List[Float[torch.Tensor, "n_points, n_dim"]]]:
+    def stereographic(self, *points: Float[torch.Tensor, "n_points, n_dim"]) -> Tuple[Manifold, ...]:
         if self.is_stereographic:
             print("Manifold is already in stereographic coordinates.")
-            return self, *points
+            return self, *points  # type: ignore
 
         # Convert manifold
         stereo_manifold = ProductManifold(self.signature, device=self.device, stereographic=True)
 
         # Convert points
         stereo_points = [
-            torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
+            torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)])  # type: ignore
+            for X in points
         ]
         assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
 
-        return stereo_manifold, *stereo_points
+        return stereo_manifold, *stereo_points  # type: ignore
 
     @torch.no_grad()
     def gaussian_mixture(
@@ -699,7 +700,7 @@ class ProductManifold(Manifold):
             z_mean=torch.stack([self.mu0] * num_clusters),
             sigma_factorized=[torch.stack([torch.eye(M.dim)] * num_clusters) * cov_scale_means for M in self.P],
         )
-        assert cluster_means.shape == (num_clusters, self.ambient_dim)
+        assert cluster_means.shape == (num_clusters, self.ambient_dim)  # type: ignore
 
         # Generate class assignments
         cluster_probs = torch.rand(num_clusters)
@@ -709,8 +710,10 @@ class ProductManifold(Manifold):
 
         # Generate covariance matrices for each class - Wishart distribution
         cov_matrices = [
-            torch.distributions.Wishart(df=M.dim + 1, covariance_matrix=torch.eye(M.dim) * cov_scale_points).sample(
-                sample_shape=(num_clusters,)
+            torch.distributions.Wishart(
+                df=M.dim + 1, covariance_matrix=torch.eye(M.dim) * cov_scale_points  # type: ignore
+            ).sample(
+                sample_shape=(num_clusters,)  # type: ignore
             )
             for M in self.P
         ]
@@ -723,10 +726,7 @@ class ProductManifold(Manifold):
         assert samples.shape == (num_points, self.ambient_dim)
 
         # Map clusters to classes
-        cluster_to_class = list(range(num_classes))
-        for i in range(num_clusters - num_classes):
-            cluster_to_class.append(torch.randint(0, num_classes, (1,)).item())
-        cluster_to_class = torch.tensor(cluster_to_class)
+        cluster_to_class = torch.randint(0, num_classes, (num_clusters,))
         assert cluster_to_class.shape == (num_clusters,)
         assert torch.unique(cluster_to_class).shape == (num_classes,)
 
@@ -742,7 +742,7 @@ class ProductManifold(Manifold):
 
             # Noise component
             N = torch.distributions.Normal(0, regression_noise_std)
-            v = N.sample((num_points,)).to(self.device)
+            v = N.sample((num_points,)).to(self.device)  # type: ignore
             labels += v
 
             # Normalize regression labels to range [0, 1] so that RMSE can be more easily interpreted
