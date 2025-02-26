@@ -53,7 +53,14 @@ def train_coords(
         losses: List of loss values at each iteration during training.
     """
     # Move everything to the device
-    X = pm.initialize_embeddings(n_points=len(dists), scales=scale).to(device)  # type: ignore
+    all=[]
+    cov = torch.eye(sum(pm.dims)) / torch.tensor(sum(pm.dims))
+    for i in range(dists.shape[0]):
+        z = pm.sample(sigma_factorized=[cov])
+        z = z[0]
+        all.append(z[0])
+    X = torch.stack(all, dim=0)
+    print("X shape", X.shape)
     dists = dists.to(device)
 
     # Get train and test indices set up
@@ -62,11 +69,11 @@ def train_coords(
     train = ~test
 
     # Initialize optimizer
-    X = geoopt.ManifoldParameter(X, manifold=pm.manifold)  # type: ignore
+    X = geoopt.ManifoldParameter(X, manifold=pm.manifold)
     ropt = geoopt.optim.RiemannianAdam(
         [
             {"params": [X], "lr": burn_in_learning_rate},
-            {"params": [x.scale for x in pm.manifold.manifolds], "lr": 0},
+            {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
         ]
     )
 
