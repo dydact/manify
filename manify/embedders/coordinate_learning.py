@@ -53,14 +53,10 @@ def train_coords(
         losses: List of loss values at each iteration during training.
     """
     # Move everything to the device
-    all=[]
-    # cov = [torch.eye(sum(pm.dims)) / torch.tensor(sum(pm.dims))
-    covs = [torch.eye(M.dim) / pm.dim for M in pm.P]
-    for i in range(dists.shape[0]):
-        z = pm.sample(sigma_factorized=covs)
-        z = z[0]
-        all.append(z[0])
-    X = torch.stack(all, dim=0)
+    n = dists.shape[0]
+    covs = [torch.stack([torch.eye(M.dim) / pm.dim] * n).to(device) for M in pm.P]
+    means = torch.stack([pm.mu0] * n).to(device)
+    X, _ = pm.sample(z_mean=means, sigma_factorized=covs)
     dists = dists.to(device)
 
     # Get train and test indices set up

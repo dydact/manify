@@ -213,7 +213,7 @@ class Manifold:
         else:
             sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
         assert sigma.shape == (n, self.dim, self.dim)
-        # assert torch.all(sigma == sigma.transpose(-1, -2))
+        assert torch.all(sigma == sigma.transpose(-1, -2))
         assert z_mean.shape[-1] == self.ambient_dim
 
         # Sample initial vector from N(0, sigma)
@@ -492,7 +492,6 @@ class ProductManifold(Manifold):
         self.mu0 = self.mu0.to(device)
         self.projection_matrix = self.projection_matrix.to(device)
         return self
-
 
     def factorize(
         self, X: Float[torch.Tensor, "n_points n_dim"], intrinsic: bool = False
