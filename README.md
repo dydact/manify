@@ -1,9 +1,10 @@
-# `manify`
+# Manify: A Python Library for Learning Non-Euclidean Representations
 
 Manify is a Python library for generating graph/data embeddings and performing machine learning in product spaces with mixed curvature (hyperbolic, Euclidean, and spherical spaces). It provides tools for manifold creation, curvature estimation, embedding generation, and predictive modeling that respects the underlying geometry of complex data.
 
-## Key Features
+You can read our manuscript here: [Manify: A Python Library for Learning Non-Euclidean Representations](https://arxiv.org/abs/2503.09576)
 
+## Key Features
 - Create and manipulate manifolds with different curvatures (hyperbolic, Euclidean, spherical)
 - Build product manifolds by combining multiple spaces with different geometric properties
 - Learn embeddings of data in these manifolds
@@ -65,15 +66,12 @@ tree.fit(embeddings, graph_labels)
 
 **Embedders**
 - `manify.embedders.coordinate_learning` - Coordinate learning and optimization
-- `manify.embedders.losses` - Different measurement metrics
 - `manify.embedders.siamese` - Siamese network embedder
 - `manify.embedders.vae` - Product space variational autoencoder
 
 **Predictors**
 - `manify.predictors.decision_tree` - Decision tree and random forest predictors
 - `manify.predictors.kappa_gcn` - Kappa GCN
-- `manify.predictors.kernel` - Kernel matrix calculation
-- `manify.predictors.midpoint` - Angular midpoints calculation
 - `manify.predictors.perceptron` - Product space perceptron
 - `manify.predictors.svm` - Product space SVM
 
@@ -83,10 +81,19 @@ tree.fit(embeddings, graph_labels)
 - `manify.utils.link_prediction` - Preprocessing graphs with link prediction
 - `manify.utils.visualization` - Tools for visualization
 
-## Documentation
-
-For detailed documentation and examples, see `llms.txt` in the repository.
-
 ## Research Background
-
 Manify implements geometric machine learning approaches described in academic papers, particularly focusing on handling data with mixed geometric properties. It's especially suited for data that naturally lives in non-Euclidean spaces, such as hierarchical data, networks, and certain types of biological data.
+
+## Citation
+If you use our work, please cite the `Manify` paper:
+```bibtex
+@misc{chlenski2025manifypythonlibrarylearning,
+      title={Manify: A Python Library for Learning Non-Euclidean Representations}, 
+      author={Philippe Chlenski and Kaizhu Du and Dylan Satow and Itsik Pe'er},
+      year={2025},
+      eprint={2503.09576},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2503.09576}, 
+}
+```
