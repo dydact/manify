@@ -1,0 +1,44 @@
+# Minimal config for dry testing
+
+# Weights & Biases configuration
+wandb:
+  project: mixed-curvature
+  entity: chlenski  # Set to your wandb username or team
+  name: manify-drytest
+
+# Common settings for all benchmark types
+common:
+  # Task settings
+  classification_metrics:
+    - accuracy
+  regression_metrics:
+    - rmse
+  
+  # Model selection 
+  models:
+    - sklearn_dt
+  
+  # Device settings
+  device: cuda
+  
+  # Output settings
+  output_dir: data/results_test
+  
+  # Default number of trials
+  n_trials: 1
+  
+  # Points per dataset
+  n_points: 50
+
+# Gaussian mixture model specific settings
+gaussian:
+  n_trials_gaussian: 1
+  n_classes: 2
+  n_clusters: 4
+  cov_scale_means: 1.0
+  cov_scale_points: 1.0
+
+# Single curvature Gaussian benchmark settings
+single_curvature:
+  curvatures: [0]
+  dimension: 2
