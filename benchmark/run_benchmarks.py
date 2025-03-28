@@ -6,14 +6,15 @@ This script runs benchmarks for different manifold configurations and models,
 with support for:
 - YAML configuration
 - Weights & Biases (wandb) integration
-- Dry run mode
 - GPU parallelization
+- Real-time result reporting
 
 Benchmark types:
 1. Single curvature Gaussian (synthetic data)
 2. Signature Gaussian (synthetic data with mixed curvatures)
 3. Graph embeddings (pre-computed embeddings for graph datasets)
 4. VAE embeddings (pre-computed embeddings from VAE models)
+5. Link prediction (graph-based link prediction with learned coordinates)
 """
 
 import argparse
@@ -43,6 +44,8 @@ import manify
 from manify.manifolds import ProductManifold
 from manify.utils.benchmarks import benchmark
 from manify.predictors.kappa_gcn import get_A_hat
+from manify.utils.link_prediction import make_link_prediction_dataset
+from sklearn.model_selection import train_test_split
 
 # Configure logging
 logging.basicConfig(
@@ -95,11 +98,13 @@ def setup_wandb(config: BenchmarkConfig, dry_run: bool = False) -> None:
         os.environ["WANDB_MODE"] = "dryrun"
 
     wandb_config = config.get("wandb", {})
+    
+    # Simple straightforward initialization
     wandb.init(
         project=wandb_config.get("project", "manify-benchmarks"),
         entity=wandb_config.get("entity"),
         name=wandb_config.get("name", f"benchmark-{datetime.now().strftime('%Y%m%d-%H%M%S')}"),
-        config=config,
+        config=config
     )
 
 
@@ -188,8 +193,12 @@ def run_single_curvature_benchmark(
     gpu_id: Optional[int] = None,
     trial_indices: Optional[List[int]] = None,
     no_wandb: bool = False,
+    wandb_group: Optional[str] = None,
+    wandb_run_id: Optional[str] = None
 ) -> None:
     """Run benchmarks for single curvature Gaussian mixture data for both classification and regression."""
+    # No wandb initialization in worker processes
+        
     device = get_device(gpu_id)
     sample_device = torch.device("cpu") if device != torch.device("cuda") else device
 
@@ -268,24 +277,7 @@ def run_single_curvature_benchmark(
             model_results["task"] = task
             model_results["benchmark_type"] = "single_curvature"
             
-            # Log individual model results to wandb for monitoring
-            if not no_wandb:
-                for model_name, metrics in model_results.items():
-                    if isinstance(metrics, dict) and model_name != "benchmark_type":
-                        # Create a log entry with hierarchical structure
-                        log_data = {
-                            f"models/{model_name}/{k}": v 
-                            for k, v in metrics.items() 
-                            if isinstance(v, (int, float, bool, str))
-                        }
-                        # Add metadata
-                        log_data.update({
-                            "curvature": K,
-                            "seed": seed,
-                            "task": task,
-                            "benchmark_type": "single_curvature"
-                        })
-                        wandb.log(log_data)
+            # Skip wandb logging in worker processes - we'll do it in the main process
                         
         except Exception as e:
             logger.error(f"Error in benchmark with K={K}, seed={seed}, task={task}: {str(e)}")
@@ -297,19 +289,32 @@ def run_single_curvature_benchmark(
                 "benchmark_type": "single_curvature",
                 "error": str(e)
             }
-            # Log error to wandb
-            if not no_wandb:
-                wandb.log({
-                    "error": str(e),
-                    "curvature": K,
-                    "seed": seed,
-                    "task": task,
-                    "benchmark_type": "single_curvature"
-                })
+            # Skip wandb logging in worker processes
 
+        # Save this individual result immediately to disk
+        try:
+            # Create incremental results directory if needed
+            incremental_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'data/results_wandb/incremental')
+            os.makedirs(incremental_dir, exist_ok=True)
+            
+            # Create an individual file for this result
+            result_filename = f"single_curvature_K{K}_seed{seed}_{task}_{int(time.time())}.json"
+            result_path = os.path.join(incremental_dir, result_filename)
+            
+            # Safe write to avoid data loss (write to temp file first, then rename)
+            with open(result_path + ".tmp", 'w') as f:
+                json.dump(model_results, f, indent=2)
+            os.rename(result_path + ".tmp", result_path)
+            
+            logger.info(f"Saved individual result to {result_path}")
+        except Exception as e:
+            logger.error(f"ERROR SAVING INDIVIDUAL RESULT: {str(e)}")
+            
+        # Append to in-memory results collection
         results.append(model_results)
         logger.info(f"Completed single curvature benchmark with K={K}, seed={seed}, task={task}")
 
+    # Don't finish the wandb run - just let the main process handle it
     # Put results in queue for main process
     results_queue.put(results)
 
@@ -320,7 +325,10 @@ def run_signature_gaussian_benchmark(
     gpu_id: Optional[int] = None,
     trial_indices: Optional[List[int]] = None,
     no_wandb: bool = False,
+    wandb_group: Optional[str] = None,
+    wandb_run_id: Optional[str] = None
 ) -> None:
+    # No wandb initialization in worker processes
     """Run benchmarks for mixed curvature Gaussian mixture data for both classification and regression."""
     device = get_device(gpu_id)
     sample_device = torch.device("cpu") if device != torch.device("cuda") else device
@@ -412,24 +420,7 @@ def run_signature_gaussian_benchmark(
             model_results["task"] = task
             model_results["benchmark_type"] = "signature_gaussian"
             
-            # Log individual model results to wandb for monitoring
-            if not no_wandb:
-                for model_name, metrics in model_results.items():
-                    if isinstance(metrics, dict) and model_name != "benchmark_type":
-                        # Create a log entry with hierarchical structure
-                        log_data = {
-                            f"models/{model_name}/{k}": v 
-                            for k, v in metrics.items() 
-                            if isinstance(v, (int, float, bool, str))
-                        }
-                        # Add metadata
-                        log_data.update({
-                            "signature": signature_name,
-                            "seed": seed,
-                            "task": task,
-                            "benchmark_type": "signature_gaussian"
-                        })
-                        wandb.log(log_data)
+            # Skip wandb logging in worker processes - we'll do it in the main process
                         
         except Exception as e:
             logger.error(f"Error in benchmark with signature={signature_name}, seed={seed}, task={task}: {str(e)}")
@@ -441,19 +432,237 @@ def run_signature_gaussian_benchmark(
                 "benchmark_type": "signature_gaussian",
                 "error": str(e)
             }
-            # Log error to wandb
-            if not no_wandb:
-                wandb.log({
-                    "error": str(e),
-                    "signature": signature_name,
-                    "seed": seed,
-                    "task": task,
-                    "benchmark_type": "signature_gaussian"
-                })
+            # Skip wandb logging in worker processes
 
+        # Save this individual result immediately to disk
+        try:
+            # Create incremental results directory if needed
+            incremental_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'data/results_wandb/incremental')
+            os.makedirs(incremental_dir, exist_ok=True)
+            
+            # Create an individual file for this result
+            result_filename = f"signature_gaussian_{signature_name}_seed{seed}_{task}_{int(time.time())}.json"
+            result_path = os.path.join(incremental_dir, result_filename)
+            
+            # Safe write to avoid data loss (write to temp file first, then rename)
+            with open(result_path + ".tmp", 'w') as f:
+                json.dump(model_results, f, indent=2)
+            os.rename(result_path + ".tmp", result_path)
+            
+            logger.info(f"Saved individual result to {result_path}")
+        except Exception as e:
+            logger.error(f"ERROR SAVING INDIVIDUAL RESULT: {str(e)}")
+            
+        # Append to in-memory results collection
         results.append(model_results)
         logger.info(f"Completed signature Gaussian benchmark with signature={signature_name}, seed={seed}, task={task}")
 
+    # Don't finish the wandb run - just let the main process handle it
+    # Put results in queue for main process
+    results_queue.put(results)
+
+
+def run_link_prediction_benchmark(
+    config: BenchmarkConfig,
+    results_queue: Queue,
+    gpu_id: Optional[int] = None,
+    trial_indices: Optional[List[int]] = None,
+    no_wandb: bool = False,
+    wandb_group: Optional[str] = None,
+    wandb_run_id: Optional[str] = None
+) -> None:
+    """Run link prediction benchmarks on graph datasets."""
+    # No wandb initialization in worker processes
+    device = get_device(gpu_id)
+
+    # Extract configuration
+    benchmark_config = config.get("link_prediction", {})
+    
+    # Resolve paths relative to project root
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    data_dir = os.path.join(project_root, benchmark_config.get("data_dir", "data/graphs"))
+    
+    # Default datasets to run link prediction on
+    graph_names = benchmark_config.get("graph_names", ["karate", "lesmis", "dolphins", "polbooks", "adjnoun", "football"])
+    
+    # Component signatures for embedding the graphs
+    component_signatures = benchmark_config.get("component_signatures", [
+        [(-1, 2), (0, 2), (1, 2)]  # Default: Hyperbolic + Euclidean + Spherical
+    ])
+    component_names = benchmark_config.get("component_names", ["HES"])
+    
+    # Training parameters
+    embedding_iterations = benchmark_config.get("embedding_iterations", 5000) 
+    test_size = benchmark_config.get("test_size", 0.2)
+    max_depth = benchmark_config.get("max_depth", 3)
+    add_dists = benchmark_config.get("add_dists", True)
+    learning_rate = benchmark_config.get("learning_rate", 1e-4)
+    n_trials = benchmark_config.get("n_trials", 10)
+    
+    # Models to use
+    default_models = ["sklearn_dt", "sklearn_rf", "product_dt", "product_rf", "tangent_dt", "tangent_rf", "knn"]
+    excluded_models = benchmark_config.get("exclude_models", [])
+    models = [m for m in benchmark_config.get("models", default_models) if m not in excluded_models]
+    
+    logger.info(f"Using models for link_prediction benchmark: {models}")
+    
+    # Set up scoring metrics
+    classification_metrics = benchmark_config.get("classification_metrics", ["accuracy", "f1-micro", "auc"])
+    
+    # Generate trials based on graph datasets and signatures
+    trials = []
+    for graph_name in graph_names:
+        for i, (sig, sig_name) in enumerate(zip(component_signatures, component_names)):
+            for trial in range(n_trials):
+                trials.append((graph_name, sig, sig_name, trial))
+    
+    # Filter trials based on trial_indices if provided
+    if trial_indices is not None:
+        trials = [trials[i] for i in trial_indices]
+        
+    results = []
+    for graph_name, signature, signature_name, trial in trials:
+        logger.info(f"Running link prediction benchmark with graph={graph_name}, signature={signature_name}, trial={trial}")
+        
+        try:
+            # Load graph data
+            try:
+                # Try to load using manify.utils.dataloaders
+                dists, labels, adj = manify.utils.dataloaders.load(graph_name)
+                # Normalize distances
+                dists = dists / dists.max()
+            except Exception as e:
+                logger.error(f"Error loading graph {graph_name}: {str(e)}")
+                continue
+                
+            # Set random seed for reproducibility
+            torch.manual_seed(trial)
+                
+            # Create product manifold
+            pm = ProductManifold(signature=signature).to(device)
+            
+            # Train coordinates using the stochastic Riemannian optimizer
+            try:
+                # Import the coordinate learning module
+                from manify.embedders.coordinate_learning import train_coords
+                
+                # Train coordinates on the distance matrix
+                X_embed, losses = train_coords(
+                    pm,
+                    dists.to(device),
+                    burn_in_iterations=int(0.1 * embedding_iterations),
+                    training_iterations=int(0.9 * embedding_iterations),
+                    scale_factor_learning_rate=0,  # Fixed scale factor
+                    burn_in_learning_rate=learning_rate * 0.1,
+                    learning_rate=learning_rate,
+                )
+                
+                logger.info(f"Trained coordinates for {graph_name}, final loss: {losses[-1]:.4f}")
+                
+            except Exception as e:
+                logger.error(f"Error training coordinates for {graph_name}: {str(e)}")
+                continue
+                
+            # Create link prediction dataset
+            try:
+                # Generate pairwise features and labels
+                X, y, pm_new = make_link_prediction_dataset(
+                    X_embed, 
+                    pm, 
+                    adj.to(device), 
+                    add_dists=add_dists
+                )
+                
+                # Split into train and test sets
+                n_pairs, n_dims = X.shape
+                n_nodes = int(n_pairs**0.5)
+                
+                # Reshape tensors to node x node format
+                X_reshaped = X.view(n_nodes, n_nodes, -1)
+                y_reshaped = y.view(n_nodes, n_nodes)
+                
+                # Take test_size % of the nodes as test nodes
+                idx = list(range(n_nodes))
+                idx_train, idx_test = train_test_split(idx, test_size=test_size, random_state=trial)
+                
+                # Extract train and test sets
+                X_train = X_reshaped[idx_train][:, idx_train].reshape(-1, n_dims)
+                y_train = y_reshaped[idx_train][:, idx_train].reshape(-1)
+                
+                X_test = X_reshaped[idx_test][:, idx_test].reshape(-1, n_dims)
+                y_test = y_reshaped[idx_test][:, idx_test].reshape(-1)
+                
+                logger.info(f"Created link prediction dataset: X_train: {X_train.shape}, y_train: {y_train.shape}")
+                
+            except Exception as e:
+                logger.error(f"Error creating link prediction dataset for {graph_name}: {str(e)}")
+                continue
+                
+            # Run benchmark with error handling
+            try:
+                model_results = benchmark(
+                    X=None, 
+                    y=None,
+                    X_train=X_train,
+                    X_test=X_test,
+                    y_train=y_train,
+                    y_test=y_test,
+                    pm=pm_new,
+                    task="classification",
+                    score=classification_metrics,
+                    models=models,
+                    device=device,
+                    max_depth=max_depth
+                )
+                
+                # Add metadata
+                model_results["graph"] = graph_name
+                model_results["signature"] = signature_name
+                model_results["trial"] = trial
+                model_results["task"] = "classification"  # Link prediction is always classification
+                model_results["benchmark_type"] = "link_prediction"
+                
+                # Skip wandb logging in worker processes - main process will handle it
+                
+            except Exception as e:
+                logger.error(f"Error in benchmark with graph={graph_name}, signature={signature_name}, trial={trial}: {str(e)}")
+                # Create an empty result with error information
+                model_results = {
+                    "graph": graph_name,
+                    "signature": signature_name,
+                    "trial": trial,
+                    "task": "classification",
+                    "benchmark_type": "link_prediction",
+                    "error": str(e)
+                }
+            
+            # Save this individual result immediately to disk
+            try:
+                # Create incremental results directory if needed
+                incremental_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'data/results_wandb/incremental')
+                os.makedirs(incremental_dir, exist_ok=True)
+                
+                # Create an individual file for this result
+                result_filename = f"link_prediction_{graph_name}_{signature_name}_trial{trial}_{int(time.time())}.json"
+                result_path = os.path.join(incremental_dir, result_filename)
+                
+                # Safe write to avoid data loss (write to temp file first, then rename)
+                with open(result_path + ".tmp", 'w') as f:
+                    json.dump(model_results, f, indent=2)
+                os.rename(result_path + ".tmp", result_path)
+                
+                logger.info(f"Saved individual result to {result_path}")
+            except Exception as e:
+                logger.error(f"ERROR SAVING INDIVIDUAL RESULT: {str(e)}")
+            
+            # Append to in-memory results collection
+            results.append(model_results)
+            logger.info(f"Completed link prediction benchmark with graph={graph_name}, signature={signature_name}, trial={trial}")
+            
+        except Exception as e:
+            logger.error(f"Error processing graph {graph_name} with signature {signature_name}, trial {trial}: {e}")
+    
+    # Don't finish the wandb run - just let the main process handle it
     # Put results in queue for main process
     results_queue.put(results)
 
@@ -464,7 +673,10 @@ def run_graph_embedding_benchmark(
     gpu_id: Optional[int] = None,
     trial_indices: Optional[List[int]] = None,
     no_wandb: bool = False,
+    wandb_group: Optional[str] = None,
+    wandb_run_id: Optional[str] = None
 ) -> None:
+    # No wandb initialization in worker processes
     """Run benchmarks for pre-computed graph embeddings."""
     device = get_device(gpu_id)
 
@@ -496,9 +708,25 @@ def run_graph_embedding_benchmark(
     regression_metrics = benchmark_config.get("regression_metrics", ["rmse"])
 
     # Generate trials based on embedding datasets, signatures, and trial numbers
+    # Each dataset has a specific signature from the config
     trials = []
-    for emb_name in embedding_names:
-        for sig in signatures:
+    dataset_signature_map = {
+        'polblogs': 'SS',
+        'cora': 'H',
+        'citeseer': 'HS', 
+        'cs_phds': 'H'
+    }
+    
+    # Override with values from config if specified
+    if len(embedding_names) == len(signatures):
+        for i, emb_name in enumerate(embedding_names):
+            sig = signatures[i]
+            for trial in range(n_trials):
+                trials.append((emb_name, sig, trial))
+    else:
+        # Use default mapping if lengths don't match
+        for emb_name in embedding_names:
+            sig = dataset_signature_map.get(emb_name, signatures[0])  # Fallback to first signature
             for trial in range(n_trials):
                 trials.append((emb_name, sig, trial))
 
@@ -602,25 +830,7 @@ def run_graph_embedding_benchmark(
                 model_results["task"] = task
                 model_results["benchmark_type"] = "graph_embedding"
                 
-                # Log individual model results to wandb for monitoring
-                if not no_wandb:
-                    for model_name, metrics in model_results.items():
-                        if isinstance(metrics, dict) and model_name != "benchmark_type":
-                            # Create a log entry with hierarchical structure
-                            log_data = {
-                                f"models/{model_name}/{k}": v 
-                                for k, v in metrics.items() 
-                                if isinstance(v, (int, float, bool, str))
-                            }
-                            # Add metadata
-                            log_data.update({
-                                "embedding": embedding_name,
-                                "signature": signature,
-                                "trial": trial,
-                                "task": task,
-                                "benchmark_type": "graph_embedding"
-                            })
-                            wandb.log(log_data)
+                # Skip wandb logging in worker processes - we'll do it in the main process
                             
             except Exception as e:
                 logger.error(f"Error in benchmark with embedding={embedding_name}, signature={signature}, trial={trial}: {str(e)}")
@@ -633,17 +843,28 @@ def run_graph_embedding_benchmark(
                     "benchmark_type": "graph_embedding",
                     "error": str(e)
                 }
-                # Log error to wandb
-                if not no_wandb:
-                    wandb.log({
-                        "error": str(e),
-                        "embedding": embedding_name,
-                        "signature": signature,
-                        "trial": trial,
-                        "task": task,
-                        "benchmark_type": "graph_embedding"
-                    })
+                # Skip wandb logging in worker processes
 
+            # Save this individual result immediately to disk
+            try:
+                # Create incremental results directory if needed
+                incremental_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'data/results_wandb/incremental')
+                os.makedirs(incremental_dir, exist_ok=True)
+                
+                # Create an individual file for this result
+                result_filename = f"graph_embedding_{embedding_name}_{signature}_trial{trial}_{int(time.time())}.json"
+                result_path = os.path.join(incremental_dir, result_filename)
+                
+                # Safe write to avoid data loss (write to temp file first, then rename)
+                with open(result_path + ".tmp", 'w') as f:
+                    json.dump(model_results, f, indent=2)
+                os.rename(result_path + ".tmp", result_path)
+                
+                logger.info(f"Saved individual result to {result_path}")
+            except Exception as e:
+                logger.error(f"ERROR SAVING INDIVIDUAL RESULT: {str(e)}")
+            
+            # Append to in-memory results collection
             results.append(model_results)
             logger.info(
                 f"Completed graph embedding benchmark with dataset={embedding_name}, signature={signature}, trial={trial}"
@@ -652,6 +873,7 @@ def run_graph_embedding_benchmark(
         except Exception as e:
             logger.error(f"Error processing embedding {embedding_name}, signature {signature}, trial {trial}: {e}")
 
+    # Don't finish the wandb run - just let the main process handle it
     # Put results in queue for main process
     results_queue.put(results)
 
@@ -662,7 +884,10 @@ def run_vae_embedding_benchmark(
     gpu_id: Optional[int] = None,
     trial_indices: Optional[List[int]] = None,
     no_wandb: bool = False,
+    wandb_group: Optional[str] = None,
+    wandb_run_id: Optional[str] = None
 ) -> None:
+    # No wandb initialization in worker processes
     """Run benchmarks for pre-computed VAE embeddings."""
     device = get_device(gpu_id)
 
@@ -802,24 +1027,7 @@ def run_vae_embedding_benchmark(
                 model_results["task"] = task
                 model_results["benchmark_type"] = "vae_embedding"
                 
-                # Log individual model results to wandb for monitoring
-                if not no_wandb:
-                    for model_name, metrics in model_results.items():
-                        if isinstance(metrics, dict) and model_name != "benchmark_type":
-                            # Create a log entry with hierarchical structure
-                            log_data = {
-                                f"models/{model_name}/{k}": v 
-                                for k, v in metrics.items() 
-                                if isinstance(v, (int, float, bool, str))
-                            }
-                            # Add metadata
-                            log_data.update({
-                                "embedding": embedding_name,
-                                "trial": trial,
-                                "task": task,
-                                "benchmark_type": "vae_embedding"
-                            })
-                            wandb.log(log_data)
+                # Skip wandb logging in worker processes - we'll do it in the main process
                             
             except Exception as e:
                 logger.error(f"Error in benchmark with embedding={embedding_name}, trial={trial}: {str(e)}")
@@ -831,22 +1039,35 @@ def run_vae_embedding_benchmark(
                     "benchmark_type": "vae_embedding",
                     "error": str(e)
                 }
-                # Log error to wandb
-                if not no_wandb:
-                    wandb.log({
-                        "error": str(e),
-                        "embedding": embedding_name,
-                        "trial": trial,
-                        "task": task,
-                        "benchmark_type": "vae_embedding"
-                    })
+                # Skip wandb logging in worker processes
 
+            # Save this individual result immediately to disk
+            try:
+                # Create incremental results directory if needed
+                incremental_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'data/results_wandb/incremental')
+                os.makedirs(incremental_dir, exist_ok=True)
+                
+                # Create an individual file for this result
+                result_filename = f"vae_embedding_{embedding_name}_trial{trial}_{int(time.time())}.json"
+                result_path = os.path.join(incremental_dir, result_filename)
+                
+                # Safe write to avoid data loss (write to temp file first, then rename)
+                with open(result_path + ".tmp", 'w') as f:
+                    json.dump(model_results, f, indent=2)
+                os.rename(result_path + ".tmp", result_path)
+                
+                logger.info(f"Saved individual result to {result_path}")
+            except Exception as e:
+                logger.error(f"ERROR SAVING INDIVIDUAL RESULT: {str(e)}")
+            
+            # Append to in-memory results collection
             results.append(model_results)
             logger.info(f"Completed VAE embedding benchmark with dataset={embedding_name}, trial={trial}")
 
         except Exception as e:
             logger.error(f"Error processing VAE embedding {embedding_name}, trial {trial}: {e}")
 
+    # Don't finish the wandb run - just let the main process handle it
     # Put results in queue for main process
     results_queue.put(results)
 
@@ -922,7 +1143,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run manify benchmarks with YAML configuration")
     parser.add_argument("config", help="Path to YAML configuration file")
     parser.add_argument("--output-dir", default=None, help="Directory to save benchmark results (overrides config)")
-    parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without saving results")
+    parser.add_argument("--dry-run", action="store_true", help="Perform a run without saving results to disk (will still log to wandb)")
     parser.add_argument("--no-wandb", action="store_true", help="Disable wandb logging")
     parser.add_argument("--gpus", type=int, default=None, help="Number of GPUs to use (default: all available)")
     parser.add_argument("--gpu-ids", type=str, help="Comma-separated list of specific GPU IDs to use")
@@ -1019,7 +1240,7 @@ def main():
         setup_wandb(config, dry_run=True)
 
     # Determine which benchmarks to run
-    all_benchmark_types = ["single_curvature", "signature_gaussian", "graph_embedding", "vae_embedding"]
+    all_benchmark_types = ["single_curvature", "signature_gaussian", "graph_embedding", "vae_embedding", "link_prediction"]
     benchmark_types = []
 
     if "all" in args.benchmark_types:
@@ -1055,6 +1276,7 @@ def main():
         "signature_gaussian": run_signature_gaussian_benchmark,
         "graph_embedding": run_graph_embedding_benchmark,
         "vae_embedding": run_vae_embedding_benchmark,
+        "link_prediction": run_link_prediction_benchmark,
     }
 
     # Run selected benchmarks
@@ -1062,6 +1284,13 @@ def main():
     processes = []
     results_queues = {}
 
+    # Initialize wandb group run ID
+    if not args.no_wandb:
+        wandb_run_id = wandb.run.id if wandb.run else None
+        logger.info(f"Main wandb run ID: {wandb_run_id}")
+    else:
+        wandb_run_id = None
+    
     # Start benchmark processes
     for benchmark_type in valid_benchmark_types:
         logger.info(f"Starting {benchmark_type} benchmark")
@@ -1110,7 +1339,20 @@ def main():
         # Start processes for this benchmark
         for i, gpu_id in enumerate(allocated_gpus):
             if i < len(trial_partitions) and trial_partitions[i]:  # Only start process if there are trials to run
-                p = Process(target=benchmark_func, args=(config, results_queue, gpu_id, trial_partitions[i], args.no_wandb))
+                p = Process(
+                    target=benchmark_func, 
+                    args=(
+                        config, 
+                        results_queue, 
+                        gpu_id, 
+                        trial_partitions[i], 
+                        args.no_wandb,
+                    ),
+                    kwargs={
+                        "wandb_group": benchmark_type,
+                        "wandb_run_id": wandb_run_id
+                    }
+                )
                 p.start()
                 processes.append((benchmark_type, p))
                 logger.info(f"Started {benchmark_type} process on GPU {gpu_id} with {len(trial_partitions[i])} trials")
@@ -1157,6 +1399,82 @@ def main():
                             if results:
                                 benchmark_results[benchmark_type].extend(results)
                                 logger.info(f"Collected {len(results)} results from {benchmark_type}")
+                                
+                                # Save results immediately to disk as they arrive in main process
+                                try:
+                                    # Create a timestamp for unique filenames
+                                    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                                    
+                                    # Ensure output_dir exists
+                                    output_dir = config.get("common", {}).get("output_dir", "data/results_wandb")
+                                    if not os.path.isabs(output_dir):
+                                        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+                                        output_dir = os.path.join(project_root, output_dir)
+                                    os.makedirs(output_dir, exist_ok=True)
+                                    
+                                    # Immediately save these new results
+                                    incremental_output_path = os.path.join(output_dir, f"{benchmark_type}_incremental_{timestamp}.tsv")
+                                    
+                                    # Save these specific results
+                                    df = pd.DataFrame(results)
+                                    df.to_csv(incremental_output_path, sep="\t", index=False)
+                                    logger.info(f"SAVED {len(results)} NEW RESULTS TO {incremental_output_path}")
+                                    
+                                    # Also append to cumulative file
+                                    cumulative_path = os.path.join(output_dir, f"{benchmark_type}_cumulative.tsv")
+                                    
+                                    if os.path.exists(cumulative_path):
+                                        # Append to existing cumulative file
+                                        df.to_csv(cumulative_path, sep="\t", index=False, mode='a', header=False)
+                                    else:
+                                        # Create new cumulative file
+                                        df.to_csv(cumulative_path, sep="\t", index=False)
+                                    
+                                    logger.info(f"Updated cumulative results file: {cumulative_path}")
+                                except Exception as e:
+                                    logger.error(f"ERROR SAVING REAL-TIME RESULTS: {str(e)}")
+                                
+                                # Real-time logging to wandb if enabled
+                                if not args.no_wandb and not args.dry_run:
+                                    # Log each result immediately as it comes in
+                                    for result in results:
+                                        # Create a clean unique ID for this result
+                                        if "benchmark_type" in result and result["benchmark_type"] == "single_curvature":
+                                            result_id = f"K{result.get('curvature', 'unknown')}_seed{result.get('seed', 'unknown')}_{result.get('task', 'unknown')}"
+                                        elif "benchmark_type" in result and result["benchmark_type"] == "signature_gaussian":
+                                            result_id = f"{result.get('signature', 'unknown')}_seed{result.get('seed', 'unknown')}_{result.get('task', 'unknown')}"
+                                        elif "benchmark_type" in result and result["benchmark_type"] == "graph_embedding":
+                                            result_id = f"{result.get('embedding', 'unknown')}_{result.get('signature', 'unknown')}_trial{result.get('trial', 'unknown')}"
+                                        elif "benchmark_type" in result and result["benchmark_type"] == "vae_embedding":
+                                            result_id = f"{result.get('embedding', 'unknown')}_trial{result.get('trial', 'unknown')}"
+                                        else:
+                                            result_id = f"result_{hash(str(result))}"
+                                        
+                                        # Log the results with metadata using a flat structure
+                                        for model_name, metrics in result.items():
+                                            if isinstance(metrics, dict) and model_name not in ["benchmark_type", "error"]:
+                                                # Create a flat log entry with all metrics and metadata
+                                                log_data = {}
+                                                
+                                                # Add metadata first (consistent for all logs)
+                                                log_data["benchmark_type"] = benchmark_type
+                                                log_data["model"] = model_name
+                                                log_data["result_id"] = result_id
+                                                
+                                                # Add all relevant result metadata
+                                                for k, v in result.items():
+                                                    if k not in ["benchmark_type", model_name, "error"] and isinstance(v, (int, float, bool, str)):
+                                                        log_data[k] = v
+                                                
+                                                # Add model metrics with simple naming
+                                                for k, v in metrics.items():
+                                                    if isinstance(v, (int, float, bool, str)):
+                                                        # Use simple flat names for metrics
+                                                        log_data[k] = v
+                                                
+                                                # Generate a unique step ID to ensure separate points in wandb
+                                                step_id = int(time.time() * 1000) % 1000000
+                                                wandb.log(log_data, step=step_id, commit=True)
                         except Exception as e:
                             logger.error(f"Error getting results from queue for {benchmark_type}: {str(e)}")
                 except Exception as e:
@@ -1189,7 +1507,46 @@ def main():
 
                 # Log results to wandb if enabled
                 if not args.no_wandb:
-                    wandb.log({f"{benchmark_type}_results": wandb.Table(dataframe=pd.DataFrame(results))})
+                    # Create a clean flattened pandas DataFrame for easier visualization
+                    flattened_data = []
+                    for result in results:
+                        # Extract metadata
+                        metadata = {k: v for k, v in result.items() 
+                                    if k not in ["error"] and not isinstance(v, dict)}
+                        
+                        # Extract metrics from each model
+                        for model_name, metrics in result.items():
+                            if isinstance(metrics, dict):
+                                # Create a record with metadata plus model metrics
+                                record = metadata.copy()
+                                record["model"] = model_name
+                                # Add metrics with simple column names
+                                for metric_name, metric_value in metrics.items():
+                                    if isinstance(metric_value, (int, float, bool, str)):
+                                        record[metric_name] = metric_value
+                                flattened_data.append(record)
+                    
+                    # Convert to DataFrame
+                    if flattened_data:
+                        results_df = pd.DataFrame(flattened_data)
+                        
+                        # Log as both table artifact (can be downloaded) and metrics
+                        wandb.log({f"{benchmark_type}_results_table": wandb.Table(dataframe=results_df)})
+                        
+                        # Create summary table for each metric
+                        try:
+                            for metric in ["accuracy", "f1-micro", "rmse", "mse"]:
+                                if metric in results_df.columns:
+                                    # Group by relevant columns and compute mean
+                                    group_cols = [col for col in ["model", "benchmark_type", "task", "curvature", 
+                                                                  "signature", "embedding", "trial"] 
+                                                 if col in results_df.columns]
+                                    if group_cols:
+                                        summary = results_df.groupby(group_cols)[metric].mean().reset_index()
+                                        wandb.log({f"{benchmark_type}_{metric}_summary": wandb.Table(dataframe=summary)})
+                        except Exception as e:
+                            logger.warning(f"Error creating metric summaries: {e}")
+                    
                     wandb.save(output_path)
 
     # Finish wandb run if enabled

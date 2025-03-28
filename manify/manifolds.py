@@ -8,11 +8,14 @@ combining their geometric properties to create mixed-curvature. Both classes
 includes functions for different key geometric operations.
 """
 
-from typing import List, Optional, Tuple, Callable, Literal, Union
+import warnings
+from typing import Callable, List, Literal, Optional, Tuple, Union
+
+import geoopt
+import torch
 from jaxtyping import Float
 
-import torch
-import geoopt
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributions")  # Singular samples from Wishart
 
 
 class Manifold:
@@ -220,7 +223,7 @@ class Manifold:
         N = torch.distributions.MultivariateNormal(
             loc=torch.zeros((n, self.dim), device=self.device), covariance_matrix=sigma
         )
-        v = N.sample(sample_shape=(1,))  # type: ignore
+        v = N.sample()  # type: ignore
 
         # Don't need to adjust normal vectors for the Scaled manifold class in geoopt - very cool!
 

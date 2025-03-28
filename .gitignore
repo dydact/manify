@@ -9,3 +9,5 @@ data/blood_cell_scrna/*
 data/mnist/*-ubyte*
 notebooks/scratch*
 wandb/
+data/results_wandb/incremental/
+data/results_wandb/*incremental*

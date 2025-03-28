@@ -17,7 +17,8 @@ from sklearn.svm import SVC, SVR
 from sklearn.base import BaseEstimator
 from ..manifolds import ProductManifold
 
-from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
+# from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
+from ..predictors.tree_icml import ProductSpaceDT, ProductSpaceRF
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
 from ..predictors.kappa_gcn import KappaGCN, get_A_hat

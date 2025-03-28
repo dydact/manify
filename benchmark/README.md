@@ -16,6 +16,7 @@ This directory contains a configurable script for running benchmarks across diff
 2. **Signature Gaussian**: Synthetic data with mixed curvature parameters (product manifolds, runs both classification and regression)
 3. **Graph Embeddings**: Pre-computed graph embeddings with different manifold signatures
 4. **VAE Embeddings**: Pre-computed VAE-generated embeddings with different manifold structures
+5. **Link Prediction**: Graph-based link prediction tasks with coordinates learned via Riemannian optimization
 
 ## Usage
 
@@ -59,12 +60,12 @@ Run multiple benchmark types with custom GPU allocation:
 python run_benchmarks.py config.yaml --benchmark-types single_curvature signature_gaussian --gpu-allocation '{"single_curvature": [0], "signature_gaussian": [1]}'
 ```
 
-### Dry Run Mode
+### Limiting Trials for Testing
 
-Test configuration without saving results:
+Run a limited number of trials for testing:
 
 ```bash
-python run_benchmarks.py config.yaml --dry-run
+python run_benchmarks.py config.yaml --max-trials 1
 ```
 
 ### Disable Weights & Biases
