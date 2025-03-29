@@ -3,13 +3,15 @@ OUTPUT_DIR: "data/results_icml_revision"
 DEVICE: "cuda:1"
 
 RUNNING_SEED: 1_000_000
-N_TRIALS: 10
-N_POINTS: 1000
+N_TRIALS:
+  gaussian: 20
+  default: 10
+N_POINTS: 1_000
 
 BYPASS_TOP_CC: false
 
 GAUSSIAN_KWARGS:
-  num_points: 1000
+  num_points: 1_000
   num_classes: 8
   num_clusters: 32
   cov_scale_means: 1.0
@@ -18,7 +20,7 @@ GAUSSIAN_KWARGS:
 BENCHMARK_KWARGS:
   max_depth: 5
   n_features: "d_choose_2"
-  epochs: 100
+  epochs: 4_000
   models:
     - "sklearn_dt"
     - "sklearn_rf"

@@ -3,20 +3,22 @@ OUTPUT_DIR: "data/results_icml_revision"
 DEVICE: "cuda:1"
 
 RUNNING_SEED: 2_000_000
-N_TRIALS: 10
-N_POINTS: 1000
+N_TRIALS:
+  gaussian: 20
+  default: 10
+N_POINTS: 1_000
 
 BYPASS_TOP_CC: false
 
 LINK_PREDICTION_KWARGS:
-  burn_in_iterations: 50
-  training_iterations: 450
+  burn_in_iterations: 500
+  training_iterations: 4500
   scale_factor_learning_rate: 0.02
 
 BENCHMARK_KWARGS:
   max_depth: 5
   n_features: "d_choose_2"
-  epochs: 100
+  epochs: 4_000
   models:
     - "sklearn_dt"
     - "sklearn_rf"

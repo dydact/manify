@@ -92,9 +92,14 @@ for bench in cfg["BENCHMARKS"]:
     tqdm_desc = f"Benchmarking {bench['type']}"
     results = []
 
-    with tqdm(total=len(datasets) * cfg["N_TRIALS"], desc=tqdm_desc) as pbar:
+    if bench["type"] == "gaussian":
+        n_trials = cfg["N_TRIALS"]["gaussian"]
+    else:
+        n_trials = cfg["N_TRIALS"]["default"]
+
+    with tqdm(total=len(datasets) * n_trials, desc=tqdm_desc) as pbar:
         for dataset, sig, sigstr, task in zip(datasets, signatures, sig_strs, tasks):
-            for trial in range(cfg["N_TRIALS"]):
+            for trial in range(n_trials):
                 seed = cfg["RUNNING_SEED"] + trial
                 pm = ProductManifold(signature=sig, device=device)
 
