@@ -422,6 +422,9 @@ class KappaGCN(torch.nn.Module):
                 my_tqdm.update(1)
                 my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
 
+        if use_tqdm:
+            my_tqdm.close()
+
     def predict(
         self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
     ) -> Float[torch.Tensor, "n_nodes"]:
