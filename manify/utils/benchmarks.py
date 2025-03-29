@@ -395,7 +395,7 @@ def benchmark(
     if "ambient_mlp" in models:
         ambient_mlp = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
-        ambient_mlp.fit(X_train, y_train, A=None, **nn_train_kwargs)
+        ambient_mlp.fit(X_train, y_train, A=None, tqdm_prefix="ambient_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_mlp.predict(X_test, A=None)
         accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True, score=score)
@@ -404,7 +404,7 @@ def benchmark(
     if "tangent_mlp" in models:
         tangent_mlp = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
-        tangent_mlp.fit(X_train_tangent, y_train, A=None, **nn_train_kwargs)
+        tangent_mlp.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_mlp.predict(X_test_tangent, A=None)
         accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True, score=score)
@@ -416,16 +416,16 @@ def benchmark(
         ambient_gnn.fit(X_train, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_gnn.predict(X_test, A=A_test)
-        accs["ambient_gnn"] = _score(None, y_test_np, ambient_gnn, y_pred_override=y_pred, torch=True, score=score)
+        accs["ambient_gnn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["ambient_gnn"]["time"] = t2 - t1
 
     if "tangent_gnn" in models:
         tangent_gnn = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
-        tangent_gnn.fit(X_train_tangent, y_train, A=A_train, **nn_train_kwargs)
+        tangent_gnn.fit(X_train_tangent, y_train, A=A_train, tqdm_prefix="tangent_gnn", **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_gnn.predict(X_test_tangent, A=A_test)
-        accs["tangent_gnn"] = _score(None, y_test_np, tangent_gnn, y_pred_override=y_pred, torch=True, score=score)
+        accs["tangent_gnn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["tangent_gnn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
@@ -437,7 +437,7 @@ def benchmark(
             output_dim=nn_outdim,
         ).to(device)
         t1 = time.time()
-        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, **nn_train_kwargs)
+        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_gcn", **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
@@ -446,7 +446,7 @@ def benchmark(
     if "product_mlr" in models:
         mlr_model = KappaGCN(pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
-        mlr_model.fit(X_train_stereo, y_train, A=None, **nn_train_kwargs)
+        mlr_model.fit(X_train_stereo, y_train, A=None, tqdm_prefix="product_mlr", **nn_train_kwargs)
         t2 = time.time()
         y_pred = mlr_model.predict(X_test_stereo, A=None)
         accs["product_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)

@@ -33,6 +33,7 @@ device = torch.device(cfg["DEVICE"])
 
 # Common Benchmark Function
 def run_benchmark(pm, X, y, task, signature, dataset_name, seed, extra_kwargs=None):
+    print(f"Running benchmark for {dataset_name} | {signature} | {seed}")
     # try:
     scores = ["f1-micro", "f1-macro", "accuracy"] if task == "classification" else ["mse", "rmse"]
 
@@ -108,7 +109,10 @@ for bench in cfg["BENCHMARKS"]:
                     adj = adj.float().to(device)
                     A_hat = get_A_hat(adj)
                     data = torch.load(f"data/graphs/embeddings/{dataset}/{sigstr}_{trial}.h5", weights_only=True)
-                    idx_train = [i for i in range(data["X_train"].shape[0]) if i not in data["test_idx"]]
+
+                    # Get train and test indices
+                    idx_test = data["test_idx"]
+                    idx_train = [i for i in range(A_hat.shape[0]) if i not in idx_test]
 
                     extra_kwargs = {
                         "X_train": data["X_train"],
@@ -116,7 +120,7 @@ for bench in cfg["BENCHMARKS"]:
                         "X_test": data["X_test"],
                         "y_test": data["y_test"],
                         "A_train": A_hat[idx_train][:, idx_train],
-                        "A_test": A_hat[data["test_idx"]][:, idx_train],
+                        "A_test": A_hat[idx_test][:, idx_test],
                     }
 
                 elif bench["type"] == "vae":

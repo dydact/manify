@@ -352,6 +352,7 @@ class KappaGCN(torch.nn.Module):
         lr: float = 1e-2,
         use_tqdm: bool = True,
         lp_indices: Optional[List[Tuple[int]]] = None,
+        tqdm_prefix: Optional[str] = None,
     ) -> None:
         """
         Fit the Kappa GCN model.
@@ -365,6 +366,7 @@ class KappaGCN(torch.nn.Module):
             lr: Learning rate (default=1e-2).
             use_tqdm: Whether to use tqdm for progress bar.
             lp_indices: Indices for link prediction task (e.g.: [(0, 1), (2, 3), ...]).
+            tqdm_prefix: Prefix for tqdm progress bar.
         """
         if lp_indices is None and self.task == "link_prediction":
             raise ValueError("Must provide indices for link prediction task!")
@@ -400,7 +402,7 @@ class KappaGCN(torch.nn.Module):
 
         self.train()
         if use_tqdm:
-            my_tqdm = tqdm(total=epochs)
+            my_tqdm = tqdm(total=epochs, desc=tqdm_prefix)
 
         for i in range(epochs):
             opt.zero_grad()
