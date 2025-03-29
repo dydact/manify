@@ -1,0 +1,2 @@
+dataset	signature	seed	sklearn_dt_mse	sklearn_dt_rmse	sklearn_dt_time
+product_gaussian	HH	0	0.0317595044428904	0.17821196492629332	0.0021736621856689453

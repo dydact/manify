@@ -20,10 +20,14 @@ from scipy.io import mmread
 import torch
 
 
-def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[Real[np.ndarray, "nodes nodes"], list]:
+def _top_cc_dists(
+    G: nx.Graph, to_undirected: bool = True, bypassed: bool = False
+) -> Tuple[Real[np.ndarray, "nodes nodes"], list]:
     """Returns the distances between the top connected component of a graph"""
     if to_undirected:
         G = G.to_undirected()
+    if bypassed:
+        return nx.floyd_warshall_numpy(G), list(range(G.number_of_nodes()))
     top_cc = max(nx.connected_components(G), key=len)
     print(f"Top CC has {len(top_cc)} nodes; original graph has {G.number_of_nodes()} nodes.")
     return nx.floyd_warshall_numpy(G.subgraph(top_cc)), list(top_cc)
@@ -31,6 +35,7 @@ def _top_cc_dists(G: nx.Graph, to_undirected: bool = True) -> Tuple[Real[np.ndar
 
 def load_cities(
     cities_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cities" / "cities.txt",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     dists_flattened = []
     with open(cities_path) as f:
@@ -46,6 +51,7 @@ def load_cities(
 
 def load_cs_phds(
     cs_phds_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cs_phds.txt",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.Graph()
 
@@ -71,7 +77,7 @@ def load_cs_phds(
         year = int(line.strip())
         G.nodes[i + 1]["year"] = year  # They're 1-indexed
 
-    phd_dists, idx = _top_cc_dists(G)
+    phd_dists, idx = _top_cc_dists(G, bypassed=bypassed)
     labels = [G.nodes[i]["year"] for i in idx]
     return (
         torch.tensor(phd_dists),
@@ -99,6 +105,7 @@ def load_polblogs(
     / "graphs"
     / "polblogs"
     / "polblogs_labels.tsv",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     # Load the graph
     G = nx.from_scipy_sparse_array(mmread(polblogs_path))
@@ -122,10 +129,11 @@ def load_polblogs(
 
 def load_polbooks(
     polbooks_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "polbooks" / "polbooks.gml",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.read_gml(polbooks_path, label="id")
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
     labels_unique = ["c", "l", "n"]
     labels = [labels_unique.index(G.nodes[i]["value"]) for i in idx]
 
@@ -136,7 +144,9 @@ def load_polbooks(
     )
 
 
-def _load_network_repository(edges_path, labels_path) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
+def _load_network_repository(
+    edges_path, labels_path, bypassed: bool = False
+) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     # Edges
     G = nx.read_edgelist(edges_path, delimiter=",", data=[("weight", int)], nodetype=int)
 
@@ -146,7 +156,7 @@ def _load_network_repository(edges_path, labels_path) -> Tuple[Float[torch.Tenso
             node, label = line.strip().split(",")
             G.nodes[int(node)]["label"] = int(label)
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     labels = [G.nodes[i]["label"] for i in idx]
     return (
@@ -162,8 +172,9 @@ def _load_network_repository(edges_path, labels_path) -> Tuple[Float[torch.Tenso
 def load_cora(
     cora_edges_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cora" / "cora.edges",
     cora_labels_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "cora" / "cora.node_labels",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
-    return _load_network_repository(cora_edges_path, cora_labels_path)
+    return _load_network_repository(cora_edges_path, cora_labels_path, bypassed=bypassed)
 
 
 def load_citeseer(
@@ -173,62 +184,69 @@ def load_citeseer(
     / "graphs"
     / "citeseer"
     / "citeseer.node_labels",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
-    return _load_network_repository(citeseer_edges_path, citeseer_labels_path)
+    return _load_network_repository(citeseer_edges_path, citeseer_labels_path, bypassed=bypassed)
 
 
 def load_pubmed(
     pubmed_edges_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "pubmed" / "pubmed.edges",
     pubmed_labels_path: str = Path(__file__).parent.parent.parent / "data" / "graphs" / "pubmed" / "pubmed.node_labels",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
-    return _load_network_repository(pubmed_edges_path, pubmed_labels_path)
+    return _load_network_repository(pubmed_edges_path, pubmed_labels_path, bypassed=bypassed)
 
 
 def load_karate_club(
     karate_club_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "karate" / "karate.gml",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.read_gml(karate_club_path, label="id")
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     return torch.tensor(dists), None, torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
 
 
 def load_lesmis(
     lesmis_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "lesmis" / "lesmis.gml",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.read_gml(lesmis_path, label="id")
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     return torch.tensor(dists), None, torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
 
 
 def load_adjnoun(
     adjnoun_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "adjnoun" / "adjnoun.gml",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.read_gml(adjnoun_path, label="id")
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     return torch.tensor(dists), None, torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
 
 
 def load_football(
     football_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "football" / "football.mtx",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.from_scipy_sparse_array(mmread(football_path))
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     return torch.tensor(dists), None, torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
 
 
 def load_dolphins(
     dolphin_path=Path(__file__).parent.parent.parent / "data" / "graphs" / "dolphins" / "dolphins.gml",
+    bypassed: bool = False,
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], None, None]:
     G = nx.read_gml(dolphin_path, label="id")
 
-    dists, idx = _top_cc_dists(G)
+    dists, idx = _top_cc_dists(G, bypassed=bypassed)
 
     return torch.tensor(dists), None, torch.tensor(nx.to_numpy_array(G.subgraph(idx)))
 

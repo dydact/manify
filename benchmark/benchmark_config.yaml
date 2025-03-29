@@ -1,0 +1,147 @@
+OUTPUT_DIR: "data/results_icml_revision"
+
+RUNNING_SEED: 0
+N_TRIALS: 1
+N_POINTS: 1000
+
+BYPASS_TOP_CC: false
+
+GAUSSIAN_KWARGS:
+  num_points: 1000
+  num_classes: 8
+  num_clusters: 32
+  cov_scale_means: 0.5
+  cov_scale_points: 0.5
+
+LINK_PREDICTION_KWARGS:
+  burn_in_iterations: 50
+  training_iterations: 450
+  scale_factor_learning_rate: 0.02
+
+BENCHMARK_KWARGS:
+  max_depth: 5
+  n_features: "d_choose_2"
+  epochs: 100
+  models:
+    - "sklearn_dt"
+  #  - "sklearn_rf"
+  #  - "product_dt"
+  #  - "product_rf"
+  #  - "tangent_dt"
+  #  - "tangent_rf"
+  #  - "knn"
+  #  - "ps_perceptron"
+  #  - "tangent_mlp"
+  #  - "ambient_mlp"
+  #  - "tangent_gnn"
+  #  - "ambient_gnn"
+  #  - "kappa_gcn"
+  #  - "product_mlr"
+
+BENCHMARKS:
+  - type: "gaussian"
+    task: "classification"
+    datasets: ["single_gaussian"]
+    signatures:
+      - [[-4, 2]]
+      - [[-2, 2]]
+      - [[-1, 2]]
+      - [[-0.5, 2]]
+      - [[-0.25, 2]]
+      - [[0, 2]]
+      - [[0.25, 2]]
+      - [[0.5, 2]]
+    signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
+    output_file: "classification_nn_single_curvature.tsv"
+
+  - type: "gaussian"
+    task: "regression"
+    datasets: ["single_gaussian"]
+    signatures:
+      - [[-4, 2]]
+      - [[-2, 2]]
+      - [[-1, 2]]
+      - [[-0.5, 2]]
+      - [[-0.25, 2]]
+      - [[0, 2]]
+      - [[0.25, 2]]
+      - [[0.5, 2]]
+    signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
+    output_file: "regression_nn_single_curvature.tsv"
+
+  - type: "gaussian"
+    task: "classification"
+    datasets: ["product_gaussian"]
+    signatures:
+      - [[-1, 2], [-1, 2]]
+      - [[-1, 2], [0, 2]]
+      - [[-1, 2], [1, 2]]
+      - [[1, 2], [1, 2]]
+      - [[1, 2], [0, 2]]
+      - [[-1, 4]]
+      - [[0, 4]]
+      - [[1, 4]]
+    signature_str: ["HH", "HE", "HS", "SS", "SE", "H", "E", "S"]
+    output_file: "classification_nn_multiple_curvatures.tsv"
+
+  - type: "gaussian"
+    task: "regression"
+    datasets: ["product_gaussian"]
+    signatures:
+      - [[-1, 2], [-1, 2]]
+      - [[-1, 2], [0, 2]]
+      - [[-1, 2], [1, 2]]
+      - [[1, 2], [1, 2]]
+      - [[1, 2], [0, 2]]
+      - [[-1, 4]]
+      - [[0, 4]]
+      - [[1, 4]]
+    signature_str: ["HH", "HE", "HS", "SS", "SE", "H", "E", "S"]
+    output_file: "regression_nn_multiple_curvatures.tsv"
+
+  - type: "graph"
+    task: ["classification", "classification", "classification", "regression"]
+    datasets: ["citeseer", "cora", "polblogs", "cs_phds"]
+    signatures:
+      - [[-1, 2], [1, 2]]
+      - [[-1, 4]]
+      - [[1, 2], [1, 2]]
+      - [[-1, 4]]
+    signature_str: ["HH", "H", "SS", "H"]
+    output_file: "all_nn_graph.tsv"
+
+  - type: "vae"
+    task: "classification"
+    datasets: ["blood_cell_scrna", "lymphoma", "cifar_100", "mnist"]
+    signatures:
+      - [[1, 2], [0, 2], [-1, 2], [-1, 2], [-1, 2]]
+      - [[1, 2], [1, 2]]
+      - [[1, 2], [1, 2], [1, 2], [1, 2]]
+      - [[1, 2], [0, 2], [-1, 2]]
+    signature_str: ["SEHHH", "SS", "HHHH", "SEH"]
+    output_file: "all_nn_vae.tsv"
+
+  - type: "empirical"
+    task: ["classification", "classification", "classification", "regression", "regression"]
+    datasets: ["landmasses", "neuron_33", "neuron_46", "temperature", "traffic"]
+    signatures:
+      - [[1.0, 2]]
+      - [[1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1]]
+      - [[1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1]]
+      - [[1.0, 2], [1.0, 1]]
+      - [[0.0, 1], [1.0, 1], [1.0, 1], [1.0, 1], [1.0, 1]]
+    signature_str: ["S", "S10", "S10", "S2S", "ESSSS"]
+    output_file: "all_nn_empirical.tsv"
+
+  - type: "link_prediction"
+    task: "classification"
+    datasets: ["adjnoun", "dolphins", "football", "karate_club", "lesmis", "polbooks"]
+    signatures:
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+    signature_str: ["HES", "HES", "HES", "HES", "HES", "HES"]
+    output_file: "all_nn_link.tsv"

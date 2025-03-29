@@ -1,0 +1,2 @@
+dataset	signature	seed	sklearn_dt_f1-micro	sklearn_dt_f1-macro	sklearn_dt_accuracy	sklearn_dt_time
+product_gaussian	HH	0	0.335	0.252691043764408	0.335	0.0028700828552246094

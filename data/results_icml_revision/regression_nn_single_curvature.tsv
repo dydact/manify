@@ -1,0 +1,2 @@
+dataset	signature	seed	sklearn_dt_mse	sklearn_dt_rmse	sklearn_dt_time
+single_gaussian	H-4	0	0.039939702966699506	0.1998492005655752	0.00144195556640625
