@@ -1,0 +1,48 @@
+OUTPUT_DIR: "data/results_icml_revision"
+
+DEVICE: "cuda:1"
+
+RUNNING_SEED: 0
+N_TRIALS: 1
+N_POINTS: 1000
+
+BYPASS_TOP_CC: false
+
+LINK_PREDICTION_KWARGS:
+  burn_in_iterations: 50
+  training_iterations: 450
+  scale_factor_learning_rate: 0.02
+
+BENCHMARK_KWARGS:
+  max_depth: 5
+  n_features: "d_choose_2"
+  epochs: 100
+  models:
+    - "sklearn_dt"
+    - "sklearn_rf"
+    - "product_dt"
+    - "product_rf"
+    - "tangent_dt"
+    - "tangent_rf"
+    - "knn"
+    - "ps_perceptron"
+    - "tangent_mlp"
+    - "ambient_mlp"
+    - "tangent_gnn"
+    - "ambient_gnn"
+    - "kappa_gcn"
+    - "product_mlr"
+
+BENCHMARKS:
+  - type: "link_prediction"
+    task: "classification"
+    datasets: ["adjnoun", "dolphins", "football", "karate_club", "lesmis", "polbooks"]
+    signatures:
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+      - [[-1, 2], [0, 2], [1, 2]]
+    signature_str: ["HES", "HES", "HES", "HES", "HES", "HES"]
+    output_file: "all_nn_link.tsv"

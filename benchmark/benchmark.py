@@ -27,7 +27,8 @@ wandb.init(project="manifold_benchmarks", config=cfg)
 OUTPUT_DIR = Path(cfg["OUTPUT_DIR"])
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+device = torch.device(cfg["DEVICE"])
 
 
 # Common Benchmark Function
@@ -76,10 +77,16 @@ def save_results(results, filename):
 for bench in cfg["BENCHMARKS"]:
     datasets, signatures, sig_strs = bench["datasets"], bench["signatures"], bench["signature_str"]
     tasks = bench["task"]
+
+    # Convert single string to list for task/dataset
     if isinstance(tasks, str):
         tasks = [tasks] * len(signatures)
     elif len(tasks) != len(signatures):
         raise ValueError("Length of tasks and signatures must match, or task must be a single string.")
+    if isinstance(datasets, str):
+        datasets = [datasets] * len(signatures)
+    elif len(datasets) != len(signatures):
+        raise ValueError("Length of datasets and signatures must match, or dataset must be a single string.")
 
     tqdm_desc = f"Benchmarking {bench['type']}"
     results = []

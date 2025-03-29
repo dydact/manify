@@ -1,0 +1,2 @@
+dataset	signature	seed	sklearn_dt_mse	sklearn_dt_rmse	sklearn_dt_time
+cs_phds	H	0	365.64883159422754	19.12194633383923	0.001962900161743164

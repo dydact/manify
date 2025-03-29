@@ -1,2 +1,0 @@
-trial_error	model
-Benchmark execution failed: The least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2.	TRIAL_ERROR
