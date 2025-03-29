@@ -2,8 +2,8 @@ OUTPUT_DIR: "data/results_icml_revision"
 
 DEVICE: "cuda:1"
 
-RUNNING_SEED: 0
-N_TRIALS: 1
+RUNNING_SEED: 1_000_000
+N_TRIALS: 10
 N_POINTS: 1000
 
 BYPASS_TOP_CC: false
@@ -26,6 +26,7 @@ BENCHMARK_KWARGS:
     - "product_rf"
     - "tangent_dt"
     - "tangent_rf"
+    - "single_manifold_rf"
     - "knn"
     - "ps_perceptron"
     - "tangent_mlp"
@@ -48,6 +49,9 @@ BENCHMARKS:
       - [[0, 2]]
       - [[0.25, 2]]
       - [[0.5, 2]]
+      - [[1, 2]]
+      - [[2, 2]]
+      - [[4, 2]]
     signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
     output_file: "regression_nn_single_curvature.tsv"
 

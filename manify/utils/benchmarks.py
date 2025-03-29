@@ -18,7 +18,7 @@ from sklearn.base import BaseEstimator
 from ..manifolds import ProductManifold
 
 # from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
-from ..predictors.tree_icml import ProductSpaceDT, ProductSpaceRF
+from ..predictors.tree_icml import ProductSpaceDT, ProductSpaceRF, SingleManifoldEnsembleRF
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
 from ..predictors.kappa_gcn import KappaGCN, get_A_hat
@@ -93,6 +93,7 @@ def benchmark(
         "ambient_gnn",
         "kappa_gcn",
         "product_mlr",
+        "single_manifold_rf",
     ],
     max_depth: int = 5,
     n_estimators: int = 12,
@@ -297,6 +298,14 @@ def benchmark(
         t2 = time.time()
         accs["product_rf"] = _score(X_test, y_test_np, psrf, torch=True, score=score)
         accs["product_rf"]["time"] = t2 - t1
+
+    if "single_manifold_rf" in models:
+        smrf = SingleManifoldEnsembleRF(pm=pm, task=task, n_estimators=n_estimators)
+        t1 = time.time()
+        smrf.fit(X_train, y_train)
+        t2 = time.time()
+        accs["single_manifold_rf"] = _score(X_test, y_test_np, smrf, torch=True, score=score)
+        accs["single_manifold_rf"]["time"] = t2 - t1
 
     if "tangent_dt" in models:
         tdt = dt_class(**tree_kwargs)

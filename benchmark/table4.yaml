@@ -2,8 +2,8 @@ OUTPUT_DIR: "data/results_icml_revision"
 
 DEVICE: "cuda:1"
 
-RUNNING_SEED: 0
-N_TRIALS: 1
+RUNNING_SEED: 2_000_000
+N_TRIALS: 10
 N_POINTS: 1000
 
 BYPASS_TOP_CC: false
@@ -24,6 +24,7 @@ BENCHMARK_KWARGS:
     - "product_rf"
     - "tangent_dt"
     - "tangent_rf"
+    - "single_manifold_rf"
     - "knn"
     - "ps_perceptron"
     - "tangent_mlp"

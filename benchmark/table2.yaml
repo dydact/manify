@@ -3,7 +3,7 @@ OUTPUT_DIR: "data/results_icml_revision"
 DEVICE: "cuda:0"
 
 RUNNING_SEED: 0
-N_TRIALS: 1
+N_TRIALS: 10
 N_POINTS: 1000
 
 BYPASS_TOP_CC: false
@@ -24,6 +24,7 @@ BENCHMARK_KWARGS:
     - "sklearn_rf"
     - "product_dt"
     - "product_rf"
+    - "single_manifold_rf"
     - "tangent_dt"
     - "tangent_rf"
     - "knn"
@@ -48,6 +49,9 @@ BENCHMARKS:
       - [[0, 2]]
       - [[0.25, 2]]
       - [[0.5, 2]]
+      - [[1, 2]]
+      - [[2, 2]]
+      - [[4, 2]]
     signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
     output_file: "classification_nn_single_curvature.tsv"
 

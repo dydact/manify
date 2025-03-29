@@ -770,3 +770,36 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
             return self.predict(X) == y
         else:
             return ((self.predict(X) == y) ** 2).float().mean()
+
+
+class SingleManifoldEnsembleRF:
+    def __init__(self, pm, task="classification", n_estimators=10, **kwargs):
+        self.pm = pm
+        self.task = task
+        self.n_estimators = n_estimators
+        self.trees = []
+        self.submanifold_indices = torch.randint(0, len(pm.P), (n_estimators,))
+        for idx in self.submanifold_indices:
+            pm_sub = ProductManifold([pm.signature[idx]])
+            tree = ProductSpaceDT(pm=pm_sub, task=task, **kwargs)
+            self.trees.append(tree)
+
+    @torch.no_grad()
+    def fit(self, X, y):
+        X_factorized = self.pm.factorize(X)
+        for idx, tree in zip(self.submanifold_indices, self.trees):
+            tree.fit(X_factorized[idx], y)
+
+    @torch.no_grad()
+    def predict_proba(self, X):
+        X_factorized = self.pm.factorize(X)
+        return torch.stack(
+            [tree.predict_proba(X_factorized[idx]) for idx, tree in zip(self.submanifold_indices, self.trees)]
+        ).mean(dim=0)
+
+    @torch.no_grad()
+    def predict(self, X):
+        if self.task == "classification":
+            return self.predict_proba(X).argmax(dim=1)
+        else:
+            return self.predict_proba(X).flatten()
