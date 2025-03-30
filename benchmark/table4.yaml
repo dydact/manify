@@ -1,6 +1,6 @@
 OUTPUT_DIR: "data/results_icml_revision"
 
-DEVICE: "cuda:1"
+DEVICE: "cuda"
 
 RUNNING_SEED: 2_000_000
 N_TRIALS:
@@ -41,7 +41,7 @@ BENCHMARK_KWARGS:
 
 BENCHMARKS:
   - type: "link_prediction"
-    task: "classification"
+    task: "link_prediction"
     datasets: ["adjnoun", "dolphins", "football", "karate_club", "lesmis", "polbooks"]
     signatures:
       - [[-1, 2], [0, 2], [1, 2]]

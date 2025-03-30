@@ -35,7 +35,7 @@ device = torch.device(cfg["DEVICE"])
 def run_benchmark(pm, X, y, task, signature, dataset_name, seed, extra_kwargs=None):
     print(f"Running benchmark for {dataset_name} | {signature} | {seed}")
     # try:
-    scores = ["f1-micro", "f1-macro", "accuracy"] if task == "classification" else ["mse", "rmse"]
+    scores = ["f1-micro", "f1-macro", "accuracy"] if task in ["classification", "link_prediction"] else ["mse", "rmse"]
 
     result = benchmark(
         X, y, pm, task=task, seed=seed, device=device, score=scores, **cfg["BENCHMARK_KWARGS"], **(extra_kwargs or {})

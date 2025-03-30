@@ -294,6 +294,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         n_features: Literal["d", "d_choose_2"] = "d",
         ablate_midpoints=False,
     ):
+        # Hack
+        if task == "link_prediction":
+            task = "classification"
         # Raise error if manifold is stereographic
         if pm.is_stereographic:
             raise ValueError("Stereographic manifolds are not supported. Use a different representation.")
@@ -657,6 +660,10 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         random_state=None,
         n_jobs=-1,
     ):
+        # Hack
+        if task == "link_prediction":
+            task = "classification"
+
         # Tree hyperparameters
         tree_kwargs = {}
         self.pm = tree_kwargs["pm"] = pm
@@ -774,6 +781,9 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
 class SingleManifoldEnsembleRF:
     def __init__(self, pm, task="classification", n_estimators=10, **kwargs):
+        # Hack
+        if task == "link_prediction":
+            task = "classification"
         self.pm = pm
         self.task = task
         self.n_estimators = n_estimators

@@ -155,7 +155,7 @@ def benchmark(
 
     """
     # Input validation on (task, score) pairing
-    if task == "classification":
+    if task in ["classification", "link_prediction"]:
         assert all(s in ["accuracy", "f1-micro", "f1-macro", "time"] for s in score)
     elif task == "regression":
         assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
@@ -200,7 +200,7 @@ def benchmark(
         X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)), test_size=0.2)
 
     # Make sure classification labels are formatted correctly
-    if task == "classification":
+    if task in ["classification", "link_prediction"]:
         y = torch.unique(y, return_inverse=True)[1]
         y_train = y[train_idx]
         y_test = y[test_idx]
@@ -255,7 +255,7 @@ def benchmark(
     nn_train_kwargs = {"epochs": epochs, "lr": lr, "lp_indices": lp_train_idx}
 
     # Define your models
-    if task == "classification":
+    if task in ["classification", "link_prediction"]:
         dt_class = DecisionTreeClassifier
         rf_class = RandomForestClassifier
         knn_class = KNeighborsClassifier
@@ -268,6 +268,13 @@ def benchmark(
         knn_class = KNeighborsRegressor
         svm_class = SVR
         perceptron_class = SGDRegressor
+    
+    # Get link prediction indices: random 1000 edges
+    if task == "link_prediction":
+        # Want shape to be (1000, 2) in range 0, n_nodes:
+        n_nodes = adj.shape[0]
+        n_edges = 1000
+        lp_indices = torch.randint(0, n_nodes, (n_edges, 2))
 
     # Evaluate sklearn
     accs = {}
@@ -408,7 +415,10 @@ def benchmark(
     if "kappa_mlp" in models:
         kappa_mlp = KappaGCN(pm=pm_stereo, **nn_kwargs).to(device)
         t1 = time.time()
-        kappa_mlp.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
+        if task == "link_prediction":
+            kappa_mlp.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_mlp", lp_indices= **nn_train_kwargs)
+        else:
+            kappa_mlp.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_mlp.predict(X_test_stereo, A=None)
         if lp_test_idx:
