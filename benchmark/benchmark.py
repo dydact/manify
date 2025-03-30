@@ -154,7 +154,15 @@ for bench in cfg["BENCHMARKS"]:
                 # Consistent train-test split
                 if X is not None and y is not None:
                     if bench["type"] == "link_prediction":
-                        X_train, X_test, y_train, y_test = split_dataset(X, y, test_size=0.2, random_state=seed)
+                        X_train, X_test, y_train, y_test, idx_train, idx_test = split_dataset(
+                            X, y, test_size=0.2, random_state=seed
+                        )
+                        extra_kwargs.update(
+                            {
+                                "lp_train_idx": idx_train,
+                                "lp_test_idx": idx_test,
+                            }
+                        )
                     else:
                         if len(X) > cfg["N_POINTS"]:
                             idx = np.random.choice(len(X), cfg["N_POINTS"], replace=False)

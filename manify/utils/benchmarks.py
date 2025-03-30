@@ -117,6 +117,8 @@ def benchmark(
     epochs: int = 4_000,
     lr: float = 1e-4,
     kappa_gcn_layers: int = 1,
+    lp_train_idx: Optional[Int[torch.Tensor, "n_samples"]] = None,
+    lp_test_idx: Optional[Int[torch.Tensor, "n_samples"]] = None,
 ) -> Dict[str, float]:
     """
     Benchmarks various machine learning models on a dataset using a product manifold structure.
@@ -250,7 +252,7 @@ def benchmark(
     rf_kwargs = {"n_estimators": n_estimators, "n_jobs": -1, "random_state": seed}
     nn_outdim = 1 if task == "regression" else len(torch.unique(y))
     nn_kwargs = {"task": task, "output_dim": nn_outdim, "hidden_dims": hidden_dims}
-    nn_train_kwargs = {"epochs": epochs, "lr": lr}
+    nn_train_kwargs = {"epochs": epochs, "lr": lr, "lp_indices": lp_train_idx}
 
     # Define your models
     if task == "classification":
@@ -409,6 +411,8 @@ def benchmark(
         kappa_mlp.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_mlp.predict(X_test_stereo, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["kappa_mlp"] = _score(None, y_test_np, kappa_mlp, y_pred_override=y_pred, torch=True, score=score)
         accs["kappa_mlp"]["time"] = t2 - t1
 
@@ -418,6 +422,8 @@ def benchmark(
         ambient_mlp.fit(X_train, y_train, A=None, tqdm_prefix="ambient_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_mlp.predict(X_test, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True, score=score)
         accs["ambient_mlp"]["time"] = t2 - t1
 
@@ -427,6 +433,8 @@ def benchmark(
         tangent_mlp.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlp", **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_mlp.predict(X_test_tangent, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True, score=score)
         accs["tangent_mlp"]["time"] = t2 - t1
 
@@ -436,6 +444,8 @@ def benchmark(
         ambient_gcn.fit(X_train, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_gcn.predict(X_test, A=A_test)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["ambient_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["ambient_gcn"]["time"] = t2 - t1
 
@@ -445,6 +455,8 @@ def benchmark(
         tangent_gcn.fit(X_train_tangent, y_train, A=A_train, tqdm_prefix="tangent_gcn", **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_gcn.predict(X_test_tangent, A=A_test)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["tangent_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["tangent_gcn"]["time"] = t2 - t1
 
@@ -460,6 +472,8 @@ def benchmark(
         kappa_gcn.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_gcn", **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["kappa_gcn"]["time"] = t2 - t1
 
@@ -469,6 +483,8 @@ def benchmark(
         kappa_mlr.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlr", **nn_train_kwargs)
         t2 = time.time()
         y_pred = kappa_mlr.predict(X_test_stereo, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["kappa_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["kappa_mlr"]["time"] = t2 - t1
 
@@ -478,6 +494,8 @@ def benchmark(
         tangent_mlr.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlr", **nn_train_kwargs)
         t2 = time.time()
         y_pred = tangent_mlr.predict(X_test_tangent, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["tangent_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["tangent_mlr"]["time"] = t2 - t1
 
@@ -487,6 +505,8 @@ def benchmark(
         ambient_mlr.fit(X_train, y_train, A=None, tqdm_prefix="ambient_mlr", **nn_train_kwargs)
         t2 = time.time()
         y_pred = ambient_mlr.predict(X_test, A=None)
+        if lp_test_idx:
+            y_pred = y_pred[lp_test_idx]
         accs["ambient_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
         accs["ambient_mlr"]["time"] = t2 - t1
 

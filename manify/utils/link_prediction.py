@@ -67,6 +67,8 @@ def split_dataset(
     Float[torch.Tensor, "n_pairs n_dims"],
     Int[torch.Tensor, "n_pairs"],
     Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs"],
 ]:
     """Split a link prediction dataset into train and test sets"""
     n_pairs, n_dims = X.shape
@@ -100,4 +102,4 @@ def split_dataset(
     X_test = X_reshaped[idx_test][:, idx_test].reshape(-1, n_dims)
     y_test = y_reshaped[idx_test][:, idx_test].reshape(-1)
 
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test, idx_train, idx_test
