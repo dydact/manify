@@ -34,21 +34,31 @@ device = torch.device(cfg["DEVICE"])
 # Common Benchmark Function
 def run_benchmark(pm, X, y, task, signature, dataset_name, seed, extra_kwargs=None):
     print(f"Running benchmark for {dataset_name} | {signature} | {seed}")
-    # try:
-    scores = ["f1-micro", "f1-macro", "accuracy"] if task in ["classification", "link_prediction"] else ["mse", "rmse"]
+    try:
+        scores = (
+            ["f1-micro", "f1-macro", "accuracy"] if task in ["classification", "link_prediction"] else ["mse", "rmse"]
+        )
 
-    result = benchmark(
-        X, y, pm, task=task, seed=seed, device=device, score=scores, **cfg["BENCHMARK_KWARGS"], **(extra_kwargs or {})
-    )
+        result = benchmark(
+            X,
+            y,
+            pm,
+            task=task,
+            seed=seed,
+            device=device,
+            score=scores,
+            **cfg["BENCHMARK_KWARGS"],
+            **(extra_kwargs or {}),
+        )
 
-    result.update({"dataset": dataset_name, "signature": signature, "seed": seed})
-    wandb.log(result)
-    wandb.run.summary.update(result)
-    return result
-    # except Exception as e:
-    #     wandb.log({"error": str(e), "dataset": dataset_name, "signature": signature, "seed": seed})
-    #     print(f"Benchmark error [{dataset_name} | {signature}]: {e}")
-    #     return None
+        result.update({"dataset": dataset_name, "signature": signature, "seed": seed})
+        wandb.log(result)
+        wandb.run.summary.update(result)
+        return result
+    except Exception as e:
+        wandb.log({"error": str(e), "dataset": dataset_name, "signature": signature, "seed": seed})
+        print(f"Benchmark error [{dataset_name} | {signature}]: {e}")
+        return None
 
 
 def reorder_columns(df):
@@ -75,6 +85,7 @@ def save_results(results, filename):
 
 
 # Execute benchmarks
+seed = cfg["RUNNING_SEED"]
 for bench in cfg["BENCHMARKS"]:
     datasets, signatures, sig_strs = bench["datasets"], bench["signatures"], bench["signature_str"]
     tasks = bench["task"]
@@ -100,7 +111,7 @@ for bench in cfg["BENCHMARKS"]:
     with tqdm(total=len(datasets) * n_trials, desc=tqdm_desc) as pbar:
         for dataset, sig, sigstr, task in zip(datasets, signatures, sig_strs, tasks):
             for trial in range(n_trials):
-                seed = cfg["RUNNING_SEED"] + trial
+                seed += 1
                 pm = ProductManifold(signature=sig, device=device)
 
                 X, y = None, None

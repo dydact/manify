@@ -793,6 +793,8 @@ class SingleManifoldEnsembleRF:
             pm_sub = ProductManifold([pm.signature[idx]])
             tree = ProductSpaceDT(pm=pm_sub, task=task, **kwargs)
             self.trees.append(tree)
+        if random_state is not None:
+            torch.manual_seed(random_state)
 
     @torch.no_grad()
     def fit(self, X, y):

@@ -42,23 +42,23 @@ BENCHMARK_KWARGS:
     - "tangent_mlr"
 
 BENCHMARKS:
-  - type: "gaussian"
-    task: "regression"
-    datasets: "single_gaussian"
-    signatures:
-      - [[-4, 2]]
-      - [[-2, 2]]
-      - [[-1, 2]]
-      - [[-0.5, 2]]
-      - [[-0.25, 2]]
-      - [[0, 2]]
-      - [[0.25, 2]]
-      - [[0.5, 2]]
-      - [[1, 2]]
-      - [[2, 2]]
-      - [[4, 2]]
-    signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
-    output_file: "regression_nn_single_curvature.tsv"
+  # - type: "gaussian"
+  #   task: "regression"
+  #   datasets: "single_gaussian"
+  #   signatures:
+  #     - [[-4, 2]]
+  #     - [[-2, 2]]
+  #     - [[-1, 2]]
+  #     - [[-0.5, 2]]
+  #     - [[-0.25, 2]]
+  #     - [[0, 2]]
+  #     - [[0.25, 2]]
+  #     - [[0.5, 2]]
+  #     - [[1, 2]]
+  #     - [[2, 2]]
+  #     - [[4, 2]]
+  #   signature_str: ["H-4", "H-2", "H-1", "H-0.5", "H-0.25", "E", "S0.25", "S0.5", "S1", "S2", "S4"]
+  #   output_file: "regression_nn_single_curvature.tsv"
 
   - type: "gaussian"
     task: "regression"

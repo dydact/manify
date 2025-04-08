@@ -618,6 +618,7 @@ class ProductManifold(Manifold):
         cov_scale_points: float = 1.0,
         regression_noise_std: float = 0.1,
         task: Literal["classification", "regression"] = "classification",
+        adjust_for_dims: bool = False,
     ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points"]]:
         """
         Generate a set of labeled samples from a Gaussian mixture model.
@@ -631,6 +632,7 @@ class ProductManifold(Manifold):
             cov_scale_points: The scale of the covariance matrix for the points.
             regression_noise_std: The standard deviation of the noise for regression labels.
             task: The type of labels to generate. Either "classification" or "regression".
+            adjust_for_dims: Whether to adjust the covariance matrices for the number of dimensions in each manifold.
 
         Returns:
             samples: A tensor of shape (num_points, ambient_dim) containing the generated samples.
@@ -646,6 +648,11 @@ class ProductManifold(Manifold):
         else:
             assert num_clusters >= num_classes
 
+        # Adjust covariance matrices for number of dimensions
+        if adjust_for_dims:
+            cov_scale_points /= self.dim
+            cov_scale_means /= self.dim
+
         # Generate cluster means
         cluster_means, _ = self.sample(
             z_mean=torch.stack([self.mu0] * num_clusters),
@@ -656,7 +663,10 @@ class ProductManifold(Manifold):
         # Generate class assignments
         cluster_probs = torch.rand(num_clusters)
         cluster_probs /= cluster_probs.sum()
+        # Draw cluster assignments: ensure at least 2 points per cluster. This is to ensure splits can always happen.
         cluster_assignments = torch.multinomial(input=cluster_probs, num_samples=num_points, replacement=True)
+        while (cluster_assignments.bincount() < 2).any():
+            cluster_assignments = torch.multinomial(input=cluster_probs, num_samples=num_points, replacement=True)
         assert cluster_assignments.shape == (num_points,)
 
         # Generate covariance matrices for each class - Wishart distribution
