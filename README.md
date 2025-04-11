@@ -32,26 +32,23 @@ import torch
 from manify.manifolds import ProductManifold
 from manify.embedders import coordinate_learning
 from manify.predictors.decision_tree import ProductSpaceDT
-from manify.utils import dataloaders
+from manify.utils.dataloaders import load
+from sklearn.model_selection import train_test_split
 
 # Load graph data
-graph_dists, graph_labels, _ = dataloaders.load("polblogs")
+dists, graph_labels, _ = load("polblogs")
 
 # Create product manifold
-signature = [(1, 4)]  # Spherical manifold
-pm = ProductManifold(signature=signature)
+pm = ProductManifold(signature=[(1, 4)]) # S^4_1
 
-# Learn embeddings
-embeddings, _ = coordinate_learning.train_coords(
-    pm,
-    graph_dists / graph_dists.max(),
-    burn_in_iterations=1000,
-    training_iterations=9000
-)
+# Learn embeddings (Gu et al (2018) method)
+X, _ = coordinate_learning.train_coords(pm=pm, dists=dists)
 
-# Train classifier
+# Train and evaluate classifier (Chlenski et al (2025) method)
+X_train, X_test, y_train, y_test = train_test_split(X, graph_labels)
 tree = ProductSpaceDT(pm=pm, max_depth=3)
-tree.fit(embeddings, graph_labels)
+tree.fit(X_train, y_train)
+print(tree.score(X_test, y_test))
 ```
 
 ## Modules
