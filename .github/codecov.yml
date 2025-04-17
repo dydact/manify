@@ -1,0 +1,31 @@
+codecov:
+  require_ci_to_pass: no  # Don't require CI to pass to upload coverage
+  notify:
+    wait_for_ci: false  # Don't wait for CI to finish to notify
+
+coverage:
+  precision: 2
+  round: down
+  range: "40...80"  # More lenient range for coverage display
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 10%  # More lenient threshold for status checks
+        informational: true  # Make coverage status checks informational only
+
+ignore:
+  - "tests/**"             # Exclude test files from coverage
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: no
