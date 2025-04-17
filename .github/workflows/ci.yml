@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11, 3.12]   # test across multiple Python versions :contentReference[oaicite:6]{index=6}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5        # always pin Python explicitly :contentReference[oaicite:7]{index=7}
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install package & test deps
+        run: pip install -e '.[test]'        # ensures install works
+
+      - name: Check formatting with Black
+        run: black --check .                 # enforces Black style :contentReference[oaicite:8]{index=8}
+
+      - name: Check import sorting with isort
+        run: isort --check --profile black . # enforces isort compatibility with Black :contentReference[oaicite:9]{index=9}
+
+      - name: Run Pytest with coverage
+        run: pytest --cov=src --cov-report=xml:coverage.xml   # unit tests + coverage :contentReference[oaicite:10]{index=10}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5      # publish coverage to Codecov :contentReference[oaicite:11]{index=11}
+
+      - name: Run MyPy type checks
+        uses: sasanquaneuf/mypy-github-action@v1  # static type checking :contentReference[oaicite:12]{index=12}
+
+      - name: Shape checks via Jaxtyping
+        run: |
+          pip install jaxtyping typeguard
+          python - <<EOF
+          import jaxtyping, typeguard
+          jaxtyping.patch_typeguard()      # runtime shape/dtype enforcement :contentReference[oaicite:13]{index=13}
+          EOF
+
