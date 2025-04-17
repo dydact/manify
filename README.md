@@ -1,4 +1,11 @@
 # Manify: A Python Library for Learning Non-Euclidean Representations
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/pchlenski/hyperdt)](https://github.com/pchlenski/hyperdt/blob/main/LICENSE)
+[![PyPI version](https://badge.fury.io/py/hyperdt.svg)](https://badge.fury.io/py/hyperdt)
+[![Tests](https://github.com/pchlenski/hyperdt/actions/workflows/tests.yml/badge.svg)](https://github.com/pchlenski/hyperdt/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/pchlenski/hyperdt/branch/main/graph/badge.svg)](https://codecov.io/gh/pchlenski/hyperdt)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 
 Manify is a Python library for generating graph/data embeddings and performing machine learning in product spaces with mixed curvature (hyperbolic, Euclidean, and spherical spaces). It provides tools for manifold creation, curvature estimation, embedding generation, and predictive modeling that respects the underlying geometry of complex data.
 
