@@ -416,7 +416,7 @@ def benchmark(
         kappa_mlp = KappaGCN(pm=pm_stereo, **nn_kwargs).to(device)
         t1 = time.time()
         if task == "link_prediction":
-            kappa_mlp.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_mlp", lp_indices= **nn_train_kwargs)
+            kappa_mlp.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
         else:
             kappa_mlp.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
         t2 = time.time()
