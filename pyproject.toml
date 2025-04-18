@@ -13,15 +13,21 @@ authors = [
 dependencies = [
     "torch",
     "geoopt",
-    "networkx",
     "numpy",
-    "pandas",
-    "matplotlib",
-#    "scipy==1.11",
-    "jaxtyping",
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
+]
+
+[pyproject.optional_dependencies]
+dev = [
+    "jaxtyping",
+]
+utils = [
+    "networkx",
+    "pandas",
+    "matplotlib",
+    "scipy==1.11",
     "anndata",
     "basemap"
 ]
