@@ -17,6 +17,7 @@ dependencies = [
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
+    "scipy<=1.9.3" # Ensure scalar_search_wolfe2 import works correctly
 ]
 
 [project.optional-dependencies]
@@ -27,7 +28,6 @@ utils = [
     "networkx",
     "pandas",
     "matplotlib",
-    "scipy==1.11",
     "anndata",
     "basemap"
 ]
