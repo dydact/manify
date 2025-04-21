@@ -1,0 +1,469 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>manify.utils.dataloaders &mdash; manify 0.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="manify.utils.link_prediction" href="manify.utils.link_prediction.html" />
+    <link rel="prev" title="manify.utils.benchmarks" href="manify.utils.benchmarks.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            manify
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../api.html#module-manify.manifolds">Manifolds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#curvature-estimation">Curvature Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#embedders">Embedders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#predictors">Predictors</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#utilities">Utilities</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="manify.utils.benchmarks.html">manify.utils.benchmarks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">manify.utils.dataloaders</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_adjnoun"><code class="docutils literal notranslate"><span class="pre">load_adjnoun()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_blood_cells"><code class="docutils literal notranslate"><span class="pre">load_blood_cells()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_cifar_100"><code class="docutils literal notranslate"><span class="pre">load_cifar_100()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_citeseer"><code class="docutils literal notranslate"><span class="pre">load_citeseer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_cities"><code class="docutils literal notranslate"><span class="pre">load_cities()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_cora"><code class="docutils literal notranslate"><span class="pre">load_cora()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_cs_phds"><code class="docutils literal notranslate"><span class="pre">load_cs_phds()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_dolphins"><code class="docutils literal notranslate"><span class="pre">load_dolphins()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_facebook"><code class="docutils literal notranslate"><span class="pre">load_facebook()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_football"><code class="docutils literal notranslate"><span class="pre">load_football()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_karate_club"><code class="docutils literal notranslate"><span class="pre">load_karate_club()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_landmasses"><code class="docutils literal notranslate"><span class="pre">load_landmasses()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_lesmis"><code class="docutils literal notranslate"><span class="pre">load_lesmis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_lymphoma"><code class="docutils literal notranslate"><span class="pre">load_lymphoma()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_mnist"><code class="docutils literal notranslate"><span class="pre">load_mnist()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_neuron33"><code class="docutils literal notranslate"><span class="pre">load_neuron33()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_neuron46"><code class="docutils literal notranslate"><span class="pre">load_neuron46()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_polblogs"><code class="docutils literal notranslate"><span class="pre">load_polblogs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_polbooks"><code class="docutils literal notranslate"><span class="pre">load_polbooks()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_power"><code class="docutils literal notranslate"><span class="pre">load_power()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_pubmed"><code class="docutils literal notranslate"><span class="pre">load_pubmed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_temperature"><code class="docutils literal notranslate"><span class="pre">load_temperature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manify.utils.dataloaders.load_traffic"><code class="docutils literal notranslate"><span class="pre">load_traffic()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="manify.utils.link_prediction.html">manify.utils.link_prediction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="manify.utils.preprocessing.html">manify.utils.preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="manify.utils.visualization.html">manify.utils.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">manify</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">manify.utils.dataloaders</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/manify.utils.dataloaders.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-manify.utils.dataloaders">
+<span id="manify-utils-dataloaders"></span><h1>manify.utils.dataloaders<a class="headerlink" href="#module-manify.utils.dataloaders" title="Link to this heading"></a></h1>
+<p>Dataloaders for different datasets</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load" title="manify.utils.dataloaders.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(name, **kwargs)</p></td>
+<td><p>Driver function to load the specified dataset</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_adjnoun" title="manify.utils.dataloaders.load_adjnoun"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_adjnoun</span></code></a>([adjnoun_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_blood_cells" title="manify.utils.dataloaders.load_blood_cells"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_blood_cells</span></code></a>([blood_cell_anndata_path])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_cifar_100" title="manify.utils.dataloaders.load_cifar_100"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cifar_100</span></code></a>([cifar_data_path, coarse, train])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_citeseer" title="manify.utils.dataloaders.load_citeseer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_citeseer</span></code></a>([citeseer_edges_path, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_cities" title="manify.utils.dataloaders.load_cities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cities</span></code></a>([cities_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_cora" title="manify.utils.dataloaders.load_cora"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cora</span></code></a>([cora_edges_path, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_cs_phds" title="manify.utils.dataloaders.load_cs_phds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cs_phds</span></code></a>([cs_phds_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_dolphins" title="manify.utils.dataloaders.load_dolphins"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_dolphins</span></code></a>([dolphin_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_facebook" title="manify.utils.dataloaders.load_facebook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_facebook</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_football" title="manify.utils.dataloaders.load_football"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_football</span></code></a>([football_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_karate_club" title="manify.utils.dataloaders.load_karate_club"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_karate_club</span></code></a>([karate_club_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_landmasses" title="manify.utils.dataloaders.load_landmasses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_landmasses</span></code></a>([n_points, seed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_lesmis" title="manify.utils.dataloaders.load_lesmis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_lesmis</span></code></a>([lesmis_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_lymphoma" title="manify.utils.dataloaders.load_lymphoma"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_lymphoma</span></code></a>([lymphoma_anndata_path])</p></td>
+<td><p><a class="reference external" href="https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0">https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_mnist" title="manify.utils.dataloaders.load_mnist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_mnist</span></code></a>([mnist_data_path, train])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_neuron33" title="manify.utils.dataloaders.load_neuron33"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_neuron33</span></code></a>(**kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_neuron46" title="manify.utils.dataloaders.load_neuron46"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_neuron46</span></code></a>(**kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_polblogs" title="manify.utils.dataloaders.load_polblogs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_polblogs</span></code></a>([polblogs_path, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_polbooks" title="manify.utils.dataloaders.load_polbooks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_polbooks</span></code></a>([polbooks_path, bypassed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_power" title="manify.utils.dataloaders.load_power"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_power</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_pubmed" title="manify.utils.dataloaders.load_pubmed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_pubmed</span></code></a>([pubmed_edges_path, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_temperature" title="manify.utils.dataloaders.load_temperature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_temperature</span></code></a>([temperature_path, seed])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#manify.utils.dataloaders.load_traffic" title="manify.utils.dataloaders.load_traffic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_traffic</span></code></a>([traffic_path, seed])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load" title="Link to this definition"></a></dt>
+<dd><p>Driver function to load the specified dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The name of the dataset in string.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword argument.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A tuple that contains the distance matrix, the labels, and the adjacency matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_adjnoun">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_adjnoun</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjnoun_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/adjnoun/adjnoun.gml')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_adjnoun" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_blood_cells">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_blood_cells</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blood_cell_anndata_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/blood_cell_scrna/adata.h5ad.gz')</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_blood_cells" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_cifar_100">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_cifar_100</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cifar_data_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/cifar_100/cifar-100-python')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coarse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_cifar_100" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_citeseer">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_citeseer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">citeseer_edges_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/citeseer/citeseer.edges')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">citeseer_labels_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/citeseer/citeseer.node_labels')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_citeseer" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_cities">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_cities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cities_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/cities/cities.txt')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_cities" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_cora">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_cora</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cora_edges_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/cora/cora.edges')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cora_labels_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/cora/cora.node_labels')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_cora" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_cs_phds">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_cs_phds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cs_phds_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/cs_phds.txt')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_cs_phds" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_dolphins">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_dolphins</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dolphin_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/dolphins/dolphins.gml')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_dolphins" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_facebook">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_facebook</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_facebook" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_football">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_football</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">football_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/football/football.mtx')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_football" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_karate_club">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_karate_club</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">karate_club_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/karate/karate.gml')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_karate_club" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_landmasses">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_landmasses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">400</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_landmasses" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">n_dims']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_lesmis">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_lesmis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lesmis_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/lesmis/lesmis.gml')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_lesmis" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_lymphoma">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_lymphoma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lymphoma_anndata_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/lymphoma/adata.h5ad.gz')</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_lymphoma" title="Link to this definition"></a></dt>
+<dd><p><a class="reference external" href="https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0">https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_mnist">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_mnist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mnist_data_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/mnist')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_mnist" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_neuron33">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_neuron33</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_neuron33" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">n_dims']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_neuron46">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_neuron46</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_neuron46" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">n_dims']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_polblogs">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_polblogs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polblogs_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/polblogs/polblogs.mtx')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polblogs_labels_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/polblogs/polblogs_labels.tsv')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_polblogs" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_polbooks">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_polbooks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polbooks_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/polbooks/polbooks.gml')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_polbooks" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_power">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_power</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_power" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_pubmed">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_pubmed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pubmed_edges_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/pubmed/pubmed.edges')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pubmed_labels_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/graphs/pubmed/pubmed.node_labels')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypassed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_pubmed" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">nodes']</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_temperature">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_temperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temperature_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/temperature/temperature.csv')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_temperature" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">n_dims']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="manify.utils.dataloaders.load_traffic">
+<span class="sig-prename descclassname"><span class="pre">manify.utils.dataloaders.</span></span><span class="sig-name descname"><span class="pre">load_traffic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traffic_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PosixPath('/Users/kaizhudu/manify/data/traffic/traffic.csv')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#manify.utils.dataloaders.load_traffic" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes</span> <span class="pre">n_dims']</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Float[Tensor,</span> <span class="pre">'nodes']</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="manify.utils.benchmarks.html" class="btn btn-neutral float-left" title="manify.utils.benchmarks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="manify.utils.link_prediction.html" class="btn btn-neutral float-right" title="manify.utils.link_prediction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Philippe Chlenski and Kaizhu Du.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
