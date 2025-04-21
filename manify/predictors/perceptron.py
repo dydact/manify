@@ -32,11 +32,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(
-        self,
-        X: Float[torch.Tensor, "n_samples n_manifolds"],
-        y: Int[torch.Tensor, "n_samples,"],
-    ) -> None:
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples,"]) -> None:
         """
         Trains the perceptron model using the provided data and labels.
         Args:
@@ -47,7 +43,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             self: The fitted model.
         """
         # Identify unique classes for multiclass classification
-        self.classes_ = torch.unique(y)
+        self.classes_ = [int(c.item()) for c in torch.unique(y)]
         n_samples = X.shape[0]
 
         # Precompute kernel matrix

@@ -619,18 +619,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.nodes.append(node)
 
         # Do left and right recursion after appending node to self.nodes (ensures order of self.nodes is correct)
-        node.left = self._fit_node(
-            angles=angles_neg,
-            labels=labels_neg,
-            comparisons=comparisons_neg,
-            depth=depth - 1,
-        )
-        node.right = self._fit_node(
-            angles=angles_pos,
-            labels=labels_pos,
-            comparisons=comparisons_pos,
-            depth=depth - 1,
-        )
+        node.left = self._fit_node(angles=angles_neg, labels=labels_neg, comparisons=comparisons_neg, depth=depth - 1)
+        node.right = self._fit_node(angles=angles_pos, labels=labels_pos, comparisons=comparisons_pos, depth=depth - 1)
         return node
 
     def _leaf_values(
@@ -653,7 +643,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     def _traverse(self, x: Float[torch.Tensor, "intrinsic_dim,"], node: DecisionNode) -> DecisionNode:
         """Traverse a decision tree for a single point"""
         # Leaf case
-        if node.value is not None:
+        if node.left is None and node.right is None:
             return node
 
         return self._traverse(x, node.left) if self._left(x, node) else self._traverse(x, node.right)  # type: ignore
@@ -767,11 +757,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         return idx_sample, idx_dim
 
     @torch.no_grad()
-    def fit(
-        self,
-        X: Float[torch.Tensor, "batch ambient_dim"],
-        y: Float[torch.Tensor, "batch,"],
-    ) -> None:
+    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch,"]) -> None:
         """Preprocess and fit an ensemble of trees on subsampled data"""
         # Pre-preprocessing step: aggregate special dimensions
         if self.use_special_dims:
@@ -781,10 +767,11 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
         # Can use any tree to preprocess X and y
         angles, labels, classes, comparisons = self.trees[0]._preprocess(X=X, y=y)
-        self.classes_ = classes.tolist() if classes is not None else []
+        self.classes_ = classes if classes is not None else torch.tensor([])
 
         # Also update angle2man and special_first
         for tree in self.trees:
+            tree.classes_ = self.classes_
             tree.angle2man = self.trees[0].angle2man
             tree.special_first = self.trees[0].special_first
 

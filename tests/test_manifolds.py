@@ -143,3 +143,6 @@ def test_product_manifold_methods():
                 assert M.type == "S" and isinstance(M.manifold.base, geoopt.Sphere)
 
         _shared_tests(pm, X1, X2, is_euclidean=all(M.curvature == 0 for M in pm.P))
+
+        # Also test gaussian mixture
+        X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)

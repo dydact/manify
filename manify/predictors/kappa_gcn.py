@@ -179,6 +179,12 @@ class KappaGCN(torch.nn.Module):
         self.pm = pm
         self.task = task
 
+        # Ensure pm is stereographic
+        if not pm.is_stereographic:
+            raise ValueError(
+                "ProductManifold must be stereographic for KappaGCN to work. Please use pm.stereographic() to convert."
+            )
+
         # Hidden layers
         if hidden_dims is None:
             dims = [pm.dim, pm.dim, pm.dim]  # 2 hidden layers
@@ -441,20 +447,18 @@ class KappaGCN(torch.nn.Module):
         if use_tqdm:
             my_tqdm.close()
 
-    def predict(
-        self,
-        X: Float[torch.Tensor, "n_nodes dim"],
-        A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
-    ) -> Float[torch.Tensor, "n_nodes,"]:
+    def predict_proba(
+        self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+    ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """
-        Make predictions using the trained Kappa GCN.
+        Predict class probabilities using the trained Kappa GCN.
 
         Args:
             X (torch.Tensor): Feature matrix (NxD).
             A (torch.Tensor): Adjacency or distance matrix (NxN).
 
         Returns:
-            torch.Tensor: Predicted labels or outputs.
+            torch.Tensor: Predicted class probabilities / regression targets.
         """
         # Copy everything
         X = X.clone()
@@ -463,10 +467,25 @@ class KappaGCN(torch.nn.Module):
         # Get edges for test set
         self.eval()
         y_pred = self(X, A)
+        return y_pred
+
+    def predict(
+        self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+    ) -> Float[torch.Tensor, "n_nodes,"]:
+        """
+        Predict class probabilities using the trained Kappa GCN.
+
+        Args:
+            X (torch.Tensor): Feature matrix (NxD).
+            A (torch.Tensor): Adjacency or distance matrix (NxN).
+
+        Returns:
+            torch.Tensor: Predicted labels or outputs.
+        """
+        probs = self.predict_proba(X, A)
         if self.task == "classification":
-            return y_pred.argmax(dim=1).detach()
+            return torch.argmax(probs, dim=1)
         elif self.task == "link_prediction":
-            # Binarize the logits
-            return (y_pred > 0).long().detach()
+            return (probs > 0.5).float()
         else:
-            return y_pred.detach()
+            return probs  # Regression uses raw logits
