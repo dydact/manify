@@ -520,6 +520,22 @@ class ProductManifold(Manifold):
         self.projection_matrix = self.projection_matrix.to(device)
         return self
 
+    def inner(
+        self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
+    ) -> Float[torch.Tensor, "n_points1 n_points2"]:
+        """
+        Compute the inner product of manifolds.
+
+        Args:
+            X: (n_points1, n_dim) Tensor of points in the manifold.
+            Y: (n_points2, n_dim) Tensor of points in the manifold.
+
+        Returns:
+            inner_product: (n_points1, n_points2) Tensor of inner products between points.
+        """
+        ips = [M.inner(x, y) for x, y, M in zip(self.factorize(X), self.factorize(Y), self.P)]
+        return torch.stack(ips, dim=0).sum(dim=0)
+
     def factorize(
         self, X: Float[torch.Tensor, "n_points n_dim"], intrinsic: bool = False
     ) -> List[Float[torch.Tensor, "n_points n_dim_manifold"]]:
@@ -630,6 +646,21 @@ class ProductManifold(Manifold):
         assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
 
         return stereo_manifold, *stereo_points  # type: ignore
+
+    def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple[Manifold]:
+        if not self.is_stereographic:
+            print("Manifold is already in original coordinates")
+            return self, *points
+
+        # Convert manifold
+        orig_manifold = ProductManifold(self.signature, device=self.device, stereographic=False)
+
+        orig_points = [
+            torch.hstack([M.inverse_stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
+        ]
+        assert all([orig_manifold.manifold.check_point(X) for X in orig_points])
+
+        return orig_manifold, *orig_points  # type: ignore
 
     @torch.no_grad()
     def gaussian_mixture(
