@@ -11,7 +11,8 @@ includes functions for different key geometric operations.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Callable, List, Literal, Optional, Tuple, Union
+from typing import (TYPE_CHECKING, Callable, List, Literal, Optional, Tuple,
+                    Union)
 
 import geoopt
 import torch

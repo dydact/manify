@@ -3,6 +3,9 @@ import manify.embedders
 import manify.manifolds
 import manify.predictors
 
+# Define version
+__version__ = "0.0.2"
+
 # Dynamically check for utils dependencies
 try:
     import importlib.util

@@ -9,23 +9,18 @@ from jaxtyping import Float, Real
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    mean_squared_error,
-    root_mean_squared_error,
-)
+from sklearn.metrics import (accuracy_score, f1_score, mean_squared_error,
+                             root_mean_squared_error)
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..manifolds import ProductManifold
+from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
 from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
-
-from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
 
 
 def _score(

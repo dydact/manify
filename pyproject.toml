@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "jaxtyping",
+    "beartype",
     "pytest",
     "mypy",
     "pytest-cov",
@@ -71,3 +72,13 @@ generated-members = "torch.*,nn.*"
 testpaths = ["tests"]
 addopts = "--jaxtyping-packages=beartype.beartype"
 python_files = "test_*.py"
+
+[tool.mypy]
+# Specify the packages to check
+packages = ["manify"]
+
+# Ignore missing imports for external libraries
+ignore_missing_imports = true
+
+# Use jaxtyping-specific plugins
+plugins = ["jaxtyping.mypy_plugin"]
