@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import random
 
 import numpy as np
-
 
 # The next couple functions are taken from this repo:
 # https://github.com/HazyResearch/hyperbolics
@@ -60,7 +61,7 @@ def sample(D, size, n_samples=100):
 def estimate(D, size, n_samples):
     samples = sample(D, size, n_samples)
     m1 = np.mean(samples)
-    m2 = np.mean(samples**2)
+    m2 = np.mean(samples ** 2)
     return samples
 
 

@@ -1,8 +1,9 @@
 """Compute the angular midpoints between two angular coordinates in different geometric spaces"""
 
-from jaxtyping import Float
+from __future__ import annotations
 
 import torch
+from jaxtyping import Float
 
 from ..manifolds import Manifold
 
@@ -22,7 +23,7 @@ def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> 
     """
     w = torch.sin(2.0 * u - 2.0 * v) / (torch.sin(u + v) * torch.sin(v - u))
     coef = -1.0 if u + v < torch.pi else 1.0
-    sol = (-w + coef * torch.sqrt(w**2 - 4.0)) / 2.0
+    sol = (-w + coef * torch.sqrt(w ** 2 - 4.0)) / 2.0
     m = torch.arctan2(torch.tensor(1.0), sol) % torch.pi
     if assert_hyperbolic:
         assert is_hyperbolic_midpoint(u, v, m)
@@ -75,7 +76,10 @@ def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
 
 
 def midpoint(
-    u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""], manifold: Manifold, special_first: bool = False
+    u: Float[torch.Tensor, ""],
+    v: Float[torch.Tensor, ""],
+    manifold: Manifold,
+    special_first: bool = False,
 ) -> Float[torch.Tensor, ""]:
     """
     Driver code to compute the midpoint between two angular coordinates give the manifold type.

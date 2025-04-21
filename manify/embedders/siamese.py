@@ -1,8 +1,11 @@
 """Siamese network embedder"""
 
-from typing import List, Optional, Literal
-from jaxtyping import Float
+from __future__ import annotations
+
+from typing import Optional
+
 import torch
+from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 

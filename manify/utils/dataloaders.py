@@ -1,12 +1,9 @@
 """Dataloaders for different datasets"""
 
-from typing import Tuple
-from jaxtyping import Float, Real
-
 import gzip
-from pathlib import Path
 import pickle
 import shlex
+from pathlib import Path
 from typing import Tuple
 
 import anndata
@@ -14,10 +11,11 @@ import h5py
 import networkx as nx
 import numpy as np
 import pandas as pd
+import torch
+from jaxtyping import Float, Real
 from mpl_toolkits.basemap import Basemap
 from scipy.fftpack import fft, fftfreq
 from scipy.io import mmread
-import torch
 
 
 def _top_cc_dists(
@@ -522,7 +520,7 @@ def load_traffic(
 
 def load(
     name: str, **kwargs
-) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes"], Float[torch.Tensor, "nodes nodes"]]:
+) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes"], Float[torch.Tensor, "nodes nodes"],]:
     """
     Driver function to load the specified dataset
 

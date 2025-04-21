@@ -1,8 +1,9 @@
-from jaxtyping import Float, Int
+from __future__ import annotations
 
-import numpy as np
 import cvxpy
+import numpy as np
 import torch
+from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from .kernel import product_kernel
@@ -31,7 +32,11 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(
+        self,
+        X: Float[torch.Tensor, "n_samples n_manifolds"],
+        y: Int[torch.Tensor, "n_samples"],
+    ) -> None:
         """
         Trains the SVM model using the provided data and labels.
 
@@ -83,7 +88,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
                 norm = norm.item()
                 if M.type == "E" and self.e_constraints:
                     alpha_E = 1.0  # TODO: make this flexible
-                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E**2)
+                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E ** 2)
                 elif M.type == "S" and self.s_constraints:
                     constraints.append(cvxpy.quad_form(beta, K_component) <= np.pi / 2)
                 elif M.type == "H" and self.h_constraints:

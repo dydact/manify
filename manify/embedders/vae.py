@@ -1,9 +1,11 @@
 """Product space variational autoencoder implementation"""
 
+from __future__ import annotations
+
 from typing import List, Tuple
-from jaxtyping import Float
 
 import torch
+from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 
@@ -40,7 +42,7 @@ class ProductSpaceVAE(torch.nn.Module):
 
     def encode(
         self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"]]:
+    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"],]:
         """Must return z_mean, z_logvar"""
         z_mean_tangent, z_logvar = self.encoder(x)
         z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
@@ -51,7 +53,9 @@ class ProductSpaceVAE(torch.nn.Module):
         """Decoding in product space VAE"""
         return self.decoder(z)
 
-    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
+    def forward(
+        self, x: Float[torch.Tensor, "batch_size n_features"]
+    ) -> Tuple[
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_latent"],
         List[Float[torch.Tensor, "n_latent n_latent"]],

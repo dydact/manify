@@ -1,10 +1,12 @@
 """Implementation of different measurement metrics"""
 
-from typing import List
-from jaxtyping import Float
+from __future__ import annotations
 
-import torch
+from typing import List
+
 import networkx as nx
+import torch
+from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 
@@ -24,7 +26,7 @@ def distortion_loss(
     Returns:
         float: A float indicating the distortion loss, calculated as the sum of the squared relative
          errors between the estimated and true squared distances.
-        
+
     See also: square_loss in HazyResearch hyperbolics repo:
     https://github.com/HazyResearch/hyperbolics/blob/master/pytorch/hyperbolic_models.py#L178
     """

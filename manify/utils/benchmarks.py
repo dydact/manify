@@ -1,27 +1,36 @@
 """Implementation for benchmarking different product space machine learning methods"""
 
-from typing import List, Literal, Dict, Optional
 import time
-from jaxtyping import Float, Real
+from typing import Dict, List, Literal, Optional
 
-import torch
 import numpy as np
-
-from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.linear_model import SGDClassifier, SGDRegressor
-from sklearn.svm import SVC, SVR
+import torch
+from jaxtyping import Float, Real
 from sklearn.base import BaseEstimator
-from ..manifolds import ProductManifold
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import SGDClassifier, SGDRegressor
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    mean_squared_error,
+    root_mean_squared_error,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-# from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
-from ..predictors.tree_icml import ProductSpaceDT, ProductSpaceRF, SingleManifoldEnsembleRF
+from ..manifolds import ProductManifold
+from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
-from ..predictors.kappa_gcn import KappaGCN, get_A_hat
+
+# from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
+from ..predictors.tree_icml import (
+    ProductSpaceDT,
+    ProductSpaceRF,
+    SingleManifoldEnsembleRF,
+)
 
 
 def _score(
@@ -30,7 +39,10 @@ def _score(
     model: BaseEstimator,
     y_pred_override: Optional[Real[torch.Tensor, "n_samples"]] = None,
     torch: bool = False,
-    score: List[Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse"]] = ["accuracy", "f1-micro"],
+    score: List[Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse"]] = [
+        "accuracy",
+        "f1-micro",
+    ],
 ):
     """Helper function: score model on a dataset"""
     # Override y_pred
@@ -217,9 +229,18 @@ def benchmark(
     X_test_tangent = pm.logmap(X_test).detach()
 
     # Get numpy versions
-    X_train_np, X_test_np = X_train.detach().cpu().numpy(), X_test.detach().cpu().numpy()
-    y_train_np, y_test_np = y_train.detach().cpu().numpy(), y_test.detach().cpu().numpy()
-    X_train_tangent_np, X_test_tangent_np = X_train_tangent.cpu().numpy(), X_test_tangent.cpu().numpy()
+    X_train_np, X_test_np = (
+        X_train.detach().cpu().numpy(),
+        X_test.detach().cpu().numpy(),
+    )
+    y_train_np, y_test_np = (
+        y_train.detach().cpu().numpy(),
+        y_test.detach().cpu().numpy(),
+    )
+    X_train_tangent_np, X_test_tangent_np = (
+        X_train_tangent.cpu().numpy(),
+        X_test_tangent.cpu().numpy(),
+    )
 
     # Get stereographic version
     pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
@@ -233,7 +254,7 @@ def benchmark(
     if adj is not None:
         A_hat = get_A_hat(adj).detach()
     else:
-        dists = pdists**2
+        dists = pdists ** 2
         dists_train = dists[train_idx][:, train_idx]
         dists /= dists_train[torch.isfinite(dists_train)].max()
         A_hat = get_A_hat(dists).detach()
@@ -247,8 +268,16 @@ def benchmark(
         A_test = A_test.to(device).detach()
 
     # Aggregate arguments
-    tree_kwargs = {"max_depth": max_depth, "min_samples_leaf": min_samples_leaf, "min_samples_split": min_samples_split}
-    prod_kwargs = {"use_special_dims": use_special_dims, "n_features": n_features, "batch_size": batch_size}
+    tree_kwargs = {
+        "max_depth": max_depth,
+        "min_samples_leaf": min_samples_leaf,
+        "min_samples_split": min_samples_split,
+    }
+    prod_kwargs = {
+        "use_special_dims": use_special_dims,
+        "n_features": n_features,
+        "batch_size": batch_size,
+    }
     rf_kwargs = {"n_estimators": n_estimators, "n_jobs": -1, "random_state": seed}
     nn_outdim = 1 if task == "regression" else len(torch.unique(y))
     nn_kwargs = {"task": task, "output_dim": nn_outdim, "hidden_dims": hidden_dims}
@@ -268,7 +297,7 @@ def benchmark(
         knn_class = KNeighborsRegressor
         svm_class = SVR
         perceptron_class = SGDRegressor
-    
+
     # Get link prediction indices: random 1000 edges
     if task == "link_prediction":
         # Want shape to be (1000, 2) in range 0, n_nodes:
@@ -416,9 +445,21 @@ def benchmark(
         kappa_mlp = KappaGCN(pm=pm_stereo, **nn_kwargs).to(device)
         t1 = time.time()
         if task == "link_prediction":
-            kappa_mlp.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
+            kappa_mlp.fit(
+                X_train_stereo,
+                y_train,
+                A=A_train,
+                tqdm_prefix="kappa_mlp",
+                **nn_train_kwargs,
+            )
         else:
-            kappa_mlp.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlp", **nn_train_kwargs)
+            kappa_mlp.fit(
+                X_train_stereo,
+                y_train,
+                A=None,
+                tqdm_prefix="kappa_mlp",
+                **nn_train_kwargs,
+            )
         t2 = time.time()
         y_pred = kappa_mlp.predict(X_test_stereo, A=None)
         if lp_test_idx:
@@ -434,18 +475,38 @@ def benchmark(
         y_pred = ambient_mlp.predict(X_test, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True, score=score)
+        accs["ambient_mlp"] = _score(
+            None,
+            y_test_np,
+            ambient_mlp,
+            y_pred_override=y_pred,
+            torch=True,
+            score=score,
+        )
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if "tangent_mlp" in models:
         tangent_mlp = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
-        tangent_mlp.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlp", **nn_train_kwargs)
+        tangent_mlp.fit(
+            X_train_tangent,
+            y_train,
+            A=None,
+            tqdm_prefix="tangent_mlp",
+            **nn_train_kwargs,
+        )
         t2 = time.time()
         y_pred = tangent_mlp.predict(X_test_tangent, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True, score=score)
+        accs["tangent_mlp"] = _score(
+            None,
+            y_test_np,
+            tangent_mlp,
+            y_pred_override=y_pred,
+            torch=True,
+            score=score,
+        )
         accs["tangent_mlp"]["time"] = t2 - t1
 
     if "ambient_gcn" in models:
@@ -462,7 +523,13 @@ def benchmark(
     if "tangent_gcn" in models:
         tangent_gcn = KappaGCN(pm=pm_euc, **nn_kwargs).to(device)
         t1 = time.time()
-        tangent_gcn.fit(X_train_tangent, y_train, A=A_train, tqdm_prefix="tangent_gcn", **nn_train_kwargs)
+        tangent_gcn.fit(
+            X_train_tangent,
+            y_train,
+            A=A_train,
+            tqdm_prefix="tangent_gcn",
+            **nn_train_kwargs,
+        )
         t2 = time.time()
         y_pred = tangent_gcn.predict(X_test_tangent, A=A_test)
         if lp_test_idx:
@@ -479,7 +546,13 @@ def benchmark(
             output_dim=nn_outdim,
         ).to(device)
         t1 = time.time()
-        kappa_gcn.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_gcn", **nn_train_kwargs)
+        kappa_gcn.fit(
+            X_train_stereo,
+            y_train,
+            A=A_train,
+            tqdm_prefix="kappa_gcn",
+            **nn_train_kwargs,
+        )
         t2 = time.time()
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         if lp_test_idx:
@@ -501,7 +574,13 @@ def benchmark(
     if "tangent_mlr" in models:
         tangent_mlr = KappaGCN(pm=pm_euc, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)
         t1 = time.time()
-        tangent_mlr.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlr", **nn_train_kwargs)
+        tangent_mlr.fit(
+            X_train_tangent,
+            y_train,
+            A=None,
+            tqdm_prefix="tangent_mlr",
+            **nn_train_kwargs,
+        )
         t2 = time.time()
         y_pred = tangent_mlr.predict(X_test_tangent, A=None)
         if lp_test_idx:

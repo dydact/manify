@@ -2,12 +2,14 @@
 Kappa GCN implementation
 """
 
-import sys
-from typing import List, Optional, Literal, Union, Tuple, Callable
-from jaxtyping import Float
+from __future__ import annotations
 
-import torch
+import sys
+from typing import Callable, List, Literal, Optional, Tuple, Union
+
 import geoopt
+import torch
+from jaxtyping import Float
 
 from ..manifolds import Manifold, ProductManifold
 
@@ -19,7 +21,9 @@ else:
 
 
 def get_A_hat(
-    A: Float[torch.Tensor, "n_nodes n_nodes"], make_symmetric: bool = True, add_self_loops: bool = True
+    A: Float[torch.Tensor, "n_nodes n_nodes"],
+    make_symmetric: bool = True,
+    add_self_loops: bool = True,
 ) -> Float[torch.Tensor, "n_nodes n_nodes"]:
     """
     Normalize adjacency matrix.
@@ -68,7 +72,11 @@ class KappaGCNLayer(torch.nn.Module):
     """
 
     def __init__(
-        self, in_features: int, out_features: int, manifold: Manifold, nonlinearity: Optional[Callable] = torch.relu
+        self,
+        in_features: int,
+        out_features: int,
+        manifold: Manifold,
+        nonlinearity: Optional[Callable] = torch.relu,
     ):
         super().__init__()
 
@@ -87,7 +95,10 @@ class KappaGCNLayer(torch.nn.Module):
         self.manifold = manifold
 
     def _left_multiply(
-        self, A: Float[torch.Tensor, "n_nodes n_nodes"], X: Float[torch.Tensor, "n_nodes dim"], M: Manifold
+        self,
+        A: Float[torch.Tensor, "n_nodes n_nodes"],
+        X: Float[torch.Tensor, "n_nodes dim"],
+        M: Manifold,
     ):
         """
         Implementation for Kappa left matrix multiplication for message passing in product space
@@ -113,7 +124,9 @@ class KappaGCNLayer(torch.nn.Module):
         )
 
     def forward(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+        self,
+        X: Float[torch.Tensor, "n_nodes dim"],
+        A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
     ) -> Float[torch.Tensor, "n_nodes dim"]:
         """
         Forward pass for the Kappa GCN layer.
@@ -233,7 +246,10 @@ class KappaGCN(torch.nn.Module):
         M: Manifold,
         return_inner_products: bool = False,
     ) -> Union[
-        Tuple[Float[torch.Tensor, "n_nodes n_classes"], Float[torch.Tensor, "n_nodes n_classes"]],
+        Tuple[
+            Float[torch.Tensor, "n_nodes n_classes"],
+            Float[torch.Tensor, "n_nodes n_classes"],
+        ],
         Float[torch.Tensor, "n_nodes n_classes"],
     ]:
         """Helper function for get_logits"""
@@ -266,7 +282,7 @@ class KappaGCN(torch.nn.Module):
             logits = 4 * za
         else:
             # Non-Euclidean case: need to do the arsinh
-            dist = 2 * za / ((1 + kappa * z_k_norms**2) * a_k_norms)
+            dist = 2 * za / ((1 + kappa * z_k_norms ** 2) * a_k_norms)
             dist = geoopt.manifolds.stereographic.math.arsin_k(dist, kappa * abs(kappa))
 
             # Get the coefficients
@@ -426,7 +442,9 @@ class KappaGCN(torch.nn.Module):
             my_tqdm.close()
 
     def predict(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+        self,
+        X: Float[torch.Tensor, "n_nodes dim"],
+        A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
     ) -> Float[torch.Tensor, "n_nodes"]:
         """
         Make predictions using the trained Kappa GCN.

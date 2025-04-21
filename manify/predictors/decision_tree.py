@@ -4,14 +4,16 @@ Decision tree and random forest predictors for product space manifolds.
 For more information, see Chlenski et al. (2024).: https://arxiv.org/abs/2410.13879
 """
 
-from typing import Tuple, Optional, Literal, Union, List
-from jaxtyping import Float, Int, Bool
+from __future__ import annotations
+
+from typing import List, Literal, Optional, Tuple, Union
 
 import torch
+from jaxtyping import Bool, Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from .midpoint import midpoint
 from ..manifolds import ProductManifold
+from .midpoint import midpoint
 
 
 def _angular_greater(
@@ -70,9 +72,9 @@ def _get_info_gains(
         total_probs = (pos_labels + neg_labels) / n_total.unsqueeze(-1)
 
         # Gini impurity is 1 - sum(prob^2)
-        gini_pos = 1 - (pos_probs**2).sum(dim=-1)
-        gini_neg = 1 - (neg_probs**2).sum(dim=-1)
-        gini_total = 1 - (total_probs**2).sum(dim=-1)
+        gini_pos = 1 - (pos_probs ** 2).sum(dim=-1)
+        gini_neg = 1 - (neg_probs ** 2).sum(dim=-1)
+        gini_total = 1 - (total_probs ** 2).sum(dim=-1)
 
     # For MSE, use the mean of the regression labels to compute MSE (i.e. look at variance)
     elif criterion == "mse":
@@ -160,9 +162,9 @@ def _get_info_gains_nobatch(
         total_probs = (pos_labels + neg_labels) / n_total.unsqueeze(-1)
 
         # Gini impurity is 1 - sum(prob^2)
-        gini_pos = 1 - (pos_probs**2).sum(dim=-1)
-        gini_neg = 1 - (neg_probs**2).sum(dim=-1)
-        gini_total = 1 - (total_probs**2).sum(dim=-1)
+        gini_pos = 1 - (pos_probs ** 2).sum(dim=-1)
+        gini_neg = 1 - (neg_probs ** 2).sum(dim=-1)
+        gini_total = 1 - (total_probs ** 2).sum(dim=-1)
 
     # For MSE, use the mean of the regression labels to compute MSE (i.e. look at variance)
     elif criterion == "mse":
@@ -261,7 +263,11 @@ def _get_split(
     labels_neg = labels[neg_indices]
     labels_pos = labels[pos_indices]
 
-    return (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos)
+    return (angles_neg, comparisons_neg, labels_neg), (
+        angles_pos,
+        comparisons_pos,
+        labels_pos,
+    )
 
 
 class DecisionNode:
@@ -513,7 +519,11 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         return n, d, m
 
     @torch.no_grad()
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch"]) -> None:
+    def fit(
+        self,
+        X: Float[torch.Tensor, "batch ambient_dim"],
+        y: Float[torch.Tensor, "batch"],
+    ) -> None:
         """
         Reworked fit function for new version of ProductDT
 
@@ -596,15 +606,27 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             mask = comparisons[n, d].bool()
         else:
             mask = _angular_greater(angles[:, d], theta).flatten()
-        (angles_neg, comparisons_neg, labels_neg), (angles_pos, comparisons_pos, labels_pos) = _get_split(
-            mask=mask, angles=angles, comparisons=comparisons, labels=labels
-        )
+        (angles_neg, comparisons_neg, labels_neg), (
+            angles_pos,
+            comparisons_pos,
+            labels_pos,
+        ) = _get_split(mask=mask, angles=angles, comparisons=comparisons, labels=labels)
         node = DecisionNode(feature=int(d.item()), theta=float(theta.item()))
         self.nodes.append(node)
 
         # Do left and right recursion after appending node to self.nodes (ensures order of self.nodes is correct)
-        node.left = self._fit_node(angles=angles_neg, labels=labels_neg, comparisons=comparisons_neg, depth=depth - 1)
-        node.right = self._fit_node(angles=angles_pos, labels=labels_pos, comparisons=comparisons_pos, depth=depth - 1)
+        node.left = self._fit_node(
+            angles=angles_neg,
+            labels=labels_neg,
+            comparisons=comparisons_neg,
+            depth=depth - 1,
+        )
+        node.right = self._fit_node(
+            angles=angles_pos,
+            labels=labels_pos,
+            comparisons=comparisons_pos,
+            depth=depth - 1,
+        )
         return node
 
     def _leaf_values(
@@ -726,7 +748,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         if isinstance(self.max_features, int) and self.max_features <= n_cols:
             n_cols_sample = n_cols
         elif self.max_features == "sqrt":
-            n_cols_sample = torch.ceil(torch.tensor(n_cols**0.5)).int()
+            n_cols_sample = torch.ceil(torch.tensor(n_cols ** 0.5)).int()
         elif self.max_features == "log2":
             n_cols_sample = torch.ceil(torch.log2(torch.tensor(n_cols))).int()
         elif self.max_features == "none" or self.max_features is None:
@@ -741,7 +763,11 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         return idx_sample, idx_dim
 
     @torch.no_grad()
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch"]) -> None:
+    def fit(
+        self,
+        X: Float[torch.Tensor, "batch ambient_dim"],
+        y: Float[torch.Tensor, "batch"],
+    ) -> None:
         """Preprocess and fit an ensemble of trees on subsampled data"""
         # Pre-preprocessing step: aggregate special dimensions
         if self.use_special_dims:

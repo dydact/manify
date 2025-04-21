@@ -1,15 +1,17 @@
 """Implementation for coordinate training and optimization"""
 
-import sys
-from typing import Tuple, List, Dict
-from jaxtyping import Float, Int
+from __future__ import annotations
 
+import sys
+from typing import Dict, List, Tuple
+
+import geoopt
 import numpy as np
 import torch
-import geoopt
+from jaxtyping import Float, Int
 
-from .losses import distortion_loss, d_avg
 from ..manifolds import ProductManifold
+from .losses import d_avg, distortion_loss
 
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:

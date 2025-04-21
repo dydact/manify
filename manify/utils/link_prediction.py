@@ -1,9 +1,11 @@
 """Preprocessing with link prediction"""
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import torch
 from jaxtyping import Float, Int
 from sklearn.model_selection import train_test_split
+
 from ..manifolds import ProductManifold
 
 
@@ -12,7 +14,7 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
+) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold,]:
     """
     Generate a dataset for link prediction tasks with product manifold
 
@@ -72,7 +74,7 @@ def split_dataset(
 ]:
     """Split a link prediction dataset into train and test sets"""
     n_pairs, n_dims = X.shape
-    n_nodes = int(n_pairs**0.5)
+    n_nodes = int(n_pairs ** 0.5)
 
     # Reshape
     X_reshaped = X.view(n_nodes, n_nodes, -1)

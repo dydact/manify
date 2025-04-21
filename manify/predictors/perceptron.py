@@ -1,9 +1,11 @@
 """Product space perceptron implementation"""
 
+from __future__ import annotations
+
 from typing import Optional
-from jaxtyping import Float, Int
 
 import torch
+from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from ..manifolds import ProductManifold
@@ -30,7 +32,11 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(
+        self,
+        X: Float[torch.Tensor, "n_samples n_manifolds"],
+        y: Int[torch.Tensor, "n_samples"],
+    ) -> None:
         """
         Trains the perceptron model using the provided data and labels.
         Args:
