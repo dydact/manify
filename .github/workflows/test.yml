@@ -15,6 +15,7 @@ jobs:
         python-version: ["3.9", "3.10", "3.11"]
 
     steps:
+      # Setup and installation
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -22,6 +23,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Install dependencies
         run: |
@@ -41,13 +43,27 @@ jobs:
           print("manify version:", getattr(manify, "__version__", "unknown"))
           EOF
 
+      # Code quality checks
+      - name: Check code formatting with Black
+        run: |
+          black --check manify/
+
+      - name: Check import ordering with isort
+        run: |
+          isort --check-only --profile black manify/
+
+      - name: Run pylint
+        run: |
+          pylint manify/
+        continue-on-error: true
+
       - name: Check type annotations with MyPy
         run: |
           # only check core modules—skip untyped imports
-          mypy --ignore-missing-imports --no-warn-return-any --follow-imports=skip \
-            manify/__init__.py manify/embedders manify/predictors manify/manifolds
+          mypy --ignore-missing-imports --no-warn-return-any --follow-imports=skip manify
         continue-on-error: true
 
+      # Unit testing
       - name: Run unit tests & collect coverage
         run: |
           pytest tests --cov=manify --cov-report=xml:coverage.xml
