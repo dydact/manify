@@ -25,12 +25,7 @@ from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
 
-# from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
-from ..predictors.tree_icml import (
-    ProductSpaceDT,
-    ProductSpaceRF,
-    SingleManifoldEnsembleRF,
-)
+from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
 
 
 def _score(
@@ -254,7 +249,7 @@ def benchmark(
     if adj is not None:
         A_hat = get_A_hat(adj).detach()
     else:
-        dists = pdists ** 2
+        dists = pdists**2
         dists_train = dists[train_idx][:, train_idx]
         dists /= dists_train[torch.isfinite(dists_train)].max()
         A_hat = get_A_hat(dists).detach()
