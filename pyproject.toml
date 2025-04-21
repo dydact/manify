@@ -68,4 +68,6 @@ module-rgx = "([a-z_][a-z0-9_]*)"
 generated-members = "torch.*,nn.*"
 
 [tool.pytest.ini_options]
-adopts = "--jaxtyping-packages=beartype.beartype"
+testpaths = ["tests"]
+addopts = "--jaxtyping-packages=beartype.beartype"
+python_files = "test_*.py"

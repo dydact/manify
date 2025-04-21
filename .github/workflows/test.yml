@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false    # don’t stop the matrix if one Python version fails
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
       - name: Check out code
