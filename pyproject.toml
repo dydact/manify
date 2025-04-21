@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manify"
-version = "0.0.1"
+version = "0.0.2"
 description = "Manifold-based machine learning"
 authors = [
     { name = "Philippe Chlenski", email = "pac@cs.columbia.edu"},
@@ -23,6 +23,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "jaxtyping",
+    "pytest",
+    "mypy",
+    "pytest-cov",
+    "black",
+    "isort",
+    "flake8"
 ]
 utils = [
     "networkx",
