@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "jaxtyping",
+    "jaxtyping[mypy]",
     "beartype",
     "pytest",
     "mypy",
@@ -81,4 +81,4 @@ packages = ["manify"]
 ignore_missing_imports = true
 
 # Use jaxtyping-specific plugins
-plugins = ["jaxtyping.mypy_plugin"]
+plugins = [ "jaxtyping.mypy_plugin", "beartype.mypy_plugin" ]
