@@ -399,16 +399,35 @@ class Manifold:
             return orig_manifold, *points  # type: ignore
 
         # Inverse projection for points
-        norm_squared = [(Y**2).sum(dim=1, keepdim=True) for Y in points]
-        sign = torch.sign(self.curvature)  # type: ignore
+        out = []
+        for X in points:
+            # Calculate squared norm
+            # let σ = sign(K)  and  λ = sqrt(|K|)
+            sign = torch.sign(torch.tensor(self.curvature, device=self.device))
+            lam = abs(self.curvature) ** 0.5
 
-        X0 = (1 + sign * norm_squared) / (1 - sign * norm_squared)
-        Xi = 2 * points / (1 - sign * norm_squared)
+            # compute the ‖·‖² in the *scaled* ball
+            norm2 = torch.sum((lam * X) ** 2, dim=1)
 
-        inv_points = [torch.cat([x0, xi], dim=1) for x0, xi in zip(X0, Xi)]
-        assert all([orig_manifold.manifold.check_point(X) for X in inv_points])
+            # inverse‐stereographic denom must be (1 + σ⋅‖y‖²), *not* (1 – σ⋅‖y‖²)
+            denom = 1.0 + sign * norm2
+            # clamp to avoid blow‐up at the boundary
+            denom = torch.clamp_min(denom.abs(), 1e-6) * denom.sign()
 
-        return orig_manifold, *inv_points  # type: ignore
+            # then
+            X0 = (1.0 - sign * norm2) / denom
+            Xi = 2.0 * lam * X / denom.unsqueeze(1)
+
+            # Combine into full coordinates
+            inv_points = torch.cat([X0.unsqueeze(1), Xi], dim=1)
+
+            # Let the manifold class validate the points
+            if not orig_manifold.manifold.check_point(inv_points):
+                raise ValueError("Generated points do not lie on the target manifold")
+
+            out.append(inv_points)
+
+        return orig_manifold, *out  # type: ignore
 
     def apply(self, f: Callable) -> Callable:
         """
