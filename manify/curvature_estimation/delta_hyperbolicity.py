@@ -29,7 +29,9 @@ def sampled_delta_hyperbolicity(dismat, n_samples=1000, reference_idx=0):
     return rel_deltas, indices
 
 
-def iterative_delta_hyperbolicity(dismat):
+def iterative_delta_hyperbolicity(
+    dismat: Float[torch.Tensor, "n_points n_points"],
+) -> Float[torch.Tensor, "n_points n_points n_points"]:
     """delta(x,y,z) = min((x,y)_w,(y-z)_w) - (x,z)_w"""
     n = dismat.shape[0]
     w = 0
@@ -56,7 +58,7 @@ def iterative_delta_hyperbolicity(dismat):
     return rel_deltas, gromov_products
 
 
-def gromov_product(i, j, k, dismat):
+def gromov_product(i: int, j: int, k: int, dismat: Float[torch.Tensor, "n_points n_points"]) -> float:
     """(j,k)_i = 0.5 (d(i,j) + d(i,k) - d(j,k))"""
     d_ij = dismat[i, j]
     d_ik = dismat[i, k]
@@ -65,10 +67,7 @@ def gromov_product(i, j, k, dismat):
 
 
 def delta_hyperbolicity(
-    dismat: Float[torch.Tensor, "n_points n_points"],
-    relative=True,
-    device="cpu",
-    full=False,
+    dismat: Float[torch.Tensor, "n_points n_points"], relative=True, full=False
 ) -> Float[torch.Tensor, ""]:
     """
     Compute the delta-hyperbolicity of a metric space.
@@ -76,7 +75,6 @@ def delta_hyperbolicity(
     Args:
         dismat: Distance matrix of the metric space.
         relative: Whether to return the relative delta-hyperbolicity.
-        device: Device to run the computation on.
         full: Whether to return the full delta tensor or just the maximum delta.
 
     Returns:

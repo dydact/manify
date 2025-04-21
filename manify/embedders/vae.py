@@ -40,9 +40,10 @@ class ProductSpaceVAE(torch.nn.Module):
         else:
             raise ValueError(f"Unknown reconstruction loss: {reconstruction_loss}")
 
-    def encode(
-        self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"],]:
+    def encode(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
+        Float[torch.Tensor, "batch_size n_latent"],
+        Float[torch.Tensor, "batch_size n_latent"],
+    ]:
         """Must return z_mean, z_logvar"""
         z_mean_tangent, z_logvar = self.encoder(x)
         z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
@@ -53,9 +54,7 @@ class ProductSpaceVAE(torch.nn.Module):
         """Decoding in product space VAE"""
         return self.decoder(z)
 
-    def forward(
-        self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[
+    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_latent"],
         List[Float[torch.Tensor, "n_latent n_latent"]],
@@ -82,7 +81,7 @@ class ProductSpaceVAE(torch.nn.Module):
         self,
         z_mean: Float[torch.Tensor, "batch_size n_latent"],
         sigma_factorized: List[Float[torch.Tensor, "n_latent n_latent"]],
-    ) -> Float[torch.Tensor, "batch_size"]:
+    ) -> Float[torch.Tensor, "batch_size,"]:
         """
         Computes the KL divergence between posterior and prior distributions.
 

@@ -41,18 +41,18 @@ def compute_kernel_and_norm_manifold(
         # K_S is asin(C_S * inner products)
         # C_S is the curvature (see p.5 of Tabaghi paper)
         C_S = manifold.curvature
-        K = torch.asin(torch.clamp(ip * C_S, -1, 1)) * C_S ** 0.5
-        norm = torch.tensor(C_S ** 0.5)
+        K = torch.asin(torch.clamp(ip * C_S, -1, 1)) * C_S**0.5
+        norm = torch.tensor(C_S**0.5)
         # norm is sqrt(C_S) (see p.16 of Tabaghi paper)
     elif manifold.type == "H":
         # K_H is asinh(R^-2 * Lorentz inner products) * sqrt(-C_H)
         C_H = abs(manifold.curvature)
         # R = -1 * manifold.scale
         R = (X_source @ X_target.T).sqrt().max()
-        K = torch.asinh(torch.clamp(ip / R ** 2, -1, 1)) * C_H ** 0.5
+        K = torch.asinh(torch.clamp(ip / R**2, -1, 1)) * C_H**0.5
         # norm = torch.tensor(C_H)
         # norm is sqrt(-C_H)
-        norm = torch.asinh(-(R ** 2) * C_H)
+        norm = torch.asinh(-(R**2) * C_H)
     else:
         raise ValueError("Invalid manifold type!")
 
@@ -63,7 +63,10 @@ def product_kernel(
     pm: ProductManifold,
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
-) -> Tuple[List[Float[torch.Tensor, "n_points_source n_points_target"]], List[Float[torch.Tensor, ""]],]:
+) -> Tuple[
+    List[Float[torch.Tensor, "n_points_source n_points_target"]],
+    List[Float[torch.Tensor, ""]],
+]:
     """
     Compute the kernel matrix between two sets of points in a product manifold.
 

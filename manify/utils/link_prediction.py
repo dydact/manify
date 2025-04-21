@@ -14,7 +14,11 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold,]:
+) -> Tuple[
+    Float[torch.Tensor, "batch**2 n_dim*2"],
+    Float[torch.Tensor, "batch**2"],
+    ProductManifold,
+]:
     """
     Generate a dataset for link prediction tasks with product manifold
 
@@ -60,21 +64,21 @@ def make_link_prediction_dataset(
 
 def split_dataset(
     X: Float[torch.Tensor, "n_pairs n_dims"],
-    y: Int[torch.Tensor, "n_pairs"],
+    y: Int[torch.Tensor, "n_pairs,"],
     test_size: float = 0.2,
     downsample: Optional[int] = None,
     **kwargs,
 ) -> Tuple[
     Float[torch.Tensor, "n_pairs n_dims"],
     Float[torch.Tensor, "n_pairs n_dims"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
 ]:
     """Split a link prediction dataset into train and test sets"""
     n_pairs, n_dims = X.shape
-    n_nodes = int(n_pairs ** 0.5)
+    n_nodes = int(n_pairs**0.5)
 
     # Reshape
     X_reshaped = X.view(n_nodes, n_nodes, -1)

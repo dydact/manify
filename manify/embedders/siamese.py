@@ -25,7 +25,7 @@ class SiameseNetwork(torch.nn.Module):
         if decoder is not None:
             self.decoder = decoder
         else:
-            self.decoder = lambda x: x
+            self.decoder = torch.nn.Identity()
             self.decoder.requires_grad_(False)
             self.decoder.to(pm.device)
 

@@ -23,7 +23,7 @@ def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> 
     """
     w = torch.sin(2.0 * u - 2.0 * v) / (torch.sin(u + v) * torch.sin(v - u))
     coef = -1.0 if u + v < torch.pi else 1.0
-    sol = (-w + coef * torch.sqrt(w ** 2 - 4.0)) / 2.0
+    sol = (-w + coef * torch.sqrt(w**2 - 4.0)) / 2.0
     m = torch.arctan2(torch.tensor(1.0), sol) % torch.pi
     if assert_hyperbolic:
         assert is_hyperbolic_midpoint(u, v, m)

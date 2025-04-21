@@ -35,7 +35,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def fit(
         self,
         X: Float[torch.Tensor, "n_samples n_manifolds"],
-        y: Int[torch.Tensor, "n_samples"],
+        y: Int[torch.Tensor, "n_samples,"],
     ) -> None:
         """
         Trains the SVM model using the provided data and labels.
@@ -88,7 +88,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
                 norm = norm.item()
                 if M.type == "E" and self.e_constraints:
                     alpha_E = 1.0  # TODO: make this flexible
-                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E ** 2)
+                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E**2)
                 elif M.type == "S" and self.s_constraints:
                     constraints.append(cvxpy.quad_form(beta, K_component) <= np.pi / 2)
                 elif M.type == "H" and self.h_constraints:
@@ -154,7 +154,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
 
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
         """
         Predicts the class for the given test data.
 

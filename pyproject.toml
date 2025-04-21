@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "jaxtyping[mypy]",
+    "jaxtyping",
     "beartype",
     "pytest",
     "mypy",
@@ -32,6 +32,21 @@ dev = [
     "pylint"
 ]
 utils = [
+    "networkx",
+    "pandas",
+    "matplotlib",
+    "anndata",
+    "basemap"
+]
+all = [
+    "jaxtyping",
+    "beartype",
+    "pytest",
+    "mypy",
+    "pytest-cov",
+    "black",
+    "isort",
+    "pylint",
     "networkx",
     "pandas",
     "matplotlib",
@@ -79,6 +94,3 @@ packages = ["manify"]
 
 # Ignore missing imports for external libraries
 ignore_missing_imports = true
-
-# Use jaxtyping-specific plugins
-plugins = [ "jaxtyping.mypy_plugin", "beartype.mypy_plugin" ]

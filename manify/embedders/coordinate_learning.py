@@ -23,7 +23,7 @@ else:
 def train_coords(
     pm: ProductManifold,
     dists: Float[torch.Tensor, "n_points n_points"],
-    test_indices: Int[torch.Tensor, "n_test"] = torch.tensor([]),
+    test_indices: Int[torch.Tensor, "n_test,"] = torch.tensor([]),
     device: str = "cpu",
     burn_in_learning_rate: float = 1e-3,
     burn_in_iterations: int = 2_000,
@@ -32,7 +32,6 @@ def train_coords(
     training_iterations: int = 18_000,
     loss_window_size: int = 100,
     logging_interval: int = 10,
-    scale=1.0,
 ) -> Tuple[Float[torch.Tensor, "n_points n_dim"], Dict[str, List[float]]]:
     """
     Coordinate training and optimization
@@ -79,7 +78,7 @@ def train_coords(
     my_tqdm = tqdm(total=burn_in_iterations + training_iterations, leave=False)
 
     # Outer training loop - mostly setting optimizer learning rates up here
-    losses = {"train_train": [], "test_test": [], "train_test": [], "total": []}
+    losses: Dict[str, List[float]] = {"train_train": [], "test_test": [], "train_test": [], "total": []}
 
     # Actual training loop
     for i in range(burn_in_iterations + training_iterations):
