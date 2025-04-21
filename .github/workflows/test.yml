@@ -26,10 +26,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # install manify with test deps
-          pip install -e ".[test]"
-          # install all extras if any, but don’t fail CI if some optional deps are missing
-          pip install -e ".[all]" || echo "Optional extras failed—continuing"
+          # Install base manify
+          pip install -e .
+          # install manify-dev
+          pip install -e ".[dev]"
+          # pip install -e ".[utils]"
+          # install all extras
+          pip install -e ".[all]" 
 
       - name: Smoke‑test pip install manify
         run: |

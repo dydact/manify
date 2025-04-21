@@ -17,6 +17,7 @@ dependencies = [
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
+    "jaxtyping"
 ]
 
 [pyproject.optional_dependencies]
