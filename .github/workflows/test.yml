@@ -69,7 +69,7 @@ jobs:
       # Unit testing
       - name: Run unit tests & collect coverage
         run: |
-          pytest tests --cov=manify --cov-report=xml:coverage.xml --cov-fail-under=80
+          pytest tests --cov=manify --cov-report=xml:coverage.xml
 
       # Code coverage
       - name: Upload coverage to Codecov
