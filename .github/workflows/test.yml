@@ -44,7 +44,7 @@ jobs:
         continue-on-error: true
 
       - name: Check import ordering with isort
-        run: isort --check-only --profile black manify/
+        run: isort --check-only --profile black manify/ --line-width 120
         continue-on-error: true
 
       - name: Run pylint

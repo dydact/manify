@@ -36,9 +36,11 @@
 """
 
 from __future__ import annotations
+
+from typing import Optional, Tuple
+
 import torch
 from datasets import load_dataset
-from typing import Tuple, Optional
 from jaxtyping import Float
 
 
