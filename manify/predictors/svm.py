@@ -5,20 +5,22 @@ import numpy as np
 import torch
 from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
+from typing import Optional, Literal
 
 from .kernel import product_kernel
+from ..manifolds import ProductManifold
 
 
 class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
-        pm,
-        weights=None,
-        h_constraints=True,
-        e_constraints=True,
-        s_constraints=True,
-        task="classification",
-        epsilon=1e-5,
+        pm: ProductManifold,
+        weights: Optional[Float[torch.Tensor, "n_manifolds,"]] = None,
+        h_constraints: bool = True,
+        e_constraints: bool = True,
+        s_constraints: bool = True,
+        task: Literal["classification", "regression"] = "classification",
+        epsilon: float = 1e-5,
     ):
         self.pm = pm
         self.h_constraints = h_constraints

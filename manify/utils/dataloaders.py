@@ -4,7 +4,7 @@ import gzip
 import pickle
 import shlex
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Any
 
 import anndata
 import h5py
@@ -19,6 +19,7 @@ from scipy.io import mmread
 
 # Create a data directory constant
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
+OUTPUT_TYPE = (Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"])
 
 
 def _top_cc_dists(
@@ -73,7 +74,7 @@ def load_cs_phds(
 
     # Add years
     for i, line in enumerate(lines[2075:-1]):
-        year = int(line.strip())  # type: ignore
+        year = int(line.strip())
         G.nodes[i + 1]["year"] = year  # They're 1-indexed
 
     phd_dists, idx = _top_cc_dists(G, bypassed=bypassed)
@@ -81,11 +82,11 @@ def load_cs_phds(
     return (torch.tensor(phd_dists), torch.tensor(labels), torch.tensor(nx.to_numpy_array(G.subgraph(idx))))
 
 
-def load_facebook():
+def load_facebook() -> Tuple[None, None, None]:
     raise NotImplementedError
 
 
-def load_power():
+def load_power() -> Tuple[None, None, None]:
     raise NotImplementedError
 
 
@@ -419,11 +420,11 @@ def _load_neuron(
     return torch.tensor(data, dtype=torch.float32), torch.tensor(labels), None
 
 
-def load_neuron33(**kwargs) -> Tuple[Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"], None]:
+def load_neuron33(**kwargs: Any) -> Tuple[Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"], None]:
     return _load_neuron(33, **kwargs)
 
 
-def load_neuron46(**kwargs) -> Tuple[Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"], None]:
+def load_neuron46(**kwargs: Any) -> Tuple[Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"], None]:
     return _load_neuron(46, **kwargs)
 
 
@@ -461,7 +462,7 @@ def load_traffic(
 
 
 def load(
-    name: str, **kwargs
+    name: str, **kwargs: Any
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes,"], Float[torch.Tensor, "nodes nodes"]]:
     """
     Driver function to load the specified dataset
@@ -474,7 +475,15 @@ def load(
         A tuple that contains the distance matrix, the labels, and the adjacency matrix
     """
     loaders: Dict[
-        str, Callable[..., Tuple[Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"], None]]
+        str,
+        Callable[
+            ...,
+            Tuple[
+                Optional[Float[torch.Tensor, "nodes n_dims"]],
+                Optional[Float[torch.Tensor, "nodes,"]],
+                Optional[Float[torch.Tensor, "nodes nodes"]],
+            ],
+        ],
     ] = {
         "cities": load_cities,
         "cs_phds": load_cs_phds,

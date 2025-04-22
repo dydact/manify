@@ -44,7 +44,7 @@ def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
     """
     a = lambda x: torch.sqrt(-1.0 / torch.cos(2.0 * x))  # Alpha coefficient to reach manifold
     d = lambda x, y: a(x) * a(y) * torch.cos(x - y)  # Hyperbolic distance function (angular)
-    return torch.isclose(d(u, m), d(m, v))
+    return torch.isclose(d(u, m), d(m, v))  # type: ignore
 
 
 def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:

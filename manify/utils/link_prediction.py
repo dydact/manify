@@ -1,6 +1,6 @@
 """Preprocessing with link prediction"""
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 import torch
 from jaxtyping import Float, Int
@@ -67,7 +67,7 @@ def split_dataset(
     y: Int[torch.Tensor, "n_pairs,"],
     test_size: float = 0.2,
     downsample: Optional[int] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[
     Float[torch.Tensor, "n_pairs n_dims"],
     Float[torch.Tensor, "n_pairs n_dims"],

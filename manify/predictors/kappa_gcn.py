@@ -21,9 +21,7 @@ else:
 
 
 def get_A_hat(
-    A: Float[torch.Tensor, "n_nodes n_nodes"],
-    make_symmetric: bool = True,
-    add_self_loops: bool = True,
+    A: Float[torch.Tensor, "n_nodes n_nodes"], make_symmetric: bool = True, add_self_loops: bool = True
 ) -> Float[torch.Tensor, "n_nodes n_nodes"]:
     """
     Normalize adjacency matrix.
@@ -47,7 +45,7 @@ def get_A_hat(
         A = A + torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
 
     # Get degree matrix
-    D = torch.diag(torch.sum(A, axis=1))  # type: ignore
+    D = torch.diag(torch.sum(A, axis=1))
 
     # Compute D^(-1/2)
     D_inv_sqrt = torch.inverse(torch.sqrt(D))
@@ -95,11 +93,8 @@ class KappaGCNLayer(torch.nn.Module):
         self.manifold = manifold
 
     def _left_multiply(
-        self,
-        A: Float[torch.Tensor, "n_nodes n_nodes"],
-        X: Float[torch.Tensor, "n_nodes dim"],
-        M: Manifold,
-    ):
+        self, A: Float[torch.Tensor, "n_nodes n_nodes"], X: Float[torch.Tensor, "n_nodes dim"], M: Manifold
+    ) -> Float[torch.Tensor, "n_nodes dim"]:
         """
         Implementation for Kappa left matrix multiplication for message passing in product space
 
@@ -203,7 +198,7 @@ class KappaGCN(torch.nn.Module):
             self.fermi_dirac_bias = torch.nn.Parameter(torch.tensor(0.0))
         else:
             self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
-            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)  # type: ignore
+            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
 
     def forward(
         self,
@@ -211,7 +206,7 @@ class KappaGCN(torch.nn.Module):
         A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
         aggregate_logits: bool = True,
         softmax: bool = False,
-    ):
+    ) -> Float[torch.Tensor, "n_nodes dim"]:
         """
         Forward pass for the Kappa GCN.
 
@@ -361,7 +356,7 @@ class KappaGCN(torch.nn.Module):
         if isinstance(self.pm, ProductManifold):
             return self._get_logits_product_manifold(X, W, b, self.pm)
         elif isinstance(self.pm, Manifold):
-            return self._get_logits_single_manifold(X, W, b, self.pm, return_inner_products=False)  # type: ignore
+            return self._get_logits_single_manifold(X, W, b, self.pm, return_inner_products=False)
         else:
             raise ValueError("Manifold must be a Manifold or ProductManifold object.")
 
