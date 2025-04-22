@@ -31,28 +31,6 @@ dev = [
     "isort",
     "pylint"
 ]
-utils = [
-    "networkx",
-    "pandas",
-    "matplotlib",
-    "anndata",
-    "basemap"
-]
-all = [
-    "jaxtyping",
-    "beartype",
-    "pytest",
-    "mypy",
-    "pytest-cov",
-    "black",
-    "isort",
-    "pylint",
-    "networkx",
-    "pandas",
-    "matplotlib",
-    "anndata",
-    "basemap"
-]
 
 [tool.setuptools]
 packages = ["manify"]

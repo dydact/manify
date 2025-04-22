@@ -6,7 +6,7 @@ import wandb
 import sys
 from tqdm.notebook import tqdm
 from pathlib import Path
-from manify.utils.dataloaders import load
+from manify.utils.dataloaders_old import load
 from manify.utils.benchmarks import benchmark
 from manify.manifolds import ProductManifold
 from manify.embedders.coordinate_learning import train_coords
