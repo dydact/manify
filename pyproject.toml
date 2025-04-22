@@ -57,6 +57,9 @@ all = [
 [tool.setuptools]
 packages = ["manify"]
 
+[tool.setuptools.package-data]
+"manify" = ["../data/**/*"]
+
 # Pylint configuration
 [tool.pylint.master]
 init-hook = "import sys; sys.path.append('.')"

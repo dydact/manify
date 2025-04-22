@@ -52,7 +52,7 @@ def load_cities(
 
 
 def load_cs_phds(
-    cs_phds_path: Path = DATA_DIR / "graphs" / "cs_phds.txt", bypassed: bool = False
+    cs_phds_path: Path = DATA_DIR / "graphs" / "cs_phds" / "cs_phds.txt", bypassed: bool = False
 ) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes,"], Float[torch.Tensor, "nodes nodes"]]:
     G = nx.Graph()
 
@@ -213,7 +213,7 @@ def load_dolphins(
 
 def load_blood_cells(
     blood_cell_anndata_path: Path = DATA_DIR / "blood_cell_scrna" / "adata.h5ad.gz",
-) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes,"], None]:
+) -> Tuple[Float[torch.Tensor, "nodes dims"], Float[torch.Tensor, "nodes,"], None]:
     with gzip.open(blood_cell_anndata_path, "rb") as f:
         adata = anndata.read_h5ad(f)
     X = torch.tensor(adata.X.todense()).float()
@@ -225,7 +225,7 @@ def load_blood_cells(
 
 def load_lymphoma(
     lymphoma_anndata_path: Path = DATA_DIR / "lymphoma" / "adata.h5ad.gz",
-) -> Tuple[Float[torch.Tensor, "nodes nodes"], Float[torch.Tensor, "nodes,"], None]:
+) -> Tuple[Float[torch.Tensor, "nodes dims"], Float[torch.Tensor, "nodes,"], None]:
     """https://www.10xgenomics.com/resources/datasets/hodgkins-lymphoma-dissociated-tumor-targeted-immunology-panel-3-1-standard-4-0-0"""
     with gzip.open(lymphoma_anndata_path, "rb") as f:
         adata = anndata.read_h5ad(f)
