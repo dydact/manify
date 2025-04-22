@@ -1,5 +1,7 @@
 """Implementation for benchmarking different product space machine learning methods"""
 
+from __future__ import annotations
+
 import time
 from typing import Dict, List, Literal, Optional
 
@@ -59,7 +61,7 @@ def _score(
     y_pred_override: Optional[Real[torch.Tensor, "n_samples,"]] = None,
     torch: bool = False,
     score: List[SCORETYPE] = ["accuracy", "f1-micro"],
-):
+) -> Dict[SCORETYPE, float]:
     """Helper function: score model on a dataset"""
     # Override y_pred
     if y_pred_override is not None:
@@ -431,7 +433,7 @@ def benchmark(
 
     if "ps_svm" in models:
         try:
-            ps_svm = ProductSpaceSVM(pm=pm, task=task, h_constraints=False, e_constraints=False)
+            ps_svm = ProductSpaceSVM(pm=pm, task=task, h_constraints=False, e_constraints=False)  # type: ignore
             t1 = time.time()
             ps_svm.fit(X_train, y_train)
             t2 = time.time()
@@ -444,9 +446,9 @@ def benchmark(
     if "kappa_mlp" in models:
         assert isinstance(X_test_stereo, torch.Tensor)
         d = X_test_stereo.shape[1]  # Shape can't change between layers
-        kappa_mlp = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(
-            device
-        )  # type: ignore
+        kappa_mlp = KappaGCN(
+            pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim  # type: ignore
+        ).to(device)
         t1 = time.time()
         if task == "link_prediction":
             kappa_mlp.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_mlp", **nn_train_kwargs)

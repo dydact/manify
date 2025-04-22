@@ -1,6 +1,8 @@
 """Preprocessing with link prediction"""
 
-from typing import Optional, Tuple, Any
+from __future__ import annotations
+
+from typing import Any, Optional, Tuple
 
 import torch
 from jaxtyping import Float, Int

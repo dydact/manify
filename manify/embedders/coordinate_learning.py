@@ -11,7 +11,7 @@ import torch
 from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
-from .losses import d_avg, distortion_loss
+from ._losses import d_avg, distortion_loss
 
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:

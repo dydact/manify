@@ -1,7 +1,10 @@
 # Lazy loading variant of utils imports - changed to this so that missing imports would be non-breaking for core manify
+from __future__ import annotations
+
+from typing import Literal
 
 
-def __getattr__(name):
+def __getattr__(name: Literal["benchmarks", "dataloaders", "link_prediction", "preprocessing", "visualization"]):
     if name == "benchmarks":
         import manify.utils.benchmarks
 

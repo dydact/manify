@@ -1,11 +1,10 @@
-"""
-Tools for generating Riemannian manifolds and product manifolds.
+"""Tools for generating Riemannian manifolds and product manifolds.
 
-The module consists of two classes: Manifold and ProductManifold .The Manifold class
-represents hyperbolic, Euclidean, or spherical manifolds based on curvature.
-The ProductManifold class supports products of multiple manifolds,
-combining their geometric properties to create mixed-curvature. Both classes
-includes functions for different key geometric operations.
+The module consists of two classes: `Manifold` and `ProductManifold`. The `Manifold` class represents hyperbolic,
+Euclidean, or spherical manifolds of constant Gaussian curvature. The `ProductManifold` class supports Cartesian
+products of multiple manifolds, combining their geometric properties to create mixed-curvature. Both classes
+include methods for different key geometric operations, and are built on top of their corresponding `geoopt` classes
+(`Lorentz`, `Euclidean`, `Sphere`, `Scaled` and `ProductManifold`)
 """
 
 from __future__ import annotations
@@ -21,8 +20,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributi
 
 
 class Manifold:
-    """
-    Tools for generating Riemannian manifolds.
+    """Tools for generating Riemannian manifolds.
 
     Parameters
     ----------

@@ -13,7 +13,7 @@ from jaxtyping import Bool, Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from ..manifolds import ProductManifold
-from .midpoint import midpoint
+from ._midpoint import midpoint
 
 
 def _angular_greater(
@@ -270,7 +270,7 @@ def _get_split(
     )
 
 
-class DecisionNode:
+class _DecisionNode:
     """Class for nodes in a decision tree."""
 
     def __init__(
@@ -279,8 +279,8 @@ class DecisionNode:
         probs: Float[torch.Tensor, "batch n_classes"] = torch.tensor([]),
         feature: int = 0,
         theta: float = 0.0,
-        left: Optional["DecisionNode"] = None,
-        right: Optional["DecisionNode"] = None,
+        left: Optional["_DecisionNode"] = None,
+        right: Optional["_DecisionNode"] = None,
     ):
         self.value = value
         self.probs = probs  # predicted class probabilities of all samples in the leaf
@@ -339,12 +339,12 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.criterion = "gini" if task == "classification" else "mse"
 
         # These will become important later, when fit is called
-        self.nodes: List[DecisionNode] = []  # For fitted nodes
+        self.nodes: List[_DecisionNode] = []  # For fitted nodes
         self.permutations: Optional[Int[torch.Tensor, "n_classes"]] = None  # If used as part of a random forest
         self.angle2man: List[int] = []  # Maps preprocessed angles to manifold indices
         self.special_first: List[bool] = []  # Whether the first dimension is special in a projection
         self.angle_dims: List[Tuple[int, int]] = []  # Maps preprocessed angles to dimension indices
-        self.tree: DecisionNode = DecisionNode()  # The root of the tree
+        self.tree: _DecisionNode = _DecisionNode()  # The root of the tree
         self.classes_: Float[torch.Tensor, "n_classes,"] = torch.empty(0)  # Initialize as an empty tensor
         self.labels_: Int[torch.Tensor, "batch n_classes"] = torch.tensor([])  # sklearn-style labels
         self.signature: List[Tuple[float, int]] = pm.signature  # The signature of the manifold
@@ -570,7 +570,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         labels: Int[torch.Tensor, "batch n_classes"],
         comparisons: Bool[torch.Tensor, "query_batch dim key_batch"],
         depth: int,
-    ) -> DecisionNode:
+    ) -> _DecisionNode:
         """
         The recursive component of the product space decision tree fitting function
 
@@ -578,9 +578,9 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
         """
 
-        def _halt(labels: Int[torch.Tensor, "batch,"]) -> DecisionNode:
+        def _halt(labels: Int[torch.Tensor, "batch,"]) -> _DecisionNode:
             probs, value = self._leaf_values(labels)
-            node = DecisionNode(value=value.item(), probs=probs)
+            node = _DecisionNode(value=value.item(), probs=probs)
             self.nodes.append(node)
             return node
 
@@ -609,7 +609,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             comparisons_pos,
             labels_pos,
         ) = _get_split(mask=mask, angles=angles, comparisons=comparisons, labels=labels)
-        node = DecisionNode(feature=int(d.item()), theta=float(theta.item()))
+        node = _DecisionNode(feature=int(d.item()), theta=float(theta.item()))
         self.nodes.append(node)
 
         # Do left and right recursion after appending node to self.nodes (ensures order of self.nodes is correct)
@@ -627,13 +627,13 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             probs = y.sum(dim=0) / y.sum()
             return probs, probs.argmax()
 
-    def _left(self, angles_row: Float[torch.Tensor, "intrinsic_dim,"], node: DecisionNode) -> bool:
+    def _left(self, angles_row: Float[torch.Tensor, "intrinsic_dim,"], node: _DecisionNode) -> bool:
         """Boolean: Go left? Works on a preprocessed input vector."""
         return _angular_greater(  # type:ignore
             torch.tensor(node.theta, device=angles_row.device).flatten(), angles_row[node.feature].flatten()
         ).item()
 
-    def _traverse(self, x: Float[torch.Tensor, "intrinsic_dim,"], node: DecisionNode) -> DecisionNode:
+    def _traverse(self, x: Float[torch.Tensor, "intrinsic_dim,"], node: _DecisionNode) -> _DecisionNode:
         """Traverse a decision tree for a single point"""
         # Leaf case
         if node.left is None and node.right is None:

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from typing import Literal, Optional
+
 import cvxpy
 import numpy as np
 import torch
 from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
-from typing import Optional, Literal
 
-from .kernel import product_kernel
 from ..manifolds import ProductManifold
+from ._kernel import product_kernel
 
 
 class ProductSpaceSVM(BaseEstimator, ClassifierMixin):

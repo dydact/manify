@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Tuple
+
 import torch
 from jaxtyping import Float
-from typing import Tuple
 
 
 def sampled_delta_hyperbolicity(

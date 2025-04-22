@@ -9,7 +9,7 @@ from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from ..manifolds import ProductManifold
-from .kernel import product_kernel
+from ._kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):

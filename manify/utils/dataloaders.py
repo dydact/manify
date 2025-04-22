@@ -1,10 +1,12 @@
 """Dataloaders for different datasets"""
 
+from __future__ import annotations
+
 import gzip
 import pickle
 import shlex
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import anndata
 import h5py
@@ -19,7 +21,6 @@ from scipy.io import mmread
 
 # Create a data directory constant
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
-OUTPUT_TYPE = (Float[torch.Tensor, "nodes n_dims"], Float[torch.Tensor, "nodes,"])
 
 
 def _top_cc_dists(
