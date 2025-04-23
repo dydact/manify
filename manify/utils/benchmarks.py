@@ -54,41 +54,23 @@ def _score(
     _y: Real[torch.Tensor, "n_samples,"],
     model: BaseEstimator,
     y_pred_override: Optional[Real[torch.Tensor, "n_samples,"]] = None,
-    torch: bool = False,
-    score: List[SCORETYPE] = ["accuracy", "f1-micro"],
+    use_torch: bool = False,
+    score: Optional[List[SCORETYPE]] = None,
 ) -> Dict[SCORETYPE, float]:
-    """Helper function: score model on a dataset"""
-    # Override y_pred
-    if y_pred_override is not None:
-        y_pred = y_pred_override
-    else:
-        y_pred = model.predict(_X)
-
-    # Convert to numpy
-    if torch:
+    if score is None:
+        score = ["accuracy", "f1-micro"]
+    y_pred = y_pred_override if y_pred_override is not None else model.predict(_X)
+    if use_torch:
         y_pred = y_pred.detach().cpu().numpy()
-
-    # Score handling
-    out: Dict[SCORETYPE, float] = {}
-    for s in score:
-        try:
-            if s == "accuracy":
-                out[s] = accuracy_score(_y, y_pred)
-            elif s == "f1-micro":
-                out[s] = f1_score(_y, y_pred, average="micro")
-            elif s == "f1-macro":
-                out[s] = f1_score(_y, y_pred, average="macro")
-            elif s == "mse":
-                out[s] = mean_squared_error(_y, y_pred)
-            elif s == "rmse":
-                out[s] = root_mean_squared_error(_y, y_pred)
-            elif s == "percent_rmse":
-                out[s] = (root_mean_squared_error(_y, y_pred, multioutput="raw_values") / np.abs(_y)).mean()
-            else:
-                raise ValueError(f"Unknown score: {s}")
-        except Exception as e:
-            out[s] = np.nan
-    return out
+    scoring_funcs = {
+        "accuracy": accuracy_score,
+        "f1-micro": lambda y, p: f1_score(y, p, average="micro"),
+        "f1-macro": lambda y, p: f1_score(y, p, average="macro"),
+        "mse": mean_squared_error,
+        "rmse": root_mean_squared_error,
+        "percent_rmse": lambda y, p: (root_mean_squared_error(y, p, multioutput="raw_values") / np.abs(y)).mean(),
+    }
+    return {s: scoring_funcs[s](_y, y_pred) if s in scoring_funcs else np.nan for s in score}
 
 
 def benchmark(
@@ -96,28 +78,8 @@ def benchmark(
     y: Real[torch.Tensor, "batch,"],
     pm: ProductManifold,
     device: Literal["cpu", "cuda", "mps"] = "cpu",
-    score: List[SCORETYPE] = ["accuracy", "f1-micro", "f1-macro"],
-    models: List[MODELTYPE] = [
-        "sklearn_dt",
-        "sklearn_rf",
-        "product_dt",
-        "product_rf",
-        "tangent_dt",
-        "tangent_rf",
-        "knn",
-        "ps_perceptron",
-        # "svm",
-        # "ps_svm",
-        # "tangent_mlp",
-        "ambient_mlp",
-        "tangent_gcn",
-        "ambient_gcn",
-        "kappa_gcn",
-        "ambient_mlr",
-        "tangent_mlr",
-        "kappa_mlr",
-        "single_manifold_rf",
-    ],
+    score: Optional[List[SCORETYPE]] = None,
+    models: Optional[List[MODELTYPE]] = None,
     max_depth: int = 5,
     n_estimators: int = 12,
     min_samples_split: int = 2,
@@ -134,7 +96,7 @@ def benchmark(
     adj: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
     A_train: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
     A_test: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
-    hidden_dims: List[int] = [32, 32],
+    hidden_dims: Optional[List[int]] = None,
     epochs: int = 4_000,
     lr: float = 1e-4,
     kappa_gcn_layers: int = 1,
@@ -175,11 +137,46 @@ def benchmark(
         Dict[str, float]: Dictionary of model names and their corresponding evaluation scores.
 
     """
+    if score is None:
+        score = ["accuracy", "f1-micro", "f1-macro"]
+    if models is None:
+        models = [
+            "sklearn_dt",
+            "sklearn_rf",
+            "product_dt",
+            "product_rf",
+            "tangent_dt",
+            "tangent_rf",
+            "knn",
+            "ps_perceptron",
+            # "svm",
+            # "ps_svm",
+            # "tangent_mlp",
+            "ambient_mlp",
+            "tangent_gcn",
+            "ambient_gcn",
+            "kappa_gcn",
+            "ambient_mlr",
+            "tangent_mlr",
+            "kappa_mlr",
+            "single_manifold_rf",
+        ]
+    if hidden_dims is None:
+        hidden_dims = [32, 32]
+
     # Input validation on (task, score) pairing
     if task in ["classification", "link_prediction"]:
         assert all(s in ["accuracy", "f1-micro", "f1-macro", "time"] for s in score)
     elif task == "regression":
         assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
+
+    # Input validation on (task, score) pairing
+    if task in ["classification", "link_prediction"]:
+        assert all(s in ["accuracy", "f1-micro", "f1-macro", "time"] for s in score)
+    elif task == "regression":
+        assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
+    else:
+        raise ValueError(f"Unknown task: {task}")
 
     # Make sure we're on the right device
     pm = pm.to(device)
@@ -285,14 +282,12 @@ def benchmark(
         rf_class = RandomForestClassifier
         knn_class = KNeighborsClassifier
         svm_class = SVC
-        perceptron_class = SGDClassifier
 
-    elif task == "regression":
+    else:  # task == "regression"
         dt_class = DecisionTreeRegressor
         rf_class = RandomForestRegressor
         knn_class = KNeighborsRegressor
         svm_class = SVR
-        perceptron_class = SGDRegressor
 
     # Get link prediction indices: random 1000 edges
     if task == "link_prediction":
@@ -309,7 +304,7 @@ def benchmark(
         t1 = time.time()
         dt.fit(X_train_np, y_train_np)
         t2 = time.time()
-        accs["sklearn_dt"] = _score(X_test_np, y_test_np, dt, torch=False, score=score)
+        accs["sklearn_dt"] = _score(X_test_np, y_test_np, dt, use_torch=False, score=score)
         accs["sklearn_dt"]["time"] = t2 - t1
 
     if "sklearn_rf" in models:
@@ -317,7 +312,7 @@ def benchmark(
         t1 = time.time()
         rf.fit(X_train_np, y_train_np)
         t2 = time.time()
-        accs["sklearn_rf"] = _score(X_test_np, y_test_np, rf, torch=False, score=score)
+        accs["sklearn_rf"] = _score(X_test_np, y_test_np, rf, use_torch=False, score=score)
         accs["sklearn_rf"]["time"] = t2 - t1
 
     if "product_dt" in models:
@@ -325,7 +320,7 @@ def benchmark(
         t1 = time.time()
         psdt.fit(X_train, y_train)
         t2 = time.time()
-        accs["product_dt"] = _score(X_test, y_test_np, psdt, torch=True, score=score)
+        accs["product_dt"] = _score(X_test, y_test_np, psdt, use_torch=True, score=score)
         accs["product_dt"]["time"] = t2 - t1
 
     if "product_rf" in models:
@@ -333,7 +328,7 @@ def benchmark(
         t1 = time.time()
         psrf.fit(X_train, y_train)
         t2 = time.time()
-        accs["product_rf"] = _score(X_test, y_test_np, psrf, torch=True, score=score)
+        accs["product_rf"] = _score(X_test, y_test_np, psrf, use_torch=True, score=score)
         accs["product_rf"]["time"] = t2 - t1
 
     # if "single_manifold_rf" in models:
@@ -349,7 +344,7 @@ def benchmark(
         t1 = time.time()
         tdt.fit(X_train_tangent_np, y_train_np)
         t2 = time.time()
-        accs["tangent_dt"] = _score(X_test_tangent_np, y_test_np, tdt, torch=False, score=score)
+        accs["tangent_dt"] = _score(X_test_tangent_np, y_test_np, tdt, use_torch=False, score=score)
         accs["tangent_dt"]["time"] = t2 - t1
 
     if "tangent_rf" in models:
@@ -357,7 +352,7 @@ def benchmark(
         t1 = time.time()
         trf.fit(X_train_tangent_np, y_train_np)
         t2 = time.time()
-        accs["tangent_rf"] = _score(X_test_tangent_np, y_test_np, trf, torch=False, score=score)
+        accs["tangent_rf"] = _score(X_test_tangent_np, y_test_np, trf, use_torch=False, score=score)
         accs["tangent_rf"]["time"] = t2 - t1
 
     if "knn" in models:
@@ -380,7 +375,7 @@ def benchmark(
         t2 = time.time()
         knn.fit(train_dists, y_train_np)
         t3 = time.time()
-        accs["knn"] = _score(train_test_dists, y_test_np, knn, torch=False, score=score)
+        accs["knn"] = _score(train_test_dists, y_test_np, knn, use_torch=False, score=score)
         accs["knn"]["time"] = t3 - t1
 
     # if "perceptron" in models:
@@ -404,7 +399,7 @@ def benchmark(
             t1 = time.time()
             ps_per.fit(X_train, y_train)
             t2 = time.time()
-            accs["ps_perceptron"] = _score(X_test, y_test_np, ps_per, torch=True, score=score)
+            accs["ps_perceptron"] = _score(X_test, y_test_np, ps_per, use_torch=True, score=score)
             accs["ps_perceptron"]["time"] = t2 - t1
 
     if "svm" in models:
@@ -423,7 +418,7 @@ def benchmark(
         t2 = time.time()
         svm.fit(train_ips, y_train_np)
         t3 = time.time()
-        accs["svm"] = _score(train_test_ips, y_test_np, svm, torch=False, score=score)
+        accs["svm"] = _score(train_test_ips, y_test_np, svm, use_torch=False, score=score)
         accs["svm"]["time"] = t3 - t1
 
     if "ps_svm" in models:
@@ -432,7 +427,7 @@ def benchmark(
             t1 = time.time()
             ps_svm.fit(X_train, y_train)
             t2 = time.time()
-            accs["ps_svm"] = _score(X_test, y_test_np, ps_svm, torch=False, score=score)
+            accs["ps_svm"] = _score(X_test, y_test_np, ps_svm, use_torch=False, score=score)
             accs["ps_svm"]["time"] = t2 - t1
         except Exception:
             pass
@@ -453,7 +448,7 @@ def benchmark(
         y_pred = kappa_mlp.predict(X_test_stereo, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["kappa_mlp"] = _score(None, y_test_np, kappa_mlp, y_pred_override=y_pred, torch=True, score=score)
+        accs["kappa_mlp"] = _score(None, y_test_np, kappa_mlp, y_pred_override=y_pred, use_torch=True, score=score)
         accs["kappa_mlp"]["time"] = t2 - t1
 
     if "ambient_mlp" in models:
@@ -464,7 +459,7 @@ def benchmark(
         y_pred = ambient_mlp.predict(X_test, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, torch=True, score=score)
+        accs["ambient_mlp"] = _score(None, y_test_np, ambient_mlp, y_pred_override=y_pred, use_torch=True, score=score)
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if "tangent_mlp" in models:
@@ -475,7 +470,7 @@ def benchmark(
         y_pred = tangent_mlp.predict(X_test_tangent, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, torch=True, score=score)
+        accs["tangent_mlp"] = _score(None, y_test_np, tangent_mlp, y_pred_override=y_pred, use_torch=True, score=score)
         accs["tangent_mlp"]["time"] = t2 - t1
 
     if "ambient_gcn" in models:
@@ -486,7 +481,7 @@ def benchmark(
         y_pred = ambient_gcn.predict(X_test, A=A_test)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["ambient_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["ambient_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["ambient_gcn"]["time"] = t2 - t1
 
     if "tangent_gcn" in models:
@@ -497,7 +492,7 @@ def benchmark(
         y_pred = tangent_gcn.predict(X_test_tangent, A=A_test)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["tangent_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["tangent_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["tangent_gcn"]["time"] = t2 - t1
 
     if "kappa_gcn" in models:
@@ -512,7 +507,7 @@ def benchmark(
         y_pred = kappa_gcn.predict(X_test_stereo, A=A_test)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["kappa_gcn"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["kappa_gcn"]["time"] = t2 - t1
 
     if "kappa_mlr" in models:
@@ -523,7 +518,7 @@ def benchmark(
         y_pred = kappa_mlr.predict(X_test_stereo, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["kappa_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["kappa_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["kappa_mlr"]["time"] = t2 - t1
 
     if "tangent_mlr" in models:
@@ -534,7 +529,7 @@ def benchmark(
         y_pred = tangent_mlr.predict(X_test_tangent, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["tangent_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["tangent_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["tangent_mlr"]["time"] = t2 - t1
 
     if "ambient_mlr" in models:
@@ -545,7 +540,7 @@ def benchmark(
         y_pred = ambient_mlr.predict(X_test, A=None)
         if lp_test_idx:
             y_pred = y_pred[lp_test_idx]
-        accs["ambient_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, torch=True, score=score)
+        accs["ambient_mlr"] = _score(None, y_test_np, None, y_pred_override=y_pred, use_torch=True, score=score)
         accs["ambient_mlr"]["time"] = t2 - t1
 
     # return accs

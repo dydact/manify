@@ -185,8 +185,7 @@ class Manifold:
         x = torch.Tensor(x).reshape(-1, self.dim)
         if self.type == "E":
             return x
-        else:
-            return torch.cat([torch.zeros((x.shape[0], 1), device=self.device), x], dim=1)
+        return torch.cat([torch.zeros((x.shape[0], 1), device=self.device), x], dim=1)
 
     def sample(
         self,
@@ -277,31 +276,30 @@ class Manifold:
         if self.type == "E":
             return torch.distributions.MultivariateNormal(mu, sigma).log_prob(z)
 
+        u = self.manifold.logmap(x=mu, y=z)  # Map z to tangent space at mu
+        v = self.manifold.transp(x=mu, y=self.mu0, v=u)  # Parallel transport to origin
+        # assert torch.allclose(v[:, 0], torch.Tensor([0.])) # For tangent vectors at origin this should be true
+        # OK, so this assertion doesn't actually pass, but it's spiritually true
+        if torch.isnan(v).any():
+            print("NANs in parallel transport")
+            v = torch.nan_to_num(v, nan=0.0)
+        N = torch.distributions.MultivariateNormal(torch.zeros(self.dim, device=self.device), sigma)
+        ll = N.log_prob(v[:, 1:])
+
+        # For convenience
+        R = self.scale
+        n = self.dim
+
+        # Final formula (epsilon to avoid log(0))
+        if self.type == "S":
+            sin_M = torch.sin
+            u_norm = self.manifold.norm(x=mu, u=u)
+
         else:
-            u = self.manifold.logmap(x=mu, y=z)  # Map z to tangent space at mu
-            v = self.manifold.transp(x=mu, y=self.mu0, v=u)  # Parallel transport to origin
-            # assert torch.allclose(v[:, 0], torch.Tensor([0.])) # For tangent vectors at origin this should be true
-            # OK, so this assertion doesn't actually pass, but it's spiritually true
-            if torch.isnan(v).any():
-                print("NANs in parallel transport")
-                v = torch.nan_to_num(v, nan=0.0)
-            N = torch.distributions.MultivariateNormal(torch.zeros(self.dim, device=self.device), sigma)
-            ll = N.log_prob(v[:, 1:])
+            sin_M = torch.sinh
+            u_norm = self.manifold.base.norm(u=u)  # Horrible workaround needed for geoopt bug # type: ignore
 
-            # For convenience
-            R = self.scale
-            n = self.dim
-
-            # Final formula (epsilon to avoid log(0))
-            if self.type == "S":
-                sin_M = torch.sin
-                u_norm = self.manifold.norm(x=mu, u=u)
-
-            else:
-                sin_M = torch.sinh
-                u_norm = self.manifold.base.norm(u=u)  # Horrible workaround needed for geoopt bug # type: ignore
-
-            return ll - (n - 1) * torch.log(R * torch.abs(sin_M(u_norm / R) / u_norm) + 1e-8)
+        return ll - (n - 1) * torch.log(R * torch.abs(sin_M(u_norm / R) / u_norm) + 1e-8)
 
     def logmap(
         self, x: Float[torch.Tensor, "n_points n_dim"], base: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
@@ -366,7 +364,7 @@ class Manifold:
         for X in denom:
             X[X.abs() < 1e-6] = 1e-6  # Avoid division by zero
         stereo_points = [n / d for n, d in zip(num, denom)]
-        assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
+        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points)
 
         return stereo_manifold, *stereo_points
 
@@ -579,7 +577,7 @@ class ProductManifold(Manifold):
                 for M, sigma in zip(self.P, sigma_factorized)
             ]
 
-        assert sum([sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized)]) == len(self.P)
+        assert all(sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized))
         assert z_mean.shape[-1] == self.ambient_dim
 
         # Sample initial vector from N(0, sigma)
@@ -637,7 +635,7 @@ class ProductManifold(Manifold):
         stereo_points = [
             torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
         ]
-        assert all([stereo_manifold.manifold.check_point(X) for X in stereo_points])
+        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points)
 
         return stereo_manifold, *stereo_points
 
@@ -652,7 +650,7 @@ class ProductManifold(Manifold):
         orig_points = [
             torch.hstack([M.inverse_stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
         ]
-        assert all([orig_manifold.manifold.check_point(X) for X in orig_points])
+        assert all(orig_manifold.manifold.check_point(X) for X in orig_points)
 
         return orig_manifold, *orig_points
 
