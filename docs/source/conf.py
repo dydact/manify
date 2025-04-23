@@ -14,6 +14,7 @@ extensions = [
     # 'sphinx.ext.autodoc',
     # 'sphinx.ext.autosummary',
 ]
+napoleon_use_rtype = False
 
 autoapi_type = 'python'
 autoapi_dirs = [os.path.abspath('../../manify')]
@@ -36,7 +37,8 @@ autoapi_options = [
     "show-inheritance",
     # note: NO 'undoc-members' here
 ]
-autodoc_typehints = "description"
+# autodoc_typehints = "description"
 html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
+autodoc_typehints = "none"
 
