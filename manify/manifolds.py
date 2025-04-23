@@ -22,19 +22,18 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributi
 class Manifold:
     """Constant-curvature Riemannian manifold class.
 
-    This class provides tools for creating and manipulating Riemannian manifolds
-    with constant curvature (hyperbolic, Euclidean, or spherical).
+    This class provides tools for creating and manipulating Riemannian manifolds with constant curvature (hyperbolic,
+    Euclidean, or spherical).
 
     Attributes:
-        curvature: The curvature of the manifold. Negative for hyperbolic,
-            zero for Euclidean, and positive for spherical manifolds.
+        curvature: The curvature of the manifold. Negative for hyperbolic, zero for Euclidean, and positive for
+            spherical manifolds.
         dim: The dimension of the manifold.
         device: The device on which the manifold is stored.
         is_stereographic: Whether stereographic coordinates are used for the manifold.
         scale: The scale factor derived from the curvature.
-        type: A string identifier for the manifold type ('H' for hyperbolic,
-            'E' for Euclidean, 'S' for spherical, 'P' for poincaré ball,
-            or 'D' for stereographic sphere).
+        type: A string identifier for the manifold type ('H' for hyperbolic, 'E' for Euclidean, 'S' for spherical,
+            'P' for poincaré ball, 'D' for stereographic sphere).
         ambient_dim: The dimension of the ambient space.
         manifold: The underlying geoopt manifold object.
         mu0: The origin point on the manifold.
@@ -135,28 +134,28 @@ class Manifold:
     def dist(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """Inherit distance function from the geoopt manifold.
+        """Compute the distance between two sets of points on the manifold.
 
         Args:
             X: Tensor of points in the manifold.
             Y: Tensor of points in the manifold.
 
         Returns:
-            distance: Tensor of distances between points.
+            distances: Tensor of distances between points.
         """
         return self.manifold.dist(X[:, None], Y[None, :])
 
     def dist2(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """Inherit squared distance function from the geoopt manifold.
+        """Compute the squared distance between two sets of points on the manifold.
 
         Args:
             X: Tensor of points in the manifold.
             Y: Tensor of points in the manifold.
 
         Returns:
-            distance: Tensor of squared distances between points.
+            squared_distances: Tensor of squared distances between points.
         """
         return self.manifold.dist2(X[:, None], Y[None, :])
 
@@ -197,10 +196,10 @@ class Manifold:
         """Map points to the tangent plane at the origin of the manifold.
 
         Args:
-            x: Tensor of points to map to the tangent plane of shape (n_points, n_dim).
+            x: Tensor of points to map to the tangent plane.
 
         Returns:
-            Tensor of points in the tangent plane at the origin of shape (n_points, n_ambient_dim).
+            tangent_points: Tensor of points in the tangent plane at the origin.
         """
         x = torch.Tensor(x).reshape(-1, self.dim)
         if self.type == "E":
@@ -267,15 +266,13 @@ class Manifold:
         """Compute probability density function for $\\mathcal{WN}(\\mathbf{z}; \\mu, \\Sigma)$ on the manifold.
 
         Args:
-            z: Tensor of points on the manifold for which to compute the likelihood of shape (n_points, n_ambient_dim).
-            mu: Tensor representing the mean of the distribution of shape (n_points, n_ambient_dim).
-                Defaults to `self.mu0`.
-            sigma: Tensor representing the covariance matrix of shape (n_points, n_dim, n_dim).
-                  Defaults to identity matrices.
+            z: Tensor of points on the manifold for which to compute the likelihood.
+            mu: Tensor representing the mean of the distribution. Defaults to `self.mu0`.
+            sigma: Tensor representing the covariance matrix. Defaults to identity matrices.
 
         Returns:
-            log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution
-                with mean `mu` and covariance `sigma` of shape (n_points,).
+            log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
+                `mu` and covariance `sigma`.
         """
 
         # Default to mu=self.mu0 and sigma=I
@@ -357,15 +354,14 @@ class Manifold:
             \rho_K(x_i) = \frac{x_i}{1 + \sqrt{|K|} \cdot x_0}
         \end{equation}
 
-        For more information, see (https://arxiv.org/pdf/1911.08411)
+        For more information, see https://arxiv.org/pdf/1911.08411
 
         Args:
-            *points: Variable number of tensors representing points on the manifold
-                    to convert to stereographic coordinates.
+            *points: Variable number of tensors representing points on the manifold to convert to stereographic coords.
 
         Returns:
-            stereo_manifold: The manifold in stereographic coordinates
-            stereo_points: The provided points converted to stereographic coordinates (if any)
+            stereo_manifold: The manifold in stereographic coordinates.
+            stereo_points: The provided points converted to stereographic coordinates (if any).
         """
 
         if self.is_stereographic:
@@ -391,6 +387,7 @@ class Manifold:
 
     def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple["Manifold", ...]:
         r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
+
         If points are given, convert them as well.
 
         Formula for inverse stereographic projection:
@@ -400,12 +397,12 @@ class Manifold:
         \end{align}
 
         Args:
-            *points: Variable number of tensors representing points in stereographic coordinates
-                    to convert back to original coordinates.
+            *points: Variable number of tensors representing points in stereographic coords to convert back to original 
+                coords.
 
         Returns:
-            inv_stereo_manifold: The manifold in original coordinates
-            inv_stereo_points: The provided points converted from stereographic to original coordinates (if any)
+            inv_stereo_manifold: The manifold in original coords.
+            inv_stereo_points: The provided points converted from stereographic to original coords (if any).
         """
         if not self.is_stereographic:
             print("Manifold is already in original coordinates.")
@@ -475,8 +472,7 @@ class Manifold:
 class ProductManifold(Manifold):
     """Tools for constructing product manifolds with multiple factors.
 
-    A product manifold combines multiple manifolds with different curvatures
-    and dimensions into a single product space.
+    A product manifold combines multiple manifolds with different curvatures and dimensions into a single product space.
 
     Attributes:
         signature: List of tuples defining the curvature and dimension of each factor manifold.
@@ -552,7 +548,7 @@ class ProductManifold(Manifold):
                 self.projection_matrix[j, k] = 1.0
 
     def parameters(self) -> List[float]:
-        """Get scales for all component manifolds.
+        """Get scale parameters for all component manifolds.
 
         Returns:
             scales: List of scale parameters for each component manifold.
@@ -583,11 +579,11 @@ class ProductManifold(Manifold):
         The inner product is the sum of inner products in each component manifold.
 
         Args:
-            X: Tensor of points in the product manifold of shape (n_points1, n_dim).
-            Y: Tensor of points in the product manifold of shape (n_points2, n_dim).
+            X: Tensor of points in the product manifold.
+            Y: Tensor of points in the product manifold.
 
         Returns:
-            inner_products: Tensor of inner products between points of shape (n_points1, n_points2).
+            inner_products: Tensor of inner products between points.
         """
         ips = [M.inner(x, y) for x, y, M in zip(self.factorize(X), self.factorize(Y), self.P)]
         return torch.stack(ips, dim=0).sum(dim=0)
@@ -653,16 +649,17 @@ class ProductManifold(Manifold):
         mu: Optional[Float[torch.Tensor, "n_dim,"]] = None,
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
     ) -> Float[torch.Tensor, "batch_size,"]:
-        r"""Probability density function for $\mathcal{WN}(\mathbf{z} ; \mu, \Sigma)$ in manifold
+        r"""Compute probability density function for $\mathcal{WN}(\mathbf{z} ; \mu, \Sigma)$ on the product manifold.
 
         Args:
             z: Tensor representing the points for which the log-likelihood is computed.
-            mu: Tensor representing the mean of the distribution.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
+            mu: Tensor representing the mean of the distribution. Defaults to `self.mu0`.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults
+                to identity matrices.
 
         Returns:
             log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
-                `mu` and covariance `sigma`
+                `mu` and covariance `sigma`.
         """
         n = z.shape[0]
         if mu is None:
@@ -688,18 +685,17 @@ class ProductManifold(Manifold):
             \rho_K(x_i) = \frac{x_i}{1 + \sqrt{|K|} \cdot x_0}
         \end{equation}
 
-        For more information, see (https://arxiv.org/pdf/1911.08411)
+        For more information, see https://arxiv.org/pdf/1911.08411
 
         Args:
-            *points: Variable number of tensors representing points on the manifold
-                    to convert to stereographic coordinates.
+            *points: Variable number of tensors representing points on the manifold to convert to stereographic coords.
 
         Returns:
-            stereo_manifold: The manifold in stereographic coordinates
-            stereo_points: The provided points converted to stereographic coordinates (if any)
+            stereo_manifold: The manifold in stereographic coords.
+            stereo_points: The provided points converted to stereographic coords (if any).
         """
         if self.is_stereographic:
-            print("Manifold is already in stereographic coordinates.")
+            print("Manifold is already in stereographic coords.")
             return self, *points
 
         # Convert manifold
@@ -713,8 +709,11 @@ class ProductManifold(Manifold):
 
         return stereo_manifold, *stereo_points
 
-    def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple[Manifold]:
+    def inverse_stereographic(
+        self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]
+    ) -> Tuple["ProductManifold", ...]:
         r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
+
         If points are given, convert them as well.
 
         Formula for inverse stereographic projection:
@@ -724,15 +723,15 @@ class ProductManifold(Manifold):
         \end{align}
 
         Args:
-            *points: Variable number of tensors representing points in stereographic coordinates
-                    to convert back to original coordinates.
+            *points: Variable number of tensors representing points in stereographic coords to convert back to original 
+                coords.
 
         Returns:
-            inv_stereo_manifold: The manifold in original coordinates
-            inv_stereo_points: The provided points converted from stereographic to original coordinates (if any)
+            inv_stereo_manifold: The manifold in original coords.
+            inv_stereo_points: The provided points converted from stereographic to original coords (if any).
         """
         if not self.is_stereographic:
-            print("Manifold is already in original coordinates")
+            print("Manifold is already in original coordinates.")
             return self, *points
 
         # Convert manifold
@@ -772,8 +771,8 @@ class ProductManifold(Manifold):
             adjust_for_dims: Whether to adjust the covariance matrices for the number of dimensions in each manifold.
 
         Returns:
-            samples: A tensor of shape (num_points, ambient_dim) containing the generated samples.
-            class_assignments: A tensor of shape (num_points,) containing the class assignments of the samples.
+            samples: A tensor of generated samples.
+            class_assignments: A tensor of class assignments for the samples.
         """
         # Set seed
         if seed is not None:

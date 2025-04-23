@@ -1,4 +1,9 @@
-"""Implementation of different measurement metrics"""
+"""Implementation of metrics and loss functions for evaluating embedding quality.
+
+This module provides various functions to measure the quality of embeddings
+in Riemannian manifolds, including distortion metrics, average distance error,
+and other evaluation measures for both graph and general embedding tasks.
+"""
 
 from __future__ import annotations
 
@@ -16,19 +21,26 @@ def distortion_loss(
     D_true: Float[torch.Tensor, "n_points n_points"],
     pairwise: bool = False,
 ) -> Float[torch.Tensor, ""]:
-    """Compute the distortion loss between estimated SQUARED distances and true SQUARED distances.
+    r"""Computes the distortion loss between estimated and true squared distances.
+
+    The distortion loss measures how well the pairwise distances in the embedding space match the true distances. It is
+    calculated as
+
+    $$\sum_{i,j} \left(\left(\frac{D_{\text{est}}(i,j)}{D_{\text{true}}(i,j)}\right)^2 - 1\right),$$
+
+    where the sum is over all pairs of points (or just unique pairs if `pairwise=True`).
 
     Args:
-        D_est: A tensor of estimated pairwise distances.
-        D_true: A tensor of true pairwise distances.
-        pairwise: A boolean indicating whether to return whether D_est and D_true are pairwise
+        D_est: Tensor of estimated pairwise squared distances.
+        D_true: Tensor of true pairwise squared distances.
+        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices). Defaults to False.
 
     Returns:
-        float: A float indicating the distortion loss, calculated as the sum of the squared relative
-            errors between the estimated and true squared distances.
+        loss: Scalar tensor representing the distortion loss.
 
-    See also: `square_loss` in HazyResearch hyperbolics repo:
-    https://github.com/HazyResearch/hyperbolics/blob/master/pytorch/hyperbolic_models.py#L178
+    Note:
+        This is similar to the `square_loss` in HazyResearch hyperbolics repository:
+        https://github.com/HazyResearch/hyperbolics/blob/master/pytorch/hyperbolic_models.py#L178
     """
 
     # Turn into flat vectors of pairwise distances. For pairwise distances, we only consider the upper triangle.
@@ -54,15 +66,22 @@ def d_avg(
     D_true: Float[torch.Tensor, "n_points n_points"],
     pairwise: bool = False,
 ) -> Float[torch.Tensor, ""]:
-    """Average distance error D_av
+    r"""Computes the average relative distance error (D_avg).
+
+    The average distance error is the mean relative error between the estimated and true distances:
+
+    $$D_{\text{avg}} = \frac{1}{N} \sum_{i,j} \frac{|D_{\text{est}}(i,j) - D_{\text{true}}(i,j)|}{D_{\text{true}}(i,j)},$$
+
+    where $N$ is the number of distances being considered. This metric provides a normalized measure of how accurately
+    the embedding preserves the original distances.
+
     Args:
-        D_est (n_points, n_points): A tensor of estimated pairwise distances.
-        D_true (n_points, n_points).: A tensor of true pairwise distances.
-        pairwise (bool): A boolean indicating whether to return whether D_est and D_true are pairwise
+        D_est: Tensor of estimated pairwise distances.
+        D_true: Tensor of true pairwise distances.
+        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices). Defaults to False.
 
     Returns:
-        float: A float indicating the average distance error D_avg, calculated as the
-        mean relative error across all pairwise distances.
+        d_avg: Scalar tensor representing the average relative distance error.
     """
 
     if pairwise:
@@ -84,22 +103,41 @@ def d_avg(
 
 
 def mean_average_precision(x_embed: Float[torch.Tensor, "n_points n_dim"], graph: nx.Graph) -> Float[torch.Tensor, ""]:
-    """Mean averae precision (mAP) from the Gu et al paper."""
+    r"""Computes the mean average precision (mAP) for graph embedding evaluation.
+
+    This metric is used to evaluate how well an embedding preserves the neighborhood structure of a graph, as described
+    in Gu et al. (2019): "Learning Mixed-Curvature Representations in Product Spaces".
+
+    Args:
+        x_embed: Tensor containing the embeddings of the graph nodes.
+        graph: NetworkX graph representing the original graph structure.
+
+    Returns:
+        mAP: Mean average precision score.
+
+    Note:
+        This function is currently not implemented.
+    """
     raise NotImplementedError
 
 
 def dist_component_by_manifold(pm: ProductManifold, x_embed: Float[torch.Tensor, "n_points n_dim"]) -> List[float]:
-    """
-    Compute the variance in pairwise distances explained by each manifold component.
+    r"""Computes the proportion of variance in pairwise distances explained by each manifold component.
+
+    The contribution is calculated as the ratio of the sum of squared distances in each component to the total squared
+    distance:
+
+    $$\text{contribution}_k = \frac{\sum_{i<j} D^2_k(x_i, x_j)}{\sum_{i<j} D^2_{\text{total}}(x_i, x_j)}$$
+
+    where $D^2_k$ is the squared distance in the $k$-th manifold component.
 
     Args:
-        pm: The product manifold.
-        x_embed (n_points, n_dim): A tensor of embeddings.
+        pm: The product manifold containing multiple component manifolds.
+        x_embed: Tensor of embeddings in the product manifold.
 
     Returns:
-        List[float]: A list of proportions, where each value represents the fraction
-                     of total distance variance explained by the corresponding
-                     manifold component.
+        contributions: List of proportions, where each value represents the fraction of total distance variance
+        explained by the corresponding manifold component.
     """
     sq_dists_by_manifold = [M.pdist2(x_embed[:, pm.man2dim[i]]) for i, M in enumerate(pm.P)]
     total_sq_dist = pm.pdist2(x_embed)

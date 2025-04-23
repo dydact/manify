@@ -1,4 +1,12 @@
-"""Product space variational autoencoder implementation"""
+"""Variational autoencoder implementation for product manifold spaces.
+
+This module provides a variational autoencoder (VAE) implementation specifically designed for learning representations
+in mixed-curvature product spaces. The implementation handles the complexities of sampling, KL divergence calculation,
+and reparameterization in curved spaces, supporting combinations of hyperbolic, Euclidean, and spherical geometries
+within a single latent space.
+
+For more information, see Skopek et al (2020): Mixed Curvature Variational Autoencoders
+"""
 
 from __future__ import annotations
 
@@ -18,10 +26,44 @@ else:
 
 
 class ProductSpaceVAE(torch.nn.Module):
-    """
-    Variational Autoencoder (VAE) for data in a mixed-curvature product manifold space.
-    This VAE model leverages a product manifold structure for latent representations, enabling
-    flexible encodings in spaces with different curvature properties (e.g., hyperbolic, Euclidean, spherical).
+    r"""Product Space Variational Autoencoder.
+
+    The probabilistic model is defined as:
+
+    - Prior: $p(z) = \mathcal{WN}(z; \mu_0, I)$ (wrapped normal distribution centered at manifold origin)
+    - Likelihood: $p_\theta(x|z) = \mathcal{N}(x; f_\theta(z), \sigma^2 I)$ or other reconstruction distribution
+    - Posterior approximation: $q_\phi(z|x) = \mathcal{WN}(z; \mu_\phi(x), \Sigma_\phi(x))$
+
+    where $\mathcal{WN}$ is a wrapped normal distribution on the manifold.
+
+    The model is trained by maximizing the evidence lower bound (ELBO):
+
+    $\mathcal{L}(\theta, \phi; x) = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - \beta \cdot D_{KL}(q_\phi(z|x) || p(z))$
+
+    Attributes:
+        encoder: Neural network that outputs mean and log-variance parameters.
+        decoder: Neural network that reconstructs inputs from latent embeddings.
+        pm: Product manifold defining the structure of the latent space.
+        beta: Weight for the KL divergence term in the ELBO. Defaults to 1.0.
+        device: Device for tensor computations. Defaults to "cpu".
+        n_samples: Number of samples for Monte Carlo estimation of KL divergence.
+        reconstruction_loss: Type of reconstruction loss to use.
+
+    Args:
+        encoder: Neural network module that produces mean (first half of output) and log-variance (second half of
+            output) of the posterior distribution. The output dimension should match twice the intrinsic dimension of
+            the product manifold.
+        decoder: Neural network module that maps latent representations back to the input space.
+        pm: Product manifold defining the structure of the latent space.
+        beta: Weight of the KL divergence term in the ELBO loss. Values < 1 give a $\beta$-VAE with a looser constraint
+            on the latent space. Defaults to 1.0.
+        reconstruction_loss: Type of reconstruction loss to use. Currently only "mse" (mean squared error) is supported.
+            Defaults to "mse".
+        device: Device for tensor computations. Defaults to "cpu".
+        n_samples: Number of Monte Carlo samples to use when estimating the KL divergence. Defaults to 16.
+
+    Raises:
+        ValueError: If an unsupported reconstruction_loss is specified.
     """
 
     def __init__(
@@ -51,14 +93,40 @@ class ProductSpaceVAE(torch.nn.Module):
         Float[torch.Tensor, "batch_size n_latent"],
         Float[torch.Tensor, "batch_size n_latent"],
     ]:
-        """Must return z_mean, z_logvar"""
+        r"""Encodes input data to obtain latent means and log-variances in the manifold.
+
+        This method processes input data through the encoder network to obtain parameters of the approximate posterior
+        distribution $q(z|x)$ in the product manifold space. For non-Euclidean components, the method:
+
+        1. Gets tangent space vectors and log-variances from the encoder,
+        2. Projects tangent vectors to the ambient space by adding zeros in the right places, and
+        3. Maps the ambient space vectors to the manifold using the exponential map
+
+        Args:
+            x: Input data tensor of shape (batch_size, n_features).
+
+        Returns:
+            z_mean: Mean of the posterior distribution in the manifold space.
+            z_logvar: Log-variance of the posterior distribution, used for constructing the covariance matrices.
+        """
         z_mean_tangent, z_logvar = self.encoder(x)
         z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
         z_mean = self.pm.expmap(u=z_mean_ambient, base=None)
         return z_mean, z_logvar
 
     def decode(self, z: Float[torch.Tensor, "batch_size n_latent"]) -> Float[torch.Tensor, "batch_size n_features"]:
-        """Decoding in product space VAE"""
+        """Decodes latent points from the manifold space back to the input space.
+
+        Takes points from the product manifold latent space and passes them through
+        the decoder network to reconstruct the original input data.
+
+        Args:
+            z: Latent points in the product manifold, with shape (batch_size, n_latent).
+
+        Returns:
+            reconstructed: Tensor containing the reconstructed input data,
+                with shape (batch_size, n_features).
+        """
         return self.decoder(z)
 
     def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
@@ -66,16 +134,23 @@ class ProductSpaceVAE(torch.nn.Module):
         Float[torch.Tensor, "batch_size n_latent"],
         List[Float[torch.Tensor, "n_latent n_latent"]],
     ]:
-        """
-        Performs the forward pass of the VAE.
+        r"""Performs the forward pass of the VAE in product manifold space.
 
-        Encodes the input, samples latent variables, and decodes to reconstruct the input.
+        This method implements the complete VAE forward pass:
+
+        1. Encode the input to get posterior parameters (`z_means`, `z_logvars`)
+        2. Factorize the log-variances for each manifold component
+        3. Convert log-variances to covariance matrices (adding a small epsilon for numerical stability)
+        4. Sample points from the posterior distributions in the product manifold
+        5. Decode the sampled points to get reconstructions
 
         Args:
-            x (torch.Tensor): Input data of shape (batch_size, n_features).
+            x: Input data tensor of shape (batch_size, n_features).
 
         Returns:
-            tuple: Reconstructed data, latent means, and latent variances.
+            x_reconstructed: Reconstructed data tensor with the same shape as the input.
+            z_means: Means of the posterior distributions in the manifold space.
+            sigmas: List of covariance matrices for each manifold component.
         """
         z_means, z_logvars = self.encode(x)
         sigma_factorized = self.pm.factorize(z_logvars, intrinsic=True)
@@ -89,18 +164,27 @@ class ProductSpaceVAE(torch.nn.Module):
         z_mean: Float[torch.Tensor, "batch_size n_latent"],
         sigma_factorized: List[Float[torch.Tensor, "n_latent n_latent"]],
     ) -> Float[torch.Tensor, "batch_size,"]:
-        """
-        Computes the KL divergence between posterior and prior distributions.
+        r"""Computes the KL divergence between posterior and prior distributions in the manifold.
+
+        For distributions in Riemannian manifolds, computing the KL divergence analytically
+        is often intractable. This method uses Monte Carlo sampling to approximate the KL divergence:
+
+        $$D_{KL}(q(z|x) || p(z)) \approx \frac{1}{N} \sum_{i=1}^{N} [\log q(z_i|x) - \log p(z_i)]$$
+
+        where $z_i$ are samples from $q(z|x)$.
+
+        This implementation follows the approach described in:
+        http://joschu.net/blog/kl-approx.html
 
         Args:
-            z_mean (torch.Tensor): Latent means of shape (batch_size, n_latent).
-            sigma_factorized (list of torch.Tensor): Factorized covariance matrices for each latent dimension.
+            z_mean: Means of the posterior distributions in the manifold,
+                of shape (batch_size, n_latent).
+            sigma_factorized: List of covariance matrices for each manifold component.
 
         Returns:
-            torch.Tensor: KL divergence values for each data point in the batch.
+            kl_divergence: KL divergence values for each data point in the batch.
         """
         # Get KL divergence as the average of log q(z|x) - log p(z)
-        # See http://joschu.net/blog/kl-approx.html for more info
         means = torch.repeat_interleave(z_mean, self.n_samples, dim=0)
         sigmas_factorized_interleaved = [
             torch.repeat_interleave(sigma, self.n_samples, dim=0) for sigma in sigma_factorized
@@ -113,14 +197,26 @@ class ProductSpaceVAE(torch.nn.Module):
     def elbo(
         self, x: Float[torch.Tensor, "batch_size n_features"]
     ) -> Tuple[Float[torch.Tensor, ""], Float[torch.Tensor, ""], Float[torch.Tensor, ""]]:
-        """
-        Computes the Evidence Lower Bound (ELBO).
+        r"""Computes the Evidence Lower Bound (ELBO) for the VAE objective.
+
+        The ELBO is the standard objective function for variational autoencoders, consisting of a reconstruction term
+        (log-likelihood) and a regularization term (KL divergence):
+
+        $$\mathcal{L}(\theta, \phi; x) = \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] - \beta \cdot D_{KL}(q_\phi(z|x) || p(z)),$$
+
+        where:
+
+        - $\theta$ are the decoder parameters
+        - $\phi$ are the encoder parameters
+        - $\beta$ is a weight for the KL term (setting $\beta < 1$ creates a $\beta$-VAE)
 
         Args:
-            x (torch.Tensor): Input data of shape (batch_size, n_features).
+            x: Input data tensor of shape (batch_size, n_features).
 
         Returns:
-            tuple: Mean ELBO, mean log-likelihood, and mean KL divergence across the batch.
+            elbo: Mean ELBO value across the batch (higher is better).
+            log_likelihood: Mean reconstruction log-likelihood across the batch.
+            kl_divergence: Mean KL divergence across the batch.
         """
         x_reconstructed, z_means, sigma_factorized = self(x)
         kld = self.kl_divergence(z_means, sigma_factorized)
@@ -128,6 +224,14 @@ class ProductSpaceVAE(torch.nn.Module):
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()
 
     def _grads_ok(self) -> bool:
+        """Checks if all gradients are valid (no NaN or Inf values).
+
+        This is a helper method used during training to ensure numerical stability.
+        It checks each parameter's gradient for NaN or Inf values and reports any issues.
+
+        Returns:
+            valid: True if all gradients are valid, False otherwise.
+        """
         out = True
         for name, param in self.named_parameters():
             if param.grad is not None:
@@ -150,20 +254,28 @@ class ProductSpaceVAE(torch.nn.Module):
         curvature_lr: float = 1e-4,
         clip_grad: bool = True,
     ) -> List[float]:
-        """Fits the VAE model to the training data.
+        """Trains the VAE model on the provided data.
+
+        The training process consists of two phases:
+
+        1. Burn-in phase: Initial training with a lower learning rate for stability
+        2. Main training phase: Training with the full learning rate and optional curvature optimization
+
+        Training uses Adam optimizer with gradient clipping to prevent exploding gradients. During training, the model
+        maximizes the Evidence Lower Bound (ELBO).
 
         Args:
-            X_train (torch.Tensor): Training data of shape (n_points, n_features).
-            burn_in_epochs (int): Number of burn-in epochs.
-            epochs (int): Number of training epochs.
-            batch_size (int): Size of each training batch.
-            seed (int, optional): Random seed for reproducibility.
-            lr (float): Learning rate for the optimizer.
-            curvature_lr (float): Learning rate for the curvature parameters.
-            clip_grad (bool): Whether to clip gradients.
+            X_train: Training data tensor of shape (n_points, n_features).
+            burn_in_epochs: Number of initial training epochs with reduced learning rate. Defaults to 100.
+            epochs: Number of main training epochs. Defaults to 1900.
+            batch_size: Number of samples per mini-batch. Defaults to 32.
+            seed: Random seed for reproducibility. Defaults to None.
+            lr: Learning rate for network parameters. Defaults to 1e-3.
+            curvature_lr: Learning rate for manifold curvature parameters. Defaults to 1e-4.
+            clip_grad: Whether to apply gradient clipping. Defaults to True.
 
         Returns:
-            List[float]: A list of loss values recorded during training.
+            losses: List of loss values recorded during training.
         """
         if seed is not None:
             torch.manual_seed(seed)

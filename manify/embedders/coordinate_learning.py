@@ -1,4 +1,10 @@
-"""Implementation for coordinate training and optimization"""
+"""Implementation for direct coordinate optimization in Riemannian manifolds.
+
+This module provides functions for learning optimal embeddings in product manifolds by directly optimizing the
+coordinates using Riemannian optimization. This approach is particularly useful for embedding graphs using metric learning
+to maintain pairwise distances in the target space. The optimization is performed using Riemannian gradient descent
+with support for non-transductive training, in which gradients from the test set to the training set are masked out.
+"""
 
 from __future__ import annotations
 
@@ -33,25 +39,44 @@ def train_coords(
     loss_window_size: int = 100,
     logging_interval: int = 10,
 ) -> Tuple[Float[torch.Tensor, "n_points n_dim"], Dict[str, List[float]]]:
-    """
-    Coordinate training and optimization
+    r"""Trains point coordinates in a product manifold to match target distances.
+
+    This function optimizes the coordinates of points in a product manifold to match a given distance matrix. The
+    optimization is performed in two phases:
+
+    1. Burn-in phase: Initial optimization with a smaller learning rate to find a good starting configuration.
+    2. Training phase: Fine-tuning of the coordinates with a larger learning rate, and optionally optimizing the scale
+        factors (curvatures) of the manifold components.
+
+    The optimization uses Riemannian Adam optimizer to respect the manifold structure during gradient updates. The loss
+    is computed based on the distortion between the pairwise distances in the embedding and the target distances.
+
+    For non-transductive settings, the function supports split between training and testing points, optimizing different
+    combinations of distances (train-train, test-test, train-test).
 
     Args:
-        pm: ProductManifold object that encapsulates the manifold and its signature.
-        dists: (n_points, n_points) Tensor representing the pairwise distance matrix between points.
-        test_indices: (n_test) Tensor representing the indices of the test points.
-        device: Device for training (default: "cpu").
-        burn_in_learning_rate: Learning rate during the burn-in phase (default: 1e-3).
-        burn_in_iterations: Number of iterations during the burn-in phase (default: 2,000).
-        learning_rate: Learning rate during the training phase (default: 1e-2).
-        scale_factor_learning_rate: Learning rate for scale factor optimization (default: 0.0).
-        training_iterations: Number of iterations for the training phase (default: 18,000).
-        loss_window_size: Window size for computing the moving average of the loss (default: 100).
-        logging_interval: Interval for logging the training progress (default: 10).
+        pm: ProductManifold object specifying the target manifold structure.
+        dists: Tensor representing the target pairwise distance matrix between points.
+        test_indices: Tensor containing indices of test points for transductive learning.
+            Defaults to an empty tensor (all points are used for training).
+        device: Device for tensor computations. Defaults to "cpu".
+        burn_in_learning_rate: Learning rate for the burn-in phase. Defaults to 1e-3.
+        burn_in_iterations: Number of iterations for the burn-in phase. Defaults to 2,000.
+        learning_rate: Learning rate for the main training phase. Defaults to 1e-2.
+        scale_factor_learning_rate: Learning rate for optimizing manifold scale factors.
+            Defaults to 0.0 (no optimization of curvatures).
+        training_iterations: Number of iterations for the main training phase. Defaults to 18,000.
+        loss_window_size: Window size for computing moving average loss. Defaults to 100.
+        logging_interval: Interval for logging training progress. Defaults to 10.
 
     Returns:
-        pm.x_embed: Tensor of the final learned coordinates in the manifold.
-        losses: List of loss values at each iteration during training.
+        embeddings: Tensor of shape (n_points, n_dim) with optimized coordinates in the manifold.
+        losses: Dictionary containing loss histories for different components:
+
+            * 'train_train': Loss between training points
+            * 'test_test': Loss between test points (if test_indices is provided)
+            * 'train_test': Loss between training and test points (if test_indices is provided)
+            * 'total': Sum of all loss components
     """
     # Move everything to the device
     n = dists.shape[0]
