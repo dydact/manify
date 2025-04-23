@@ -16,18 +16,18 @@ def distortion_loss(
     D_true: Float[torch.Tensor, "n_points n_points"],
     pairwise: bool = False,
 ) -> Float[torch.Tensor, ""]:
-    """
-    Compute the distortion loss between estimated SQUARED distances and true SQUARED distances.
+    """Compute the distortion loss between estimated SQUARED distances and true SQUARED distances.
+
     Args:
-        D_est (n_points, n_points): A tensor of estimated pairwise distances.
-        D_true (n_points, n_points).: A tensor of true pairwise distances.
-        pairwise (bool): A boolean indicating whether to return whether D_est and D_true are pairwise
+        D_est: A tensor of estimated pairwise distances.
+        D_true: A tensor of true pairwise distances.
+        pairwise: A boolean indicating whether to return whether D_est and D_true are pairwise
 
     Returns:
         float: A float indicating the distortion loss, calculated as the sum of the squared relative
-         errors between the estimated and true squared distances.
+            errors between the estimated and true squared distances.
 
-    See also: square_loss in HazyResearch hyperbolics repo:
+    See also: `square_loss` in HazyResearch hyperbolics repo:
     https://github.com/HazyResearch/hyperbolics/blob/master/pytorch/hyperbolic_models.py#L178
     """
 

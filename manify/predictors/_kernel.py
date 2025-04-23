@@ -20,13 +20,13 @@ def compute_kernel_and_norm_manifold(
 
     Args:
         manifold: The manifold in which the computation occurs.
-        X_source((n_points_source, n_dim)): A tensor of the source points
-        X_target("n_points_target", "n_dim"): A tensor of target points
+        X_source: A tensor of the source points
+        X_target: A tensor of target points
 
     Return:
-        Tuple("n_points_source", "n_points_target"): A tuple of two tensors. The first tensor
-        is the kernel matrix of shape computed based on the manifold type. And the second tensor
-        A scalar normalization constant for the kernel, determined by the manifold's curvature or scale.
+        A tuple of two tensors. The first tensor is the kernel matrix of shape computed based on the manifold type.
+        And the second tensor is a scalar normalization constant for the kernel, determined by the manifold's curvature
+        or scale.
     """
     if X_target is None:
         X_target = X_source
@@ -72,13 +72,13 @@ def product_kernel(
 
     Args:
         pm: The product manifold in which the computation occurs.
-        X_source((n_points_source, n_dim)): A tensor of the source points
-        X_target("n_points_target", "n_dim"): A tensor of target points
+        X_source: A tensor of the source points
+        X_target: A tensor of target points
 
     Returns:
-        Tuple("n_points_source", "n_points_target"): A tuple of two tensors. The first tensor is the
-        kernel matrix of shape computed based on the product manifold type. And the second tensor is a
-        scalar normalization constant for the kernel, determined by the product manifold's curvature or scale.
+        A tuple of two tensors. The first tensor is the kernel matrix of shape computed based on the product manifold
+        type. And the second tensor is a scalar normalization constant for the kernel, determined by the product
+        manifold's curvature or scale.
     """
     # If X_target is None, set it to X_source
     if X_target is None:

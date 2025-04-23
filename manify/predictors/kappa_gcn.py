@@ -377,8 +377,7 @@ class KappaGCN(torch.nn.Module):
         Args:
             X (torch.Tensor): Feature matrix.
             y (torch.Tensor): Labels for training nodes.
-            adj (torch.Tensor): Adjacency or distance matrix.
-            train_idx (torch.Tensor): Indices of nodes for training.
+            A (torch.Tensor): Adjacency or distance matrix.
             epochs: Number of training epochs (default=200).
             lr: Learning rate (default=1e-2).
             use_tqdm: Whether to use tqdm for progress bar.

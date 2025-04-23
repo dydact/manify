@@ -66,6 +66,8 @@ for path in sorted(Path(src_dir).rglob("*.py")):
 with mkdocs_gen_files.open(f"{doc_dir}/index.md", "w") as fd:
     fd.write("# API Reference\n\n")
     fd.write("## Overview\n\n")
+
+    # Only show modules, not individual classes
     fd.write(f"::: {src_dir}\n")
     fd.write("    options:\n")
     fd.write("        show_category_heading: false\n")
@@ -73,3 +75,4 @@ with mkdocs_gen_files.open(f"{doc_dir}/index.md", "w") as fd:
     fd.write("        filters: ['!^_', '!^Parameters$']\n")
     fd.write("        show_root_heading: false\n")
     fd.write("        heading_level: 3\n")
+    fd.write("        members: false\n")  # This line prevents showing class members

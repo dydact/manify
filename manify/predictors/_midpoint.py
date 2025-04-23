@@ -16,7 +16,7 @@ def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> 
         u: The first angular coordinate.
         v: The second angular coordinate.
         assert_hyperbolic: A boolean value. If True, verifies that the midpoint satisfies the hyperbolic
-        distance property. Defaults to False.
+            distance property. Defaults to False.
 
     Returns:
         torch.Tensor: The computed hyperbolic midpoint between u and v.
@@ -81,8 +81,7 @@ def midpoint(
     manifold: Manifold,
     special_first: bool = False,
 ) -> Float[torch.Tensor, ""]:
-    """
-    Driver code to compute the midpoint between two angular coordinates give the manifold type.
+    """Compute the midpoint between two angular coordinates given the manifold type.
 
     This function automatically selects the appropriate midpoint calculation depending
     on the manifold type. It supports hyperbolic, Euclidean, and spherical geometries.
@@ -90,13 +89,12 @@ def midpoint(
     Args:
         u: The first angular coordinate.
         v: The second angular coordinate.
-        manifold (Manifold): An object representing the manifold type.
-        special_first (bool, optional): If True, uses the manifold-specific midpoint
-        calculations given the manifold type of hyperbolic or euclidean. Defaults to False.
+        manifold: An object representing the manifold type.
+        special_first: If True, uses the manifold-specific midpoint calculations given the manifold type of hyperbolic
+            or euclidean. Defaults to False.
 
     Returns:
         torch.Tensor: The computed midpoint between u and v, based on the selected geometry.
-
     """
     if torch.isclose(u, v):
         return u

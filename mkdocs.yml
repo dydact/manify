@@ -24,6 +24,7 @@ plugins:
 # Explicitly define navigation structure
 nav:
   - Home: index.md
+  - Installation: installation.md
   - API Reference:
     - Overview: reference/index.md
     - Manifolds: reference/manifolds.md
@@ -37,12 +38,15 @@ nav:
       - Coordinate Learning: reference/embedders/coordinate_learning.md
       - Siamese: reference/embedders/siamese.md
       - VAE: reference/embedders/vae.md
+      - Losses: reference/embedders/_losses.md
     - Predictors:
       - Overview: reference/predictors/index.md
       - Decision Tree: reference/predictors/decision_tree.md
       - Kappa GCN: reference/predictors/kappa_gcn.md
       - Perceptron: reference/predictors/perceptron.md
       - SVM: reference/predictors/svm.md
+      - Kernel: reference/predictors/_kernel.md
+      - Midpoint: reference/predictors/_midpoint.md
     - Utils:
       - Overview: reference/utils/index.md
       - Benchmarks: reference/utils/benchmarks.md
@@ -57,3 +61,9 @@ markdown_extensions:
   - pymdownx.superfences
   - toc:
       permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

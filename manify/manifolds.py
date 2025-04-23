@@ -20,15 +20,31 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributi
 
 
 class Manifold:
-    """Tools for generating Riemannian manifolds.
+    """Constant-curvature Riemannian manifold class.
 
-    Parameters
-    ----------
-    curvature: (float) The curvature of the manifold. Negative for hyperbolic,
-    zero for Euclidean, and positive for spherical manifolds.
-    dim: (int) The dimension of the manifold.
-    device: (str) The device on which the manifold is stored (default: "cpu").
-    stereographic: (bool) Whether to use stereographic coordinates for the manifold.
+    This class provides tools for creating and manipulating Riemannian manifolds
+    with constant curvature (hyperbolic, Euclidean, or spherical).
+
+    Attributes:
+        curvature: The curvature of the manifold. Negative for hyperbolic,
+            zero for Euclidean, and positive for spherical manifolds.
+        dim: The dimension of the manifold.
+        device: The device on which the manifold is stored.
+        is_stereographic: Whether stereographic coordinates are used for the manifold.
+        scale: The scale factor derived from the curvature.
+        type: A string identifier for the manifold type ('H' for hyperbolic,
+            'E' for Euclidean, 'S' for spherical, 'P' for poincaré ball,
+            or 'D' for stereographic sphere).
+        ambient_dim: The dimension of the ambient space.
+        manifold: The underlying geoopt manifold object.
+        mu0: The origin point on the manifold.
+        name: A string identifier for the manifold.
+
+    Args:
+        curvature: The curvature of the manifold.
+        dim: The dimension of the manifold.
+        device: The device on which the manifold is stored. Defaults to "cpu".
+        stereographic: Whether to use stereographic coordinates. Defaults to False.
     """
 
     def __init__(self, curvature: float, dim: int, device: str = "cpu", stereographic: bool = False):
@@ -80,14 +96,13 @@ class Manifold:
         assert self.manifold.check_point(self.mu0)
 
     def to(self, device: str) -> "Manifold":
-        """
-        Move objects to a specified device
+        """Move the Manifold object to a specified device.
 
         Args:
-            device: (str) The device to which the manifold will be moved.
+            device: The device to which the manifold will be moved.
 
         Returns:
-            self: The updated manifold object.
+            manifold: The updated manifold object on the specified device.
         """
         self.device = device
         self.manifold = self.manifold.to(device)
@@ -97,15 +112,17 @@ class Manifold:
     def inner(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """
-        Compute the inner product of manifolds.
+        """Compute the inner product between two points on the manifold.
+
+        This ensures the correct inner product is computed for all manifold types
+        (flipping the sign of dim 0 for hyperbolic manifolds).
 
         Args:
-            X: (n_points1, n_dim) Tensor of points in the manifold.
-            Y: (n_points2, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the manifold.
+            Y: Tensor of points in the manifold.
 
         Returns:
-            inner_product: (n_points1, n_points2) Tensor of inner products between points.
+            inner_product: Tensor of inner products between points.
         """
         # "Not inherited because of weird broadcasting stuff, plus need for scale.
         # This ensures we compute the right inner product for all manifolds (flip sign of dim 0 for hyperbolic)
@@ -118,42 +135,39 @@ class Manifold:
     def dist(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """
-        Inherit distance function from the geoopt manifold.
+        """Inherit distance function from the geoopt manifold.
 
         Args:
-            X: (n_points1, n_dim) Tensor of points in the manifold.
-            Y: (n_points2, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the manifold.
+            Y: Tensor of points in the manifold.
 
         Returns:
-            distance: (n_points1, n_points2) Tensor of distances between points.
+            distance: Tensor of distances between points.
         """
         return self.manifold.dist(X[:, None], Y[None, :])
 
     def dist2(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """
-        Inherit squared distance function from the geoopt manifold.
+        """Inherit squared distance function from the geoopt manifold.
 
         Args:
-            X: (n_points1, n_dim) Tensor of points in the manifold.
-            Y: (n_points2, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the manifold.
+            Y: Tensor of points in the manifold.
 
         Returns:
-            distance: (n_points1, n_points2) Tensor of squared distances between points.
+            distance: Tensor of squared distances between points.
         """
         return self.manifold.dist2(X[:, None], Y[None, :])
 
     def pdist(self, X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_points"]:
-        """
-        Compute pairwise distances between embeddings.
+        """Compute pairwise distances between points on the manifold.
 
         Args:
-            X: (n_points, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the manifold.
 
         Returns:
-            dists: (n_points, n_points) Tensor of pairwise distances.
+            dists: Tensor of pairwise distances.
         """
         dists = self.dist(X, X)
 
@@ -163,14 +177,13 @@ class Manifold:
         return dists
 
     def pdist2(self, X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_points"]:
-        """
-        Compute pairwise squared distances between embeddings.
+        """Compute pairwise squared distances between points on the manifold.
 
         Args:
-            X: (n_points, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the manifold.
 
         Returns:
-            dists2: (n_points, n_points) Tensor of squared distances.
+            dists2: Tensor of pairwise squared distances.
         """
         dists2 = self.dist2(X, X)
 
@@ -181,7 +194,14 @@ class Manifold:
     def _to_tangent_plane_mu0(
         self, x: Float[torch.Tensor, "n_points n_dim"]
     ) -> Float[torch.Tensor, "n_points n_ambient_dim"]:
-        """Map points to the tangent plane at the origin of the manifold."""
+        """Map points to the tangent plane at the origin of the manifold.
+
+        Args:
+            x: Tensor of points to map to the tangent plane of shape (n_points, n_dim).
+
+        Returns:
+            Tensor of points in the tangent plane at the origin of shape (n_points, n_ambient_dim).
+        """
         x = torch.Tensor(x).reshape(-1, self.dim)
         if self.type == "E":
             return x
@@ -191,20 +211,16 @@ class Manifold:
         self,
         z_mean: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
-    ) -> Union[
-        Float[torch.Tensor, "n_points n_ambient_dim"],
-        Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]],
-    ]:
-        """
-        Sample from the variational distribution.
+    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
+        """Sample points from the variational distribution on the manifold.
 
         Args:
-            z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
+            z_mean: Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
+            sigma: Optional tensor representing the covariance matrix. Defaults to identity matrix.
 
         Returns:
-            Tensor or tuple of tensor(n_points, n_ambient_dim) representing the sampled points on the manifold.
-            If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
+            x: Tensor of sampled points on the manifold
+            v: Tensor of tangent vectors
         """
         if z_mean is None:
             z_mean = self.mu0
@@ -248,18 +264,18 @@ class Manifold:
         mu: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
     ) -> Float[torch.Tensor, "n_points,"]:
-        """
-        Probability density function for WN(z ; mu, Sigma) in manifold
+        """Compute probability density function for $\\mathcal{WN}(\\mathbf{z}; \\mu, \\Sigma)$ on the manifold.
 
         Args:
-            z: (n_points", "n_ambient_dim) Tensor of points on the manifold for which the likelihood is computed.
-            mu: (n_points", "n_ambient_dim) Tensor representing the mean of the distribution. Defaults to `self.mu0`.
-            sigma: (n_points", "n_dim", "n_dim) Tensor representing the covariance matrix. Defaults to identity matrix.
+            z: Tensor of points on the manifold for which to compute the likelihood of shape (n_points, n_ambient_dim).
+            mu: Tensor representing the mean of the distribution of shape (n_points, n_ambient_dim).
+                Defaults to `self.mu0`.
+            sigma: Tensor representing the covariance matrix of shape (n_points, n_dim, n_dim).
+                  Defaults to identity matrices.
 
         Returns:
-            (n_points) Tensor containing the log-likelihood of the points `z` under the distribution
-            with mean `mu` and covariance `sigma.`
-
+            log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution
+                with mean `mu` and covariance `sigma` of shape (n_points,).
         """
 
         # Default to mu=self.mu0 and sigma=I
@@ -304,16 +320,14 @@ class Manifold:
     def logmap(
         self, x: Float[torch.Tensor, "n_points n_dim"], base: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
     ) -> Float[torch.Tensor, "n_points n_dim"]:
-        """
-        Logarithmic map of point on manifold x at base point.
+        """Compute the logarithmic map of points on the manifold at a base point.
 
         Args:
-            x: Tensor representing the point on the manifold for the logarithmic map.
-            base: Tensor representing the base point for the map. Defaults to `self.mu0` if not provided.
+            x: Tensor representing points on the manifold.
+            base: Tensor representing the base point for the map. Defaults to `self.mu0`.
 
         Returns:
-            Tensor representing the result of the logarithmic map from `base` to `x` on the manifold.
-
+            logmap_result: Tensor representing the result of the logarithmic map from `base` to `x` on the manifold.
         """
         if base is None:
             base = self.mu0
@@ -322,29 +336,36 @@ class Manifold:
     def expmap(
         self, u: Float[torch.Tensor, "n_points n_dim"], base: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
     ) -> Float[torch.Tensor, "n_points n_dim"]:
-        """
-        Exponential map of tangent vector u at base point.
+        r"""Compute the exponential map of a tangent vector $\mathbf{u}$ at base point.
 
         Args:
             u: Tensor representing the tangent vector at the base point to map.
             base: Tensor representing the base point for the exponential map. Defaults to `self.mu0` if not provided.
 
         Returns:
-            Tensor representing the result of the exponential map applied to `u` at the base point.
+            expmap_result: Tensor representing the result of the exponential map applied to `u` at the base point.
         """
         if base is None:
             base = self.mu0
         return self.manifold.expmap(x=base, u=u)
 
     def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> Tuple["Manifold", ...]:
-        """
-        Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
+        r"""Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
 
-        Formula for stereographic projection:
-        rho_K(x) = x[1:] / (1 + sqrt(|K|) * x[0])
+        Formula for stereographic projection (for $i \geq 1$):
+        \begin{equation}
+            \rho_K(x_i) = \frac{x_i}{1 + \sqrt{|K|} \cdot x_0}
+        \end{equation}
 
-        Source:
-        https://arxiv.org/pdf/1911.08411
+        For more information, see (https://arxiv.org/pdf/1911.08411)
+
+        Args:
+            *points: Variable number of tensors representing points on the manifold
+                    to convert to stereographic coordinates.
+
+        Returns:
+            stereo_manifold: The manifold in stereographic coordinates
+            stereo_points: The provided points converted to stereographic coordinates (if any)
         """
 
         if self.is_stereographic:
@@ -369,16 +390,22 @@ class Manifold:
         return stereo_manifold, *stereo_points
 
     def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple["Manifold", ...]:
-        """
-        Convert the manifold from its stereographic coordinates back to the original coordinates.
+        r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
         If points are given, convert them as well.
 
         Formula for inverse stereographic projection:
-        X0 = (1 + sign(K) * ||y||**2) / (1 - sign(K) * ||y||**2)
-        Xi = 2 * yi / (1 - sign(K) * ||y||**2)
+        \begin{align}
+            x_0 &= \frac{1 + sign(K) \cdot \|y\|^2}{1 - sign(K) \cdot \|y\|^2} \\\\
+            x_i &= \frac{2 \cdot y_i}{1 - sign(K) \cdot \|y\|^2}
+        \end{align}
 
-        Source:
-        https://arxiv.org/pdf/1911.08411
+        Args:
+            *points: Variable number of tensors representing points in stereographic coordinates
+                    to convert back to original coordinates.
+
+        Returns:
+            inv_stereo_manifold: The manifold in original coordinates
+            inv_stereo_points: The provided points converted from stereographic to original coordinates (if any)
         """
         if not self.is_stereographic:
             print("Manifold is already in original coordinates.")
@@ -423,14 +450,17 @@ class Manifold:
         return orig_manifold, *out
 
     def apply(self, f: Callable) -> Callable:
-        """
-        Decorator for logmap -> function -> expmap. If a base point is not provided, use the origin.
+        """Create a decorator for logmap -> function -> expmap. If a base point is not provided, use the origin.
 
         Args:
-            f: Function.
+            f: Function to apply in the tangent space.
 
         Returns:
-            Callable representing the composed map.
+            wrapper: Callable representing the composed map that:
+
+                1. Maps points to the tangent space using logmap
+                2. Applies the function f
+                3. Maps the result back to the manifold using expmap
         """
 
         def wrapper(x: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim"]:
@@ -443,14 +473,35 @@ class Manifold:
 
 
 class ProductManifold(Manifold):
-    """
-    Tools for generating Riemannian manifolds.
+    """Tools for constructing product manifolds with multiple factors.
 
-    Parameters
-    ----------
-    Signature: (Tuple[float, int]) A list for the signature for the product manifold
-    device: (str) The device on which the manifold is stored (default: "cpu").
-    stereographic: (bool) Whether to use stereographic coordinates for the manifold.
+    A product manifold combines multiple manifolds with different curvatures
+    and dimensions into a single product space.
+
+    Attributes:
+        signature: List of tuples defining the curvature and dimension of each factor manifold.
+        device: The device on which the manifold is stored.
+        is_stereographic: Whether stereographic coordinates are used.
+        type: String identifier for product manifold (always 'P').
+        curvatures: List of curvature values for each factor manifold.
+        dims: List of dimensions for each factor manifold.
+        n_manifolds: Number of factor manifolds.
+        P: List of individual Manifold objects that make up this product manifold.
+        manifold: The underlying geoopt ProductManifold object.
+        name: String identifier for the product manifold.
+        mu0: The origin point on the product manifold.
+        ambient_dim: Total ambient dimension of the product manifold.
+        dim: Total intrinsic dimension of the product manifold.
+        dim2man: Dictionary mapping dimensions to manifold indices.
+        man2dim: Dictionary mapping manifold indices to their dimensions.
+        man2intrinsic: Dictionary mapping manifold indices to their intrinsic dimensions.
+        intrinsic2man: Dictionary mapping intrinsic dimensions to manifold indices.
+        projection_matrix: Matrix for projecting from intrinsic to ambient dimensions.
+
+    Args:
+        signature: List of (curvature, dimension) tuples for each factor manifold.
+        device: The device on which the manifold is stored. Defaults to "cpu".
+        stereographic: Whether to use stereographic coordinates. Defaults to False.
     """
 
     def __init__(self, signature: List[Tuple[float, int]], device: str = "cpu", stereographic: bool = False):
@@ -501,11 +552,22 @@ class ProductManifold(Manifold):
                 self.projection_matrix[j, k] = 1.0
 
     def parameters(self) -> List[float]:
-        """Returns scales for all component manifolds"""
+        """Get scales for all component manifolds.
+
+        Returns:
+            scales: List of scale parameters for each component manifold.
+        """
         return [x._log_scale for x in self.manifold.manifolds]
 
     def to(self, device: str) -> "ProductManifold":
-        """Move all components to a new device"""
+        """Move all components to a new device.
+
+        Args:
+            device: The device to which to move all components.
+
+        Returns:
+            manifold: The updated ProductManifold object on the specified device.
+        """
         self.device = device
         self.P = [M.to(device) for M in self.P]
         self.manifold = self.manifold.to(device)
@@ -516,15 +578,16 @@ class ProductManifold(Manifold):
     def inner(
         self, X: Float[torch.Tensor, "n_points1 n_dim"], Y: Float[torch.Tensor, "n_points2 n_dim"]
     ) -> Float[torch.Tensor, "n_points1 n_points2"]:
-        """
-        Compute the inner product of manifolds.
+        """Compute the inner product between points on the product manifold.
+
+        The inner product is the sum of inner products in each component manifold.
 
         Args:
-            X: (n_points1, n_dim) Tensor of points in the manifold.
-            Y: (n_points2, n_dim) Tensor of points in the manifold.
+            X: Tensor of points in the product manifold of shape (n_points1, n_dim).
+            Y: Tensor of points in the product manifold of shape (n_points2, n_dim).
 
         Returns:
-            inner_product: (n_points1, n_points2) Tensor of inner products between points.
+            inner_products: Tensor of inner products between points of shape (n_points1, n_points2).
         """
         ips = [M.inner(x, y) for x, y, M in zip(self.factorize(X), self.factorize(Y), self.P)]
         return torch.stack(ips, dim=0).sum(dim=0)
@@ -532,15 +595,14 @@ class ProductManifold(Manifold):
     def factorize(
         self, X: Float[torch.Tensor, "n_points n_dim"], intrinsic: bool = False
     ) -> List[Float[torch.Tensor, "n_points n_dim_manifold"]]:
-        """
-        Factorize the embeddings into the individual manifolds.
+        """Factorize the embeddings into the individual manifolds.
 
         Args:
-            X: (n_points", "n_dim) tensor representing the embeddings to be factorized.
+            X: Tensor representing the embeddings to be factorized.
             intrinsic: bool for whether to use intrinsic dimensions of the manifolds. Defaults to False.
 
         Returns:
-            (List[Tensor]) list of tensors representing the factorized embeddings in each manifold.
+            X_factorized: A list of tensors representing the factorized embeddings in each manifold.
         """
         dims_dict = self.man2intrinsic if intrinsic else self.man2dim
         return [X[..., dims_dict[i]] for i in range(len(self.P))]
@@ -549,20 +611,16 @@ class ProductManifold(Manifold):
         self,
         z_mean: Optional[Float[torch.Tensor, "n_points n_dim"]] = None,
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
-    ) -> Union[
-        Float[torch.Tensor, "n_points n_ambient_dim"],
-        Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]],
-    ]:
-        """
-        Sample from the variational distribution.
+    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
+        """Sample from the variational distribution.
 
         Args:
-            z_mean: (n_points, n_dim) Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
+            z_mean: Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
             sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
 
         Returns:
-            Tensor or tuple of tensor of shape `(n_points, n_ambient_dim)` representing sampled points on the manifold.
-            If `return_tangent` is True, also returns the tangent vectors with shape `(n_points, n_dim)`.
+            x: Tensor of sampled points on the manifold
+            v: Tensor of tangent vectors
         """
         if z_mean is None:
             z_mean = self.mu0
@@ -595,17 +653,16 @@ class ProductManifold(Manifold):
         mu: Optional[Float[torch.Tensor, "n_dim,"]] = None,
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
     ) -> Float[torch.Tensor, "batch_size,"]:
-        """
-        Probability density function for WN(z ; mu, Sigma) in manifold
+        r"""Probability density function for $\mathcal{WN}(\mathbf{z} ; \mu, \Sigma)$ in manifold
 
         Args:
-            z: (batch_size, n_dim) Tensor representing the points for which the log-likelihood is computed.
-            mu: (n_dim,) Tensor representing the mean of the distribution.
+            z: Tensor representing the points for which the log-likelihood is computed.
+            mu: Tensor representing the mean of the distribution.
             sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
 
         Returns:
-            (batch_size,) Tensor of shape containing the log-likelihood
-            of each point in `z`  with mean `mu` and covariance `sigma`.
+            log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
+                `mu` and covariance `sigma`
         """
         n = z.shape[0]
         if mu is None:
@@ -624,6 +681,23 @@ class ProductManifold(Manifold):
         return torch.cat(component_lls, axis=1).sum(axis=1)
 
     def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> Tuple["ProductManifold", ...]:
+        r"""Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
+
+        Formula for stereographic projection (for $i \geq 1$):
+        \begin{equation}
+            \rho_K(x_i) = \frac{x_i}{1 + \sqrt{|K|} \cdot x_0}
+        \end{equation}
+
+        For more information, see (https://arxiv.org/pdf/1911.08411)
+
+        Args:
+            *points: Variable number of tensors representing points on the manifold
+                    to convert to stereographic coordinates.
+
+        Returns:
+            stereo_manifold: The manifold in stereographic coordinates
+            stereo_points: The provided points converted to stereographic coordinates (if any)
+        """
         if self.is_stereographic:
             print("Manifold is already in stereographic coordinates.")
             return self, *points
@@ -640,6 +714,23 @@ class ProductManifold(Manifold):
         return stereo_manifold, *stereo_points
 
     def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple[Manifold]:
+        r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
+        If points are given, convert them as well.
+
+        Formula for inverse stereographic projection:
+        \begin{align}
+            x_0 &= \frac{1 + sign(K) \cdot \|y\|^2}{1 - sign(K) \cdot \|y\|^2} \\\\
+            x_i &= \frac{2 \cdot y_i}{1 - sign(K) \cdot \|y\|^2}
+        \end{align}
+
+        Args:
+            *points: Variable number of tensors representing points in stereographic coordinates
+                    to convert back to original coordinates.
+
+        Returns:
+            inv_stereo_manifold: The manifold in original coordinates
+            inv_stereo_points: The provided points converted from stereographic to original coordinates (if any)
+        """
         if not self.is_stereographic:
             print("Manifold is already in original coordinates")
             return self, *points
@@ -667,8 +758,7 @@ class ProductManifold(Manifold):
         task: Literal["classification", "regression"] = "classification",
         adjust_for_dims: bool = False,
     ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points,"]]:
-        """
-        Generate a set of labeled samples from a Gaussian mixture model.
+        """Generate a set of labeled samples from a Gaussian mixture model.
 
         Args:
             num_points: The number of points to generate.

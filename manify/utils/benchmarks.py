@@ -103,39 +103,65 @@ def benchmark(
     lp_train_idx: Optional[Float[torch.Tensor, "n_samples,"]] = None,
     lp_test_idx: Optional[Float[torch.Tensor, "n_samples,"]] = None,
 ) -> Dict[str, float]:
-    """
-    Benchmarks various machine learning models on a dataset using a product manifold structure.
+    """Benchmarks various machine learning models on Riemannian manifold datasets.
+
+    Evaluates and compares different machine learning models on datasets with a
+    product manifold structure, providing metrics for their performance.
 
     Args:
-        X (batch, dim): Input tensor of features
-        y (batch,): Input tensor of labels.
-        pm: The defined product manifold for benchmarks.
-        split: Data splitting strategy ('train_test' or 'cross_val').
-        device: Device for computation ('cpu', 'cuda', 'mps').
-        score: Scoring metric for model evaluation ('accuracy', 'f1-micro', etc.).
+        X: Tensor of input features with shape (batch, dim).
+        y: Tensor of target labels with shape (batch,).
+        pm: ProductManifold object defining the geometric structure for benchmarks.
+        device: Device for computation. Options: 'cpu', 'cuda', 'mps'. Defaults to 'cpu'.
+        score: List of scoring metrics for model evaluation (e.g., 'accuracy', 'f1-micro').
+            Defaults to None.
         models: List of model names to evaluate. Options include:
-            * "sklearn_dt": Decision tree from scikit-learn.
-            * "sklearn_rf": Random forest from scikit-learn.
-            * "product_dt": Product space decision tree.
-            * "product_rf": Product space random forest.
-            * "tangent_dt": Decision tree on tangent space.
-            * "tangent_rf": Random forest on tangent space.
-            * "knn": k-nearest neighbors.
-            * "ps_perceptron": Product space perceptron.
-        max_depth: Maximum depth of tree-based models in integer.
-        n_estimators: Integer number of estimators for random forest models.
-        min_samples_split: Minimum number of samples required to split an internal node.
-        min_samples_leaf: Minimum number of samples in a leaf node.
-        task: Task type ('classification' or 'regression').
-        seed: Random seed for reproducibility.
-        use_special_dims: Boolean for whether to use special manifold dimensions.
-        n_features: Feature dimensionality type ('d' or 'd_choose_2').
-        X_train, X_test, y_train, y_test: Training and testing datasets, X: feature, y: label.
-        batch_size: Batch size for certain models.
+            * "sklearn_dt": Decision tree from scikit-learn
+            * "sklearn_rf": Random forest from scikit-learn
+            * "product_dt": Product space decision tree
+            * "product_rf": Product space random forest
+            * "tangent_dt": Decision tree on tangent space
+            * "tangent_rf": Random forest on tangent space
+            * "knn": k-nearest neighbors
+            * "ps_perceptron": Product space perceptron
+            Defaults to None.
+        max_depth: Maximum depth of tree-based models. Defaults to 5.
+        n_estimators: Number of estimators for ensemble models. Defaults to 12.
+        min_samples_split: Minimum samples required to split an internal node. Defaults to 2.
+        min_samples_leaf: Minimum samples required in a leaf node. Defaults to 1.
+        task: Type of machine learning task. Options: 'classification' or 'regression'.
+            Defaults to 'classification'.
+        seed: Random seed for reproducibility. Defaults to None.
+        use_special_dims: Whether to use special manifold dimensions. Defaults to False.
+        n_features: Feature dimensionality type. Options: 'd' or 'd_choose_2'.
+            Defaults to 'd_choose_2'.
+        X_train: Training feature tensor with shape (n_samples, n_manifolds).
+            If provided, overrides split from X. Defaults to None.
+        X_test: Testing feature tensor with shape (n_samples, n_manifolds).
+            If provided, used with X_train. Defaults to None.
+        y_train: Training labels tensor with shape (n_samples,).
+            Must be provided if X_train is given. Defaults to None.
+        y_test: Testing labels tensor with shape (n_samples,).
+            Must be provided if X_test is given. Defaults to None.
+        batch_size: Batch size for neural network models. Defaults to None.
+        adj: Adjacency matrix for graph-based models with shape (n_nodes, n_nodes).
+            Defaults to None.
+        A_train: Training adjacency matrix with shape (n_samples, n_samples).
+            Defaults to None.
+        A_test: Testing adjacency matrix with shape (n_samples, n_samples).
+            Defaults to None.
+        hidden_dims: List of hidden layer dimensions for neural networks.
+            Defaults to None.
+        epochs: Number of training epochs for iterative models. Defaults to 4000.
+        lr: Learning rate for gradient-based optimization. Defaults to 1e-4.
+        kappa_gcn_layers: Number of layers in GCN models. Defaults to 1.
+        lp_train_idx: Training indices for link prediction with shape (n_samples,).
+            Defaults to None.
+        lp_test_idx: Testing indices for link prediction with shape (n_samples,).
+            Defaults to None.
 
     Returns:
-        Dict[str, float]: Dictionary of model names and their corresponding evaluation scores.
-
+        Dictionary mapping model names to their corresponding evaluation scores.
     """
     if score is None:
         score = ["accuracy", "f1-micro", "f1-macro"]
