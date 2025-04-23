@@ -18,21 +18,31 @@ release = '0.0.2'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+# extensions = [
+#     'sphinx.ext.autodoc',
+#     'sphinx.ext.napoleon',
+#     'sphinx_autodoc_typehints',
+#     'sphinx.ext.autosummary',
+#     'autoapi.extension',
+# ]
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',
-    'sphinx.ext.autosummary',
+    # 'sphinx_autodoc_typehints',
+    'autoapi.extension',
+    # 'sphinx.ext.autodoc',
+    # 'sphinx.ext.autosummary',
 ]
 
-autosummary_generate = True
-autodoc_default_options = {
-    "members": True,
-    "undoc-members": True,
-    "show-inheritance": True,
-}
+# autosummary_generate = True
+# autodoc_default_options = {
+#     "members": True,
+#     "undoc-members": True,
+#     "show-inheritance": True,
+# }
 
-
+autoapi_type = 'python'
+autoapi_dirs = [os.path.abspath('../../manify')]
+autoapi_ignore = ["*/utils/*"]
 
 templates_path = ['_templates']
 exclude_patterns = []
