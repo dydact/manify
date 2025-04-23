@@ -9,8 +9,20 @@ from jaxtyping import Float
 
 
 def sampled_delta_hyperbolicity(
-    D: Float[torch.Tensor, "n_points n_points"], n_samples: int = 1000, reference_idx: int = 0
+    D: Float[torch.Tensor, "n_points n_points"], n_samples: int = 1000, reference_idx: int = 0, relative: bool = True
 ) -> Tuple[Float[torch.Tensor, "n_samples,"], Float[torch.Tensor, "n_samples 3"]]:
+    """Sampled delta-hyperbolicity computation with optional relative scaling.
+
+    Args:
+        D: Distance matrix of the metric space.
+        n_samples: Number of samples to draw.
+        reference_idx: Index of the reference point.
+        relative: Whether to return the relative delta-hyperbolicity.
+
+    Returns:
+        rel_deltas: Relative delta-hyperbolicity values.
+        indices: Indices of the sampled triplets.
+    """
     n = D.shape[0]
     # Sample n_samples triplets of points randomly
     indices = torch.randint(0, n, (n_samples, 3))
@@ -27,49 +39,15 @@ def sampled_delta_hyperbolicity(
 
     # delta(x,y,z) = min((x,y)_w,(y-z)_w) - (x,z)_w
     deltas = torch.minimum(xy_w, yz_w) - xz_w
-    diam = torch.max(D)
-    rel_deltas = 2 * deltas / diam
 
-    return rel_deltas, indices
+    deltas = 2 * deltas / torch.max(D) if relative else deltas
 
-
-def iterative_delta_hyperbolicity(
-    D: Float[torch.Tensor, "n_points n_points"], reference_idx: int = 0
-) -> Float[torch.Tensor, "n_points n_points n_points"]:
-    """delta(x,y,z) = min((x,y)_w,(y-z)_w) - (x,z)_w"""
-    n = D.shape[0]
-    w = reference_idx
-    gromov_products = torch.zeros((n, n))
-    deltas = torch.zeros((n, n, n))
-
-    # Get Gromov Products
-    for x in range(n):
-        for y in range(n):
-            gromov_products[x, y] = gromov_product(w, x, y, D)
-
-    # Get Deltas
-    for x in range(n):
-        for y in range(n):
-            for z in range(n):
-                xz_w = gromov_products[x, z]
-                xy_w = gromov_products[x, y]
-                yz_w = gromov_products[y, z]
-                deltas[x, y, z] = torch.minimum(xy_w, yz_w) - xz_w
-
-    diam = torch.max(D)
-    rel_deltas = 2 * deltas / diam
-
-    return rel_deltas, gromov_products
-
-
-def gromov_product(i: int, j: int, k: int, D: Float[torch.Tensor, "n_points n_points"]) -> float:
-    """(j,k)_i = 0.5 (d(i,j) + d(i,k) - d(j,k))"""
-    return float(0.5 * (D[i, j] + D[i, k] - D[j, k]))
+    return deltas, indices
 
 
 def delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], reference_idx: int = 0, relative: bool = True, full: bool = False
-) -> Float[torch.Tensor, ""]:
+) -> Float[torch.Tensor, "n_points n_points n_points"]:
     """
     Compute the delta-hyperbolicity of a metric space.
 
@@ -100,8 +78,6 @@ def delta_hyperbolicity(
     else:
         delta = out - XY_w_xz
 
-    if relative:
-        diam = torch.max(D).item()
-        delta = 2 * delta / diam
+    delta = 2 * delta / torch.max(D) if relative else delta
 
     return delta
