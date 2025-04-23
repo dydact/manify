@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import torch
 from jaxtyping import Float

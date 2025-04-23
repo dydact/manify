@@ -1,4 +1,5 @@
 from manify.utils.dataloaders import load_hf
+from manify.utils.benchmarks import benchmark
 
 
 def test_dataloaders():
@@ -57,3 +58,15 @@ def test_dataloaders():
             assert labels is None, f"Labels should be None for {dataset_name}"
 
         print("Done testing dataloaders")
+
+
+def test_benchmark():
+    pm = ProductManifold(signature=[(-1, 4), (-1, 2), (0, 2), (1, 2), (1, 4)])
+    X, y = pm.gaussian_mixture(n_samples=100)
+    out = benchmark(X, y, pm, task="classification")
+    assert "f1-micro" in out.keys(), "f1-micro key should be present in output"
+    assert "f1-macro" in out.keys(), "f1-macro key should be present in output"
+    assert "accuracy" in out.keys(), "accuracy key should be present in output"
+    assert out["f1-micro"] >= 0, "f1-micro score should be non-negative"
+    assert out["f1-macro"] >= 0, "f1-macro score should be non-negative"
+    assert out["accuracy"] >= 0, "Accuracy score should be non-negative"
