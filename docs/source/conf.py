@@ -18,7 +18,9 @@ napoleon_use_rtype = False
 
 autoapi_type = 'python'
 autoapi_dirs = [os.path.abspath('../../manify')]
-autoapi_ignore = ["*/utils/*"]
+
+
+# autoapi_ignore = ["*/utils/*"]
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -32,13 +34,22 @@ autodoc_default_options = {
 }
 autoclass_content = "class"
 autoapi_options = [
-    "members",           # pull in documented members
-    "imported-members",  # if you want to re-export things
+    "members",   
+    "undoc-members",        
+    "imported-members",  
     "show-inheritance",
-    # note: NO 'undoc-members' here
+    "show-module-summary",
 ]
-# autodoc_typehints = "description"
+
+# conf.py
+rst_epilog = """
+.. |---| replace:: ------------
+"""
+
 html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
 autodoc_typehints = "none"
 
+rst_epilog = """
+.. |K| replace:: :math:`K`  # Example: Render K as a math symbol
+"""
