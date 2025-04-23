@@ -63,7 +63,7 @@ def load_hf(name: str, namespace: str = "manify") -> Tuple[
     row = data[0]
 
     # 2) helper to turn lists → torch (or None)
-    def to_tensor(key, dtype):
+    def to_tensor(key: str, dtype: torch.dtype) -> Optional[torch.Tensor]:
         vals = row.get(key, [])
         if not vals:
             return None

@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import sys
 from typing import List, Tuple
 
 import torch
 from jaxtyping import Float
 
 from ..manifolds import ProductManifold
+
+# TQDM: notebook or regular
+if "ipykernel" in sys.modules:
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 class ProductSpaceVAE(torch.nn.Module):
@@ -119,3 +126,76 @@ class ProductSpaceVAE(torch.nn.Module):
         kld = self.kl_divergence(z_means, sigma_factorized)
         ll = -self.reconstruction_loss(x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)).sum(dim=1)
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()
+
+    def _grads_ok(self):
+        out = True
+        for name, param in self.named_parameters():
+            if param.grad is not None:
+                if torch.isnan(param.grad).any():
+                    print(f"NaN gradient in {name}")
+                    out = False
+                if torch.isinf(param.grad).any():
+                    print(f"Inf gradient in {name}")
+                    out = False
+        return out
+
+    def fit(
+        self,
+        X_train: Float[torch.Tensor, "n_points n_features"],
+        burn_in_epochs: int = 100,
+        epochs: int = 1900,
+        batch_size: int = 32,
+        seed: int = None,
+        lr: float = 1e-3,
+        curvature_lr: float = 1e-4,
+        clip_grad: bool = True,
+    ) -> List[float]:
+        """Fits the VAE model to the training data.
+
+        Args:
+            X_train (torch.Tensor): Training data of shape (n_points, n_features).
+            burn_in_epochs (int): Number of burn-in epochs.
+            epochs (int): Number of training epochs.
+            batch_size (int): Size of each training batch.
+            seed (int, optional): Random seed for reproducibility.
+            lr (float): Learning rate for the optimizer.
+            curvature_lr (float): Learning rate for the curvature parameters.
+            clip_grad (bool): Whether to clip gradients.
+
+        Returns:
+            List[float]: A list of loss values recorded during training.
+        """
+        if seed is not None:
+            torch.manual_seed(seed)
+
+        my_tqdm = tqdm(total=(burn_in_epochs + epochs) * len(X_train))
+        opt = torch.optim.Adam(
+            [{"params": self.parameters(), "lr": lr * 0.1}, {"params": self.pm.parameters(), "lr": curvature_lr}]
+        )
+        losses = []
+        for epoch in range(burn_in_epochs + epochs):
+            if epoch == burn_in_epochs:
+                opt.param_groups[0]["lr"] = lr
+                opt.param_groups[1]["lr"] = curvature_lr
+
+            for i in range(0, len(X_train), batch_size):
+                opt.zero_grad()
+                X_batch = X_train[i : i + batch_size]
+                elbo, ll, kl = self.elbo(X_batch)
+                loss = -elbo
+                losses.append(loss.item())
+                loss.backward()
+
+                if clip_grad:
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+                if torch.isnan(loss) or torch.isinf(loss):
+                    print(f"Invalid loss detected at epoch {epoch}, batch {i}")
+                    continue
+                elif self._grads_ok():
+                    opt.step()
+
+                my_tqdm.update(batch_size)
+                my_tqdm.set_description(f"Epoch {epoch + 1}/{burn_in_epochs + epochs}, Loss: {loss.item():.4f}")
+                my_tqdm.set_postfix(loss=loss.item(), epoch=epoch + 1)
+
+        return losses

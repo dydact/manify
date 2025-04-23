@@ -70,7 +70,7 @@ def train_coords(
     ropt = geoopt.optim.RiemannianAdam(
         [
             {"params": [X], "lr": burn_in_learning_rate},
-            {"params": [x._log_scale for x in pm.manifold.manifolds], "lr": 0},
+            {"params": pm.parameters(), "lr": 0},
         ]
     )
 

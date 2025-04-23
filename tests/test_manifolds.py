@@ -1,5 +1,4 @@
 import torch
-import pytest
 from manify.manifolds import Manifold, ProductManifold
 import geoopt
 import math
