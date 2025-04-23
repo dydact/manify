@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import torch
 from jaxtyping import Float
@@ -127,7 +127,7 @@ class ProductSpaceVAE(torch.nn.Module):
         ll = -self.reconstruction_loss(x_reconstructed.view(x.shape[0], -1), x.view(x.shape[0], -1)).sum(dim=1)
         return (ll - self.beta * kld).mean(), ll.mean(), kld.mean()
 
-    def _grads_ok(self):
+    def _grads_ok(self) -> bool:
         out = True
         for name, param in self.named_parameters():
             if param.grad is not None:
@@ -145,7 +145,7 @@ class ProductSpaceVAE(torch.nn.Module):
         burn_in_epochs: int = 100,
         epochs: int = 1900,
         batch_size: int = 32,
-        seed: int = None,
+        seed: Optional[int] = None,
         lr: float = 1e-3,
         curvature_lr: float = 1e-4,
         clip_grad: bool = True,
