@@ -1,4 +1,8 @@
-"""Greedy selection of signatures, as described in Tabaghi et al. at https://arxiv.org/pdf/2102.10204"""
+"""Greedy method for estimating mixed-curvature product manifold signatures.
+
+This module implements the greedy signature selection approach described in Tabaghi, Pan, Chien, Peng & Milenkovic.
+"Linear Classifiers in Product Space Forms" (2021).
+"""
 
 from __future__ import annotations
 
@@ -15,5 +19,23 @@ def greedy_curvature_method(
     candidate_components: Tuple[Tuple[float, int], ...] = ((-1.0, 2), (0.0, 2), (1.0, 2)),
     max_components: int = 3,
 ) -> Any:
-    """The greedy curvature estimation method from Tabaghi et al. at https://arxiv.org/pdf/2102.10204"""
+    r"""Greedily estimates an optimal product manifold signature.
+
+    This implements the greedy signature selection algorithm that incrementally builds a product manifold
+    by selecting components that best preserve distances. At each step, it chooses the manifold component
+    that maximizes distortion reduction.
+
+    Args:
+        pm: Initial product manifold to use as starting point.
+        dists: Pairwise distance matrix to approximate.
+        candidate_components: Candidate (curvature, dimension) pairs to consider.
+            Defaults to ((-1, 2), (0.0, 2), (1, 2)).
+        max_components: Maximum number of components to include. Defaults to 3.
+
+    Returns:
+        optimal_pm: Optimized product manifold with the selected signature.
+
+    Note:
+        This function is not yet implemented.
+    """
     raise NotImplementedError

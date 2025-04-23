@@ -89,10 +89,9 @@ class ProductSpaceVAE(torch.nn.Module):
         else:
             raise ValueError(f"Unknown reconstruction loss: {reconstruction_loss}")
 
-    def encode(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
-        Float[torch.Tensor, "batch_size n_latent"],
-        Float[torch.Tensor, "batch_size n_latent"],
-    ]:
+    def encode(
+        self, x: Float[torch.Tensor, "batch_size n_features"]
+    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"]]:
         r"""Encodes input data to obtain latent means and log-variances in the manifold.
 
         This method processes input data through the encoder network to obtain parameters of the approximate posterior
@@ -103,7 +102,7 @@ class ProductSpaceVAE(torch.nn.Module):
         3. Maps the ambient space vectors to the manifold using the exponential map
 
         Args:
-            x: Input data tensor of shape (batch_size, n_features).
+            x: Input data tensor.
 
         Returns:
             z_mean: Mean of the posterior distribution in the manifold space.
@@ -145,7 +144,7 @@ class ProductSpaceVAE(torch.nn.Module):
         5. Decode the sampled points to get reconstructions
 
         Args:
-            x: Input data tensor of shape (batch_size, n_features).
+            x: Input data tensor.
 
         Returns:
             x_reconstructed: Reconstructed data tensor with the same shape as the input.
@@ -177,8 +176,7 @@ class ProductSpaceVAE(torch.nn.Module):
         http://joschu.net/blog/kl-approx.html
 
         Args:
-            z_mean: Means of the posterior distributions in the manifold,
-                of shape (batch_size, n_latent).
+            z_mean: Means of the posterior distributions in the manifold.
             sigma_factorized: List of covariance matrices for each manifold component.
 
         Returns:
@@ -211,7 +209,7 @@ class ProductSpaceVAE(torch.nn.Module):
         - $\beta$ is a weight for the KL term (setting $\beta < 1$ creates a $\beta$-VAE)
 
         Args:
-            x: Input data tensor of shape (batch_size, n_features).
+            x: Input data tensor.
 
         Returns:
             elbo: Mean ELBO value across the batch (higher is better).
@@ -226,8 +224,8 @@ class ProductSpaceVAE(torch.nn.Module):
     def _grads_ok(self) -> bool:
         """Checks if all gradients are valid (no NaN or Inf values).
 
-        This is a helper method used during training to ensure numerical stability.
-        It checks each parameter's gradient for NaN or Inf values and reports any issues.
+        This is a helper method used during training to ensure numerical stability. It checks each parameter's gradient
+        for NaN or Inf values and reports any issues.
 
         Returns:
             valid: True if all gradients are valid, False otherwise.
@@ -265,7 +263,7 @@ class ProductSpaceVAE(torch.nn.Module):
         maximizes the Evidence Lower Bound (ELBO).
 
         Args:
-            X_train: Training data tensor of shape (n_points, n_features).
+            X_train: Training data tensor.
             burn_in_epochs: Number of initial training epochs with reduced learning rate. Defaults to 100.
             epochs: Number of main training epochs. Defaults to 1900.
             batch_size: Number of samples per mini-batch. Defaults to 32.

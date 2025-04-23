@@ -1,4 +1,13 @@
-"""Compute delta-hyperbolicity of a metric space."""
+"""Methods for computing $\delta$-hyperbolicity of a metric space.
+
+The $\delta$-hyperbolicity measures how close a metric space is to a tree. The value $\delta \geq 0$ is a global
+property; smaller values indicate the space is more hyperbolic.
+
+This module provides two implementations:
+
+1. Full computation of $\delta$-hyperbolicity over all possible point triplets
+2. Sampling-based approximation for large metric spaces
+"""
 
 from __future__ import annotations
 
@@ -11,16 +20,23 @@ from jaxtyping import Float
 def sampled_delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], n_samples: int = 1000, reference_idx: int = 0, relative: bool = True
 ) -> Tuple[Float[torch.Tensor, "n_samples,"], Float[torch.Tensor, "n_samples 3"]]:
-    """Sampled delta-hyperbolicity computation with optional relative scaling.
+    r"""Computes $\delta$-hyperbolicity by sampling random point triplets.
+
+    For large metric spaces, this approximates $\delta$-hyperbolicity by randomly sampling triplets. For each triplet
+    $(x,y,z)$ and reference point $w$, this function computes:
+
+    $$\delta(x,y,z) = \min((x,y)_w, (y,z)_w) - (x,z)_w$$
+
+    where $(a,b)_w = \frac{1}{2}(d(w,a) + d(w,b) - d(a,b))$ is the Gromov product.
 
     Args:
-        D: Distance matrix of the metric space.
-        n_samples: Number of samples to draw.
-        reference_idx: Index of the reference point.
-        relative: Whether to return the relative delta-hyperbolicity.
+        D: Pairwise distance matrix.
+        n_samples: Number of triplets to sample. Defaults to 1000.
+        reference_idx: Index of the reference point w. Defaults to 0.
+        relative: Whether to normalize by the maximum distance. Defaults to True.
 
     Returns:
-        rel_deltas: Relative delta-hyperbolicity values.
+        deltas: $\delta$-hyperbolicity of each sampled triplet.
         indices: Indices of the sampled triplets.
     """
     n = D.shape[0]
@@ -48,16 +64,24 @@ def sampled_delta_hyperbolicity(
 def delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], reference_idx: int = 0, relative: bool = True, full: bool = False
 ) -> Float[torch.Tensor, "n_points n_points n_points"]:
-    """
-    Compute the delta-hyperbolicity of a metric space.
+    r"""Computes the exact delta-hyperbolicity of a metric space over all point triplets.
+
+    For a metric space with distance matrix $\mathbf{D}$, computes the $\delta$-hyperbolicity by:
+
+    $\delta = \max_{x,y,z} \min((x,y)_w, (y,z)_w) - (x,z)_w$
+
+    where $(a,b)_w = \frac{1}{2}(d(w,a) + d(w,b) - d(a,b))$ is the Gromov product.
+
+    This is equivalent to the 4-point definition but more efficient to compute.
 
     Args:
-        D: Distance matrix of the metric space.
-        relative: Whether to return the relative delta-hyperbolicity.
-        full: Whether to return the full delta tensor or just the maximum delta.
+        D: Pairwise distance matrix.
+        reference_idx: Index of the reference point $w$. Defaults to 0.
+        relative: Whether to normalize by the maximum distance. Defaults to True.
+        full: Whether to return the full $\delta$ tensor or just the maximum value. Defaults to False.
 
     Returns:
-        delta: Delta-hyperbolicity of the metric space.
+        delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor.
     """
 
     n = D.shape[0]

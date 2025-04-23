@@ -1,3 +1,12 @@
+"""Methods for estimating sectional curvature of graphs.
+
+This module provides functions to estimate the sectional curvature of graphs based on the approach from:
+Gu et al. "Learning mixed-curvature representations in product spaces." ICLR 2019.
+
+The implementation builds upon code from the HazyResearch/hyperbolics repository:
+https://github.com/HazyResearch/hyperbolics
+"""
+
 from __future__ import annotations
 
 import random
@@ -5,12 +14,23 @@ import random
 import networkx as nx
 import numpy as np
 
-# The next couple functions are taken from this repo:
-# https://github.com/HazyResearch/hyperbolics
-# Paper: https://openreview.net/pdf?id=HJxeWnCcF7
-
 
 def sectional_curvature(G: nx.Graph) -> np.ndarray:
+    r"""Estimates the sectional curvature of a graph.
+
+    This function implements the graph sectional curvature estimation described in Gu et al. 2019.
+    For a graph $\mathcal{G}$ and vertex $v$, the sectional curvature at $v$ is computed based on the geometry
+    of triangles formed with its neighbors.
+
+    Args:
+        G: NetworkX graph to analyze.
+
+    Returns:
+        curvatures: Array of curvature estimates for each node in the graph.
+
+    Note:
+        This function is not yet implemented.
+    """
     raise NotImplementedError
 
 
