@@ -6,5 +6,8 @@ import manify.manifolds
 import manify.predictors
 import manify.utils
 
-# Define version
+# Define version and other package metadata
 __version__ = "0.0.2"
+__author__ = "Philippe Chlenski"
+__email__ = "pac@cs.columbia.edu"
+__license__ = "MIT"

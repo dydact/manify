@@ -1,6 +1,5 @@
-# API Reference
-
-::: manify.curvature_estimation
-::: manify.embedders
-::: manify.predictors
-::: manify.utils
+::: manify
+    options:
+      show_submodules: true
+      members: false
+      heading_level: 2

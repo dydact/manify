@@ -37,6 +37,7 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
   "mkdocs-autorefs",
+  "mkdocs-gen-files",
   "griffe"
 ]
 
