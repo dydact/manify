@@ -43,7 +43,7 @@ extensions = [
 autoapi_type = 'python'
 autoapi_dirs = [os.path.abspath('../../manify')]
 autoapi_ignore = ["*/utils/*"]
-
+autodoc_typehints = "description"
 templates_path = ['_templates']
 exclude_patterns = []
 
