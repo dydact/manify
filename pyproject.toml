@@ -32,6 +32,12 @@ dev = [
     "isort",
     "pylint"
 ]
+docs = [
+  "sphinx>=5",
+  "sphinx-rtd-theme",
+  "sphinx-autodoc-typehints",
+  # any other Sphinx plugins you need…
+]
 
 [tool.setuptools]
 packages = ["manify"]
