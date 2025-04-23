@@ -33,10 +33,9 @@ class SiameseNetwork(torch.nn.Module):
     Args:
         pm: Product manifold object defining the target embedding space.
         encoder: Neural network module that maps inputs to the embedding space.
-        decoder: Optional neural network module that maps embeddings back to input space.
-            If None, a no-op identity module is used. Defaults to None.
-        reconstruction_loss: Type of reconstruction loss to use.
-            Currently only "mse" (mean squared error) is supported. Defaults to "mse".
+        decoder: Optional neural network module that maps embeddings back to input space. If None, a no-op identity
+            module is used.
+        reconstruction_loss: Type of reconstruction loss to use. Currently only "mse" (mean squared error) is supported.
 
     Raises:
         ValueError: If an unsupported reconstruction_loss is specified.

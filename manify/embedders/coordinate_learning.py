@@ -59,15 +59,14 @@ def train_coords(
         dists: Tensor representing the target pairwise distance matrix between points.
         test_indices: Tensor containing indices of test points for transductive learning.
             Defaults to an empty tensor (all points are used for training).
-        device: Device for tensor computations. Defaults to "cpu".
-        burn_in_learning_rate: Learning rate for the burn-in phase. Defaults to 1e-3.
-        burn_in_iterations: Number of iterations for the burn-in phase. Defaults to 2,000.
-        learning_rate: Learning rate for the main training phase. Defaults to 1e-2.
-        scale_factor_learning_rate: Learning rate for optimizing manifold scale factors.
-            Defaults to 0.0 (no optimization of curvatures).
-        training_iterations: Number of iterations for the main training phase. Defaults to 18,000.
-        loss_window_size: Window size for computing moving average loss. Defaults to 100.
-        logging_interval: Interval for logging training progress. Defaults to 10.
+        device: Device for tensor computations.
+        burn_in_learning_rate: Learning rate for the burn-in phase.
+        burn_in_iterations: Number of iterations for the burn-in phase.
+        learning_rate: Learning rate for the main training phase.
+        scale_factor_learning_rate: Learning rate for optimizing manifold scale factors. Off (no learning) by default.
+        training_iterations: Number of iterations for the main training phase.
+        loss_window_size: Window size for computing moving average loss.
+        logging_interval: Interval for logging training progress.
 
     Returns:
         embeddings: Tensor of shape (n_points, n_dim) with optimized coordinates in the manifold.

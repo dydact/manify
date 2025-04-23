@@ -26,14 +26,12 @@ def distortion_loss(
     The distortion loss measures how well the pairwise distances in the embedding space match the true distances. It is
     calculated as
 
-    $$\sum_{i,j} \left(\left(\frac{D_{\text{est}}(i,j)}{D_{\text{true}}(i,j)}\right)^2 - 1\right),$$
-
-    where the sum is over all pairs of points (or just unique pairs if `pairwise=True`).
+    $$\sum_{i,j} \left(\left(\frac{D_{\text{est}}(i,j)}{D_{\text{true}}(i,j)}\right)^2 - 1\right).$$
 
     Args:
         D_est: Tensor of estimated pairwise squared distances.
         D_true: Tensor of true pairwise squared distances.
-        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices). Defaults to False.
+        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices).
 
     Returns:
         loss: Scalar tensor representing the distortion loss.
@@ -70,7 +68,13 @@ def d_avg(
 
     The average distance error is the mean relative error between the estimated and true distances:
 
-    $$D_{\text{avg}} = \frac{1}{N} \sum_{i,j} \frac{|D_{\text{est}}(i,j) - D_{\text{true}}(i,j)|}{D_{\text{true}}(i,j)},$$
+    $$
+        D_{\text{avg}} = \frac{1}{N} \sum_{i,j} \frac{
+            |D_{\text{est}}(i,j) - D_{\text{true}}(i,j)|
+        }{
+            D_{\text{true}}(i,j)
+        },
+    $$
 
     where $N$ is the number of distances being considered. This metric provides a normalized measure of how accurately
     the embedding preserves the original distances.
@@ -78,7 +82,7 @@ def d_avg(
     Args:
         D_est: Tensor of estimated pairwise distances.
         D_true: Tensor of true pairwise distances.
-        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices). Defaults to False.
+        pairwise: Whether to consider only unique pairs (upper triangular part of the matrices).
 
     Returns:
         d_avg: Scalar tensor representing the average relative distance error.

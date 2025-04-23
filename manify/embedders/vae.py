@@ -44,8 +44,8 @@ class ProductSpaceVAE(torch.nn.Module):
         encoder: Neural network that outputs mean and log-variance parameters.
         decoder: Neural network that reconstructs inputs from latent embeddings.
         pm: Product manifold defining the structure of the latent space.
-        beta: Weight for the KL divergence term in the ELBO. Defaults to 1.0.
-        device: Device for tensor computations. Defaults to "cpu".
+        beta: Weight for the KL divergence term in the ELBO.
+        device: Device for tensor computations.
         n_samples: Number of samples for Monte Carlo estimation of KL divergence.
         reconstruction_loss: Type of reconstruction loss to use.
 
@@ -56,11 +56,10 @@ class ProductSpaceVAE(torch.nn.Module):
         decoder: Neural network module that maps latent representations back to the input space.
         pm: Product manifold defining the structure of the latent space.
         beta: Weight of the KL divergence term in the ELBO loss. Values < 1 give a $\beta$-VAE with a looser constraint
-            on the latent space. Defaults to 1.0.
+            on the latent space.
         reconstruction_loss: Type of reconstruction loss to use. Currently only "mse" (mean squared error) is supported.
-            Defaults to "mse".
-        device: Device for tensor computations. Defaults to "cpu".
-        n_samples: Number of Monte Carlo samples to use when estimating the KL divergence. Defaults to 16.
+        device: Device for tensor computations.
+        n_samples: Number of Monte Carlo samples to use when estimating the KL divergence.
 
     Raises:
         ValueError: If an unsupported reconstruction_loss is specified.
@@ -264,13 +263,13 @@ class ProductSpaceVAE(torch.nn.Module):
 
         Args:
             X_train: Training data tensor.
-            burn_in_epochs: Number of initial training epochs with reduced learning rate. Defaults to 100.
-            epochs: Number of main training epochs. Defaults to 1900.
-            batch_size: Number of samples per mini-batch. Defaults to 32.
-            seed: Random seed for reproducibility. Defaults to None.
-            lr: Learning rate for network parameters. Defaults to 1e-3.
-            curvature_lr: Learning rate for manifold curvature parameters. Defaults to 1e-4.
-            clip_grad: Whether to apply gradient clipping. Defaults to True.
+            burn_in_epochs: Number of initial training epochs with reduced learning rate.
+            epochs: Number of main training epochs.
+            batch_size: Number of samples per mini-batch.
+            seed: Random seed for reproducibility. If None, the random seed is not set.
+            lr: Learning rate for network parameters.
+            curvature_lr: Learning rate for manifold curvature parameters.
+            clip_grad: Whether to apply gradient clipping.
 
         Returns:
             losses: List of loss values recorded during training.

@@ -10,7 +10,7 @@ include methods for different key geometric operations, and are built on top of 
 from __future__ import annotations
 
 import warnings
-from typing import Callable, List, Literal, Optional, Tuple, Union
+from typing import Callable, List, Literal, Optional, Tuple
 
 import geoopt
 import torch
@@ -42,8 +42,8 @@ class Manifold:
     Args:
         curvature: The curvature of the manifold.
         dim: The dimension of the manifold.
-        device: The device on which the manifold is stored. Defaults to "cpu".
-        stereographic: Whether to use stereographic coordinates. Defaults to False.
+        device: The device on which the manifold is stored.
+        stereographic: Whether to use stereographic coordinates.
     """
 
     def __init__(self, curvature: float, dim: int, device: str = "cpu", stereographic: bool = False):
@@ -214,8 +214,8 @@ class Manifold:
         """Sample points from the variational distribution on the manifold.
 
         Args:
-            z_mean: Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-            sigma: Optional tensor representing the covariance matrix. Defaults to identity matrix.
+            z_mean: Tensor representing the mean of the sample distribution.
+            sigma: Optional tensor representing the covariance matrix. If None, defaults to an identity matrix.
 
         Returns:
             x: Tensor of sampled points on the manifold
@@ -267,8 +267,8 @@ class Manifold:
 
         Args:
             z: Tensor of points on the manifold for which to compute the likelihood.
-            mu: Tensor representing the mean of the distribution. Defaults to `self.mu0`.
-            sigma: Tensor representing the covariance matrix. Defaults to identity matrices.
+            mu: Tensor representing the mean of the distribution. If None, defaults to the origin `self.mu0`.
+            sigma: Tensor representing the covariance matrix. If None, defaults to an identity matrix.
 
         Returns:
             log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
@@ -321,7 +321,7 @@ class Manifold:
 
         Args:
             x: Tensor representing points on the manifold.
-            base: Tensor representing the base point for the map. Defaults to `self.mu0`.
+            base: Tensor representing the base point for the map. If None, defaults to the origin `self.mu0`.
 
         Returns:
             logmap_result: Tensor representing the result of the logarithmic map from `base` to `x` on the manifold.
@@ -337,7 +337,8 @@ class Manifold:
 
         Args:
             u: Tensor representing the tangent vector at the base point to map.
-            base: Tensor representing the base point for the exponential map. Defaults to `self.mu0` if not provided.
+            base: Tensor representing the base point for the exponential map. If None, defaults to the origin
+                `self.mu0`.
 
         Returns:
             expmap_result: Tensor representing the result of the exponential map applied to `u` at the base point.
@@ -496,8 +497,8 @@ class ProductManifold(Manifold):
 
     Args:
         signature: List of (curvature, dimension) tuples for each factor manifold.
-        device: The device on which the manifold is stored. Defaults to "cpu".
-        stereographic: Whether to use stereographic coordinates. Defaults to False.
+        device: The device on which the manifold is stored.
+        stereographic: Whether to use stereographic coordinates.
     """
 
     def __init__(self, signature: List[Tuple[float, int]], device: str = "cpu", stereographic: bool = False):
@@ -595,7 +596,7 @@ class ProductManifold(Manifold):
 
         Args:
             X: Tensor representing the embeddings to be factorized.
-            intrinsic: bool for whether to use intrinsic dimensions of the manifolds. Defaults to False.
+            intrinsic: bool for whether to use intrinsic dimensions of the manifolds.
 
         Returns:
             X_factorized: A list of tensors representing the factorized embeddings in each manifold.
@@ -611,8 +612,9 @@ class ProductManifold(Manifold):
         """Sample from the variational distribution.
 
         Args:
-            z_mean: Tensor representing the mean of the sample distribution. Defaults to `self.mu0`.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold.
+            z_mean: Tensor representing the mean of the sample distribution. If None, defaults to the origin `self.mu0`.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. If None,
+                defaults to a list of identity matrices for each manifold.
 
         Returns:
             x: Tensor of sampled points on the manifold
@@ -653,9 +655,9 @@ class ProductManifold(Manifold):
 
         Args:
             z: Tensor representing the points for which the log-likelihood is computed.
-            mu: Tensor representing the mean of the distribution. Defaults to `self.mu0`.
-            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. Defaults
-                to identity matrices.
+            mu: Tensor representing the mean of the distribution. If None, defaults to the origin `self.mu0`.
+            sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. If None,
+                defaults to a list of identity matrices for each manifold.
 
         Returns:
             log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
@@ -763,7 +765,7 @@ class ProductManifold(Manifold):
             num_points: The number of points to generate.
             num_classes: The number of classes to generate.
             num_clusters: The number of clusters to generate. If None, defaults to num_classes.
-            seed: An optional seed for the random number generator.
+            seed: An optional seed for the random number generator. If None, no random seed is set.
             cov_scale_means: The scale of the covariance matrix for the means.
             cov_scale_points: The scale of the covariance matrix for the points.
             regression_noise_std: The standard deviation of the noise for regression labels.
