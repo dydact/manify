@@ -1,5 +1,79 @@
 from manify.utils.dataloaders import load_hf
 from manify.utils.benchmarks import benchmark
+from manify.manifolds import ProductManifold
+
+
+def test_benchmark():
+    print("Testing benchmark")
+    pm = ProductManifold(signature=[(-1, 4), (-1, 2), (0, 2), (1, 2), (1, 4)])
+    X, y = pm.gaussian_mixture(num_points=100)
+    out = benchmark(X, y, pm, task="classification", epochs=10)
+    target_keys = set(
+        [
+            "sklearn_dt_accuracy",
+            "sklearn_dt_f1-micro",
+            "sklearn_dt_f1-macro",
+            "sklearn_dt_time",
+            "sklearn_rf_accuracy",
+            "sklearn_rf_f1-micro",
+            "sklearn_rf_f1-macro",
+            "sklearn_rf_time",
+            "product_dt_accuracy",
+            "product_dt_f1-micro",
+            "product_dt_f1-macro",
+            "product_dt_time",
+            "product_rf_accuracy",
+            "product_rf_f1-micro",
+            "product_rf_f1-macro",
+            "product_rf_time",
+            "tangent_dt_accuracy",
+            "tangent_dt_f1-micro",
+            "tangent_dt_f1-macro",
+            "tangent_dt_time",
+            "tangent_rf_accuracy",
+            "tangent_rf_f1-micro",
+            "tangent_rf_f1-macro",
+            "tangent_rf_time",
+            "knn_accuracy",
+            "knn_f1-micro",
+            "knn_f1-macro",
+            "knn_time",
+            "ps_perceptron_accuracy",
+            "ps_perceptron_f1-micro",
+            "ps_perceptron_f1-macro",
+            "ps_perceptron_time",
+            "ambient_mlp_accuracy",
+            "ambient_mlp_f1-micro",
+            "ambient_mlp_f1-macro",
+            "ambient_mlp_time",
+            "ambient_gcn_accuracy",
+            "ambient_gcn_f1-micro",
+            "ambient_gcn_f1-macro",
+            "ambient_gcn_time",
+            "tangent_gcn_accuracy",
+            "tangent_gcn_f1-micro",
+            "tangent_gcn_f1-macro",
+            "tangent_gcn_time",
+            "kappa_gcn_accuracy",
+            "kappa_gcn_f1-micro",
+            "kappa_gcn_f1-macro",
+            "kappa_gcn_time",
+            "kappa_mlr_accuracy",
+            "kappa_mlr_f1-micro",
+            "kappa_mlr_f1-macro",
+            "kappa_mlr_time",
+            "tangent_mlr_accuracy",
+            "tangent_mlr_f1-micro",
+            "tangent_mlr_f1-macro",
+            "tangent_mlr_time",
+            "ambient_mlr_accuracy",
+            "ambient_mlr_f1-micro",
+            "ambient_mlr_f1-macro",
+            "ambient_mlr_time",
+        ]
+    )
+    assert out.keys() == target_keys, "Output keys do not match"
+    assert all(out[key] >= 0 for key in target_keys), "All scores should be non-negative"
 
 
 def test_dataloaders():
@@ -58,15 +132,3 @@ def test_dataloaders():
             assert labels is None, f"Labels should be None for {dataset_name}"
 
         print("Done testing dataloaders")
-
-
-def test_benchmark():
-    pm = ProductManifold(signature=[(-1, 4), (-1, 2), (0, 2), (1, 2), (1, 4)])
-    X, y = pm.gaussian_mixture(n_samples=100)
-    out = benchmark(X, y, pm, task="classification")
-    assert "f1-micro" in out.keys(), "f1-micro key should be present in output"
-    assert "f1-macro" in out.keys(), "f1-macro key should be present in output"
-    assert "accuracy" in out.keys(), "accuracy key should be present in output"
-    assert out["f1-micro"] >= 0, "f1-micro score should be non-negative"
-    assert out["f1-macro"] >= 0, "f1-macro score should be non-negative"
-    assert out["accuracy"] >= 0, "Accuracy score should be non-negative"
