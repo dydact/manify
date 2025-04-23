@@ -11,3 +11,4 @@ notebooks/scratch*
 wandb/
 data/results_wandb/incremental/
 data/results_wandb/*incremental*
+site/
