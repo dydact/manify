@@ -548,7 +548,7 @@ class ProductManifold(Manifold):
             for j, k in zip(intrinsic_dims, ambient_dims[-len(intrinsic_dims) :]):
                 self.projection_matrix[j, k] = 1.0
 
-    def parameters(self) -> List[float]:
+    def parameters(self) -> List[torch.nn.parameter.Parameter]:
         """Get scale parameters for all component manifolds.
 
         Returns:

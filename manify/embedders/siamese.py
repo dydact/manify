@@ -16,6 +16,7 @@ import torch
 from jaxtyping import Float
 
 from ..manifolds import ProductManifold
+from ._base import BaseEmbedder
 
 
 class SiameseNetwork(torch.nn.Module):
