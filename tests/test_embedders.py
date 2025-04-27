@@ -52,4 +52,11 @@ def test_vae():
     encoder = torch.nn.Sequential(torch.nn.Linear(784, 128), torch.nn.ReLU(), torch.nn.Linear(128, 2 * pm.dim))
     decoder = torch.nn.Sequential(torch.nn.Linear(pm.ambient_dim, 128), torch.nn.Linear(128, 784), torch.nn.Sigmoid())
     vae = ProductSpaceVAE(pm=pm, encoder=encoder, decoder=decoder, random_state=42)
-    vae.fit(X=X[:64], burn_in_iterations=10, training_iterations=90, batch_size=16)
+    vae.fit(X=X[:64], burn_in_iterations=10, training_iterations=90, batch_size=16, lr=1e-4)
+
+    # Get outputs
+    X_embedded = vae.transform(X[:128])
+    assert X_embedded.shape == (
+        128,
+        pm.ambient_dim,
+    ), f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"

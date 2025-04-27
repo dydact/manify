@@ -262,8 +262,8 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         self,
         X: Float[torch.Tensor, "n_points n_features"],
         D: None = None,
-        lr: float = 1e-2,
-        burn_in_lr: float = 1e-3,
+        lr: float = 1e-3,
+        burn_in_lr: float = 1e-4,
         curvature_lr: float = 0.0,  # Off by default
         burn_in_iterations: int = 1,
         training_iterations: int = 9,
@@ -303,7 +303,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
 
         my_tqdm = tqdm(total=(burn_in_iterations + training_iterations) * len(X))
         opt = torch.optim.Adam(
-            [{"params": self.parameters(), "lr": lr * 0.1}, {"params": self.pm.parameters(), "lr": curvature_lr}]
+            [{"params": self.parameters(), "lr": burn_in_lr}, {"params": self.pm.parameters(), "lr": 0}]
         )
         losses: Dict[str, List[float]] = {"elbo": [], "ll": [], "kl": []}
         for epoch in range(burn_in_iterations + training_iterations):
@@ -352,13 +352,14 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         return self
 
     def transform(
-        self, X: Float["n_points n_features"], D: None = None, batch_size: int = 32
+        self, X: Float["n_points n_features"], D: None = None, batch_size: int = 32, expmap: bool = True
     ) -> Float["n_points embedding_dim"]:
         """Transform data using the trained VAE. Outputs means of the variational distribution.
 
         Args:
             X: Features to embed with VAE.
             D: Ignored.
+            expmap: Whether to use exponential map for embedding.
 
         Returns:
             embeddings: Learned embeddings.
@@ -372,7 +373,12 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         embeddings_list = []
         for i in range(0, len(X), batch_size):
             x_batch = X[i : i + batch_size]
-            z_mean, _ = self.encode(x_batch)
+            z_mean_tangent, _ = self.encode(x_batch)
+            if expmap:
+                z_mean_ambient = z_mean_tangent @ self.pm.projection_matrix  # Adds zeros in the right places
+                z_mean = self.pm.expmap(u=z_mean_ambient, base=None)
+            else:
+                z_mean = z_mean_tangent
             embeddings_list.append(z_mean.detach().cpu())
 
         embeddings = torch.cat(embeddings_list, dim=0)

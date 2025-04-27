@@ -181,7 +181,16 @@ $$
 
 where $\varepsilon > 0$ and $\xi_i \geq 0$.
 """
-import manify.predictors.decision_tree
-import manify.predictors.kappa_gcn
-import manify.predictors.perceptron
-import manify.predictors.svm
+
+from manify.predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
+from manify.predictors.kappa_gcn import KappaGCN
+from manify.predictors.perceptron import ProductSpacePerceptron
+from manify.predictors.svm import ProductSpaceSVM
+
+__all__ = [
+    "ProductSpaceDT",
+    "ProductSpaceRF",
+    "KappaGCN",
+    "ProductSpacePerceptron",
+    "ProductSpaceSVM",
+]

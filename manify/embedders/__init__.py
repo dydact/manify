@@ -7,8 +7,11 @@ or mixed curvature. The module includes:
 * `siamese`: Siamese network-based embedding for metric learning.
 * `vae`: Variational autoencoders for learning representations in product manifolds.
 * `_losses`: Loss functions for measuring embedding quality.
+* `_base`: Base class for embedders.
 """
 
-import manify.embedders.coordinate_learning
-import manify.embedders.siamese
-import manify.embedders.vae
+from manify.embedders.coordinate_learning import CoordinateLearning
+from manify.embedders.siamese import SiameseNetwork
+from manify.embedders.vae import ProductSpaceVAE
+
+__all__ = ["CoordinateLearning", "SiameseNetwork", "ProductSpaceVAE"]

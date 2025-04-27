@@ -13,7 +13,7 @@ import torch
 from ..manifolds import ProductManifold
 
 
-def greedy_curvature_method(
+def greedy_signature_selection(
     pm: ProductManifold,
     dists: torch.Tensor,
     candidate_components: Tuple[Tuple[float, int], ...] = ((-1.0, 2), (0.0, 2), (1.0, 2)),
