@@ -1,5 +1,7 @@
-from jaxtyping import Float
+from __future__ import annotations
+
 import torch
+from jaxtyping import Float
 
 
 def knn_graph(x: Float[torch.Tensor, "n_points n_dim"], k: int) -> Float[torch.Tensor, "n_points n_points"]:

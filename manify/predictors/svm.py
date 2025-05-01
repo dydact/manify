@@ -1,23 +1,27 @@
-from jaxtyping import Float, Int
+from __future__ import annotations
 
-import numpy as np
+from typing import Literal, Optional
+
 import cvxpy
+import numpy as np
 import torch
+from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from .kernel import product_kernel
+from ..manifolds import ProductManifold
+from ._kernel import product_kernel
 
 
 class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
-        pm,
-        weights=None,
-        h_constraints=True,
-        e_constraints=True,
-        s_constraints=True,
-        task="classification",
-        epsilon=1e-5,
+        pm: ProductManifold,
+        weights: Optional[Float[torch.Tensor, "n_manifolds,"]] = None,
+        h_constraints: bool = True,
+        e_constraints: bool = True,
+        s_constraints: bool = True,
+        task: Literal["classification", "regression"] = "classification",
+        epsilon: float = 1e-5,
     ):
         self.pm = pm
         self.h_constraints = h_constraints
@@ -31,7 +35,11 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(
+        self,
+        X: Float[torch.Tensor, "n_samples n_manifolds"],
+        y: Int[torch.Tensor, "n_samples,"],
+    ) -> None:
         """
         Trains the SVM model using the provided data and labels.
 
@@ -149,7 +157,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
 
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
         """
         Predicts the class for the given test data.
 

@@ -1,9 +1,13 @@
 """Preprocessing with link prediction"""
 
-from typing import Tuple, Optional
+from __future__ import annotations
+
+from typing import Any, Optional, Tuple
+
 import torch
 from jaxtyping import Float, Int
 from sklearn.model_selection import train_test_split
+
 from ..manifolds import ProductManifold
 
 
@@ -12,7 +16,11 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
+) -> Tuple[
+    Float[torch.Tensor, "batch**2 n_dim*2"],
+    Float[torch.Tensor, "batch**2"],
+    ProductManifold,
+]:
     """
     Generate a dataset for link prediction tasks with product manifold
 
@@ -58,17 +66,17 @@ def make_link_prediction_dataset(
 
 def split_dataset(
     X: Float[torch.Tensor, "n_pairs n_dims"],
-    y: Int[torch.Tensor, "n_pairs"],
+    y: Int[torch.Tensor, "n_pairs,"],
     test_size: float = 0.2,
     downsample: Optional[int] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[
     Float[torch.Tensor, "n_pairs n_dims"],
     Float[torch.Tensor, "n_pairs n_dims"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs,"],
 ]:
     """Split a link prediction dataset into train and test sets"""
     n_pairs, n_dims = X.shape

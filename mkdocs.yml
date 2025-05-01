@@ -1,0 +1,69 @@
+site_name: Manify
+theme: readthedocs
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["manify"]  
+          options:
+            docstring_style: google
+            merge_init_into_class: true
+            show_root_heading: true
+            show_source: true
+            show_category_heading: false
+            members_order: source
+            show_submodules: true
+            filters: ["!^_", "!^Parameters$"]
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+
+# Explicitly define navigation structure
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - API Reference:
+    - Overview: reference/index.md
+    - Manifolds: reference/manifolds.md
+    - Curvature Estimation: 
+      - Overview: reference/curvature_estimation/index.md
+      - Delta Hyperbolicity: reference/curvature_estimation/delta_hyperbolicity.md
+      - Greedy Method: reference/curvature_estimation/greedy_method.md
+      - Sectional Curvature: reference/curvature_estimation/sectional_curvature.md
+    - Embedders:
+      - Overview: reference/embedders/index.md
+      - Coordinate Learning: reference/embedders/coordinate_learning.md
+      - Siamese: reference/embedders/siamese.md
+      - VAE: reference/embedders/vae.md
+      - Losses: reference/embedders/_losses.md
+    - Predictors:
+      - Overview: reference/predictors/index.md
+      - Decision Tree: reference/predictors/decision_tree.md
+      - Kappa GCN: reference/predictors/kappa_gcn.md
+      - Perceptron: reference/predictors/perceptron.md
+      - SVM: reference/predictors/svm.md
+      - Kernel: reference/predictors/_kernel.md
+      - Midpoint: reference/predictors/_midpoint.md
+    - Utils:
+      - Overview: reference/utils/index.md
+      - Benchmarks: reference/utils/benchmarks.md
+      - Dataloaders: reference/utils/dataloaders.md
+      - Link Prediction: reference/utils/link_prediction.md
+      - Preprocessing: reference/utils/preprocessing.md
+      - Visualization: reference/utils/visualization.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

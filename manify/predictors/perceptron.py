@@ -1,13 +1,15 @@
 """Product space perceptron implementation"""
 
-from typing import Optional
-from jaxtyping import Float, Int
+from __future__ import annotations
+
+from typing import List, Optional
 
 import torch
+from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from ..manifolds import ProductManifold
-from .kernel import product_kernel
+from ._kernel import product_kernel
 
 
 class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
@@ -18,19 +20,19 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         pm: ProductManifold,
         max_epochs: int = 1_000,
         patience: int = 5,
-        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
+        weights: Optional[Float[torch.Tensor, "n_manifolds,"]] = None,
     ):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
-        self.classes_ = None
+        self.classes_: List[int] = []
         if weights is None:
             self.weights = torch.ones(len(pm.P), dtype=torch.float32)
         else:
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples,"]) -> None:
         """
         Trains the perceptron model using the provided data and labels.
         Args:
@@ -41,7 +43,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             self: The fitted model.
         """
         # Identify unique classes for multiclass classification
-        self.classes_ = torch.unique(y).tolist()
+        self.classes_ = [int(c.item()) for c in torch.unique(y)]
         n_samples = X.shape[0]
 
         # Precompute kernel matrix
@@ -129,7 +131,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
 
         return decision_values
 
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
         """
         Predicts the class labels for the given test data X.
 

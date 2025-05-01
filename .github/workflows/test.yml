@@ -12,9 +12,10 @@ jobs:
     strategy:
       fail-fast: false    # don’t stop the matrix if one Python version fails
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11"] # jaxtyping requires >= 3.10; scipy requires < 3.12
 
     steps:
+      # Setup and installation
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -22,14 +23,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # install manify with test deps
-          pip install -e ".[test]"
-          # install all extras if any, but don’t fail CI if some optional deps are missing
-          pip install -e ".[all]" || echo "Optional extras failed—continuing"
+          pip install -e .
+          pip install -e ".[dev]"
 
       - name: Smoke‑test pip install manify
         run: |
@@ -38,17 +38,29 @@ jobs:
           print("manify version:", getattr(manify, "__version__", "unknown"))
           EOF
 
-      - name: Check type annotations with MyPy
-        run: |
-          # only check core modules—skip untyped imports
-          mypy --ignore-missing-imports --no-warn-return-any --follow-imports=skip \
-            manify/__init__.py manify/embedders manify/predictors manify/manifolds
+      # Code quality checks
+      - name: Check code formatting with Black
+        run: black --check manify/ --line-length 120
         continue-on-error: true
 
-      - name: Run unit tests & collect coverage
-        run: |
-          pytest tests --cov=manify --cov-report=xml:coverage.xml
+      - name: Check import ordering with isort
+        run: isort --check-only --profile black manify/ --line-width 120
+        continue-on-error: true
 
+      - name: Run pylint
+        run: pylint manify/
+        continue-on-error: true
+
+      # Type checking
+      - name: Check type annotations with MyPy
+        run: mypy manify/
+        continue-on-error: true
+
+      # Unit testing
+      - name: Run unit tests & collect coverage
+        run: pytest tests --cov=manify --cov-report=xml:coverage.xml
+
+      # Code coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
