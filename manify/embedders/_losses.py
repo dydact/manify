@@ -51,8 +51,8 @@ def distortion_loss(
         D_true = D_true.flatten()
         D_est = D_est.flatten()
 
-    # Mask out any infinite or nan values
-    mask = torch.isfinite(D_true) & ~torch.isnan(D_true)
+    # Mask out any infinite or nan values; also anywhere the true distance is zero
+    mask = torch.isfinite(D_true) & ~torch.isnan(D_true) & (D_true != 0)
     D_true = D_true[mask]
     D_est = D_est[mask]
 

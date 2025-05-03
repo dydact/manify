@@ -51,6 +51,9 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         device: Device for tensor computations.
         n_samples: Number of samples for Monte Carlo estimation of KL divergence.
         reconstruction_loss: Type of reconstruction loss to use.
+        loss_history_: Dictionary to store the history of loss values during training.
+        is_fitted_: Boolean flag indicating whether the model has been fitted.
+
 
     Args:
         pm: Product manifold defining the structure of the latent space.
