@@ -41,24 +41,25 @@ jobs:
       # Code quality checks
       - name: Check code formatting with Black
         run: black --check manify/ --line-length 120
-        continue-on-error: true
 
       - name: Check import ordering with isort
         run: isort --check-only --profile black manify/ --line-width 120
-        continue-on-error: true
 
       - name: Run pylint
         run: pylint manify/
-        continue-on-error: true
 
       # Type checking
       - name: Check type annotations with MyPy
         run: mypy manify/
-        continue-on-error: true
 
       # Unit testing
       - name: Run unit tests & collect coverage
         run: pytest tests --cov=manify --cov-report=xml:coverage.xml
+
+      # Check docstrings are in Google style      
+      - name: Check docstrings are in Google style
+        run: pydocstyle manify/ --convention=google
+        continue-on-error: true
 
       # Code coverage
       - name: Upload coverage to Codecov

@@ -101,6 +101,7 @@ def test_dataloaders():
         ("neuron_33", True, False, True, False),
         ("neuron_46", True, False, True, False),
         ("traffic", True, False, True, False),
+        ("qiita", True, True, False, False),
     ]:
         print(f"  Testing {dataset_name}")
         features, dists, adjacency, labels = load_hf(dataset_name)

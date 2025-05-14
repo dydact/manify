@@ -306,7 +306,10 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
 
         my_tqdm = tqdm(total=(burn_in_iterations + training_iterations) * len(X))
         opt = torch.optim.Adam(
-            [{"params": self.parameters(), "lr": burn_in_lr}, {"params": self.pm.parameters(), "lr": 0}]
+            [
+                {"params": [p for p in self.parameters() if p not in set(self.pm.parameters())], "lr": burn_in_lr},
+                {"params": self.pm.parameters(), "lr": 0},
+            ]
         )
         losses: Dict[str, List[float]] = {"elbo": [], "ll": [], "kl": []}
         for epoch in range(burn_in_iterations + training_iterations):
@@ -319,12 +322,12 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
                 X_batch = X[i : i + batch_size]
                 elbo, ll, kl = self.elbo(X_batch)
                 L = -elbo
+                L.backward()
 
                 # Add to losses
                 losses["elbo"].append(elbo.item())
                 losses["ll"].append(ll.item())
                 losses["kl"].append(kl.item())
-                L.backward()
 
                 if clip_grad:
                     torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
@@ -362,6 +365,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         Args:
             X: Features to embed with VAE.
             D: Ignored.
+            batch_size: Number of samples per batch.
             expmap: Whether to use exponential map for embedding.
 
         Returns:

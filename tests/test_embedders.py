@@ -1,6 +1,7 @@
 import torch
 from sklearn.model_selection import train_test_split
 from manify.embedders.coordinate_learning import CoordinateLearning
+from manify.embedders.siamese import SiameseNetwork
 from manify.embedders.vae import ProductSpaceVAE
 from manify.utils.dataloaders import load_hf
 from manify.manifolds import ProductManifold
@@ -56,6 +57,27 @@ def test_vae():
 
     # Get outputs
     X_embedded = vae.transform(X[:128])
+    assert X_embedded.shape == (
+        128,
+        pm.ambient_dim,
+    ), f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"
+
+
+def test_siamese():
+    # Load qiita dataset
+    X, D, _, _ = load_hf("qiita")
+    X = X[:128]
+    D = D[:128, :128] / D.max()
+    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+
+    # Init embedder
+    encoder = torch.nn.Sequential(torch.nn.Linear(152, 64), torch.nn.ReLU(), torch.nn.Linear(64, pm.dim))
+    decoder = torch.nn.Sequential(torch.nn.Linear(pm.ambient_dim, 64), torch.nn.Linear(64, 152))
+    snn = SiameseNetwork(pm=pm, encoder=encoder, decoder=decoder, random_state=42)
+    snn.fit(X=X, D=D, burn_in_iterations=1, training_iterations=9, batch_size=16, lr=1e-4)
+
+    # Get outputs
+    X_embedded = snn.transform(X)
     assert X_embedded.shape == (
         128,
         pm.ambient_dim,
