@@ -1,4 +1,4 @@
-"""# Dataloaders Submodule
+"""# Dataloaders Submodule.
 
 The dataloaders module allows users to load datasets from Manify's datasets repo [on Hugging Face](https://huggingface.co/manify).
 
@@ -46,12 +46,13 @@ def load_hf(name: str, namespace: str = "manify") -> Tuple[
     Optional[Float[torch.Tensor, "n_points n_points"]],  # adjacency labels
     Optional[Float[torch.Tensor, "n_points,"]],  # labels
 ]:
-    """
-    Load a dataset from HuggingFace Hub at {namespace}/{name}.
+    """Load a dataset from HuggingFace Hub at {namespace}/{name}.
+
     Returns:
-      - if distance‑based:  (dists, labels, adj)
-      - if feature‑based:   (feats, labels, adj)
-    Each is a torch.Tensor (or None if absent).
+        features: The features for each node, if any
+        dists: The pairwise distance matrix over all nodes, if any
+        adj: The adjacency matrix over all nodes, if any
+        labels: The (classification or regression) labels for each node, if any
     """
     # 1) fetch the single‑row dataset
     ds = load_dataset(f"{namespace}/{name}")

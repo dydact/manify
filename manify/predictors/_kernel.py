@@ -1,4 +1,4 @@
-"""Implementation for kernel matrix calculation"""
+"""Implementation for kernel matrix calculation."""
 
 from __future__ import annotations
 
@@ -15,8 +15,7 @@ def compute_kernel_and_norm_manifold(
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Optional[Float[torch.Tensor, "n_points_target n_dim"]],
 ) -> Tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, ""]]:
-    """
-    Compute the kernel matrix between two sets of points in a given manifold.
+    """Compute the kernel matrix between two sets of points in a given manifold.
 
     Args:
         manifold: The manifold in which the computation occurs.
@@ -67,8 +66,7 @@ def product_kernel(
     List[Float[torch.Tensor, "n_points_source n_points_target"]],
     List[Float[torch.Tensor, ""]],
 ]:
-    """
-    Compute the kernel matrix between two sets of points in a product manifold.
+    """Compute the kernel matrix between two sets of points in a product manifold.
 
     Args:
         pm: The product manifold in which the computation occurs.

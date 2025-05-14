@@ -1,7 +1,6 @@
-"""
-Decision tree and random forest predictors for product space manifolds.
+"""Decision tree and random forest predictors for product space manifolds.
 
-For more information, see Chlenski et al. (2024).: https://arxiv.org/abs/2410.13879
+For more information, see Chlenski et al. (2024): https://arxiv.org/abs/2410.13879
 """
 
 from __future__ import annotations
@@ -19,16 +18,14 @@ from ._midpoint import midpoint
 def _angular_greater(
     queries: Float[torch.Tensor, "query_batch,"], keys: Float[torch.Tensor, "key_batch,"]
 ) -> Bool[torch.Tensor, "query_batch key_batch"]:
-    """
-    Given an angle theta, check whether a tensor of inputs is in [theta, theta + pi)
+    r"""Given an angle $\theta$, check whether a tensor of inputs is in $[\theta, \theta + \pi)$.
 
     Args:
-        queries: (query_batch,) tensor of angles used to define a decision hyperplane
-        keys: (key_batch,) tensor of angles to be compared to queries
+        queries: tensor of angles used to define a decision hyperplane
+        keys: tensor of angles to be compared to queries
 
     Outputs:
-        comparisons: (query_batch, key_batch) tensor of Booleans checking whether each key is in range
-        [query, query + pi)
+        comparisons: Booleans indicating whether each key is in range $[query, query + \pi)$
     """
     # return ((keys[None, :] - queries[:, None] + torch.pi) % (2 * torch.pi)) >= torch.pi
 
@@ -44,14 +41,14 @@ def _get_info_gains(
     min_values_leaf: int = 1,
     eps: float = 1e-10,
 ) -> Float[torch.Tensor, "query_batch dims"]:
-    """
-    Given comparisons matrix and labels, return information gain for each possible split.
+    """Given comparisons matrix and labels, return information gain for each possible split.
 
     Args:
         comparisons: (query_batch, dims, key_batch) tensor of comparisons
         labels: (query_batch, n_classes) tensor of one-hot labels
+        criterion: impurity function used for information gain computation
         eps: small number to prevent division by zero
-        half: whether to use float16
+        min_values_leaf: minimum number of values in a leaf node
 
     Outputs:
         ig: (query_batch, dims) tensor of information gains
@@ -122,14 +119,14 @@ def _get_info_gains_nobatch(
     min_values_leaf: int = 1,
     eps: float = 1e-10,
 ) -> Float[torch.Tensor, "batch dims"]:
-    """
-    Given angles matrix and labels, return information gain for each possible split.
+    """Given angles matrix and labels, return information gain for each possible split.
 
     Args:
         angles: (batch, dims) tensor of angles
         labels: (query_batch, n_classes) tensor of one-hot labels
+        criterion: impurity function used for information gain computation
+        min_values_leaf: minimum number of values in a leaf node
         eps: small number to prevent division by zero
-        half: whether to use float16
 
     Outputs:
         ig: (query_batch, dims) tensor of information gains
@@ -223,8 +220,7 @@ def _get_split(
         Int[torch.Tensor, "query_batch_pos n_classes"],
     ],
 ]:
-    """
-    Split comparisons and labels into negative and positive classes
+    """Split comparisons and labels into negative and positive classes.
 
     Args:
         mask: (query_batch, key_batch) tensor of booleans
@@ -291,7 +287,7 @@ class _DecisionNode:
 
 
 class ProductSpaceDT(BaseEstimator, ClassifierMixin):
-    """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspheric data"""
+    """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspherical data."""
 
     def __init__(
         self,
@@ -357,8 +353,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         Int[torch.Tensor, "n_classes,"],
         Float[torch.Tensor, "batch intrinsic_dim batch"],
     ]:
-        """
-        Preprocessing function for the new version of ProductDT
+        """Preprocessing function for the new version of ProductDT.
 
         Args:
             X: (batch, ambient_dim) tensor of coordinates
@@ -474,8 +469,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         angles: Float[torch.Tensor, "query_batch intrinsic_dim"],
         comparisons: Bool[torch.Tensor, "query_batch dims key_batch"],
     ) -> Tuple[Int[torch.Tensor, ""], Int[torch.Tensor, ""], Float[torch.Tensor, ""]]:
-        """
-        All of the postprocessing for an information gain check
+        """All of the postprocessing for an information gain check.
 
         Args:
             ig: (query_batch, dims) tensor of information gains
@@ -522,8 +516,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
     @torch.no_grad()  # type: ignore
     def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch,"]) -> None:
-        """
-        Reworked fit function for new version of ProductDT
+        """Reworked fit function for new version of ProductDT.
 
         Args:
             X: (batch, ambient_dim) tensor of trainind data (ambient coordinate representation)
@@ -532,7 +525,6 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         Returns:
             None (fits tree in place)
         """
-
         # Pre-preprocessing step: aggregate special dimensions into a new Euclidean component
         if self.use_special_dims:
             X, self.pm = self._aggregate_special_dims(X)
@@ -571,11 +563,16 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         comparisons: Bool[torch.Tensor, "query_batch dim key_batch"],
         depth: int,
     ) -> _DecisionNode:
-        """
-        The recursive component of the product space decision tree fitting function
+        """Recursively fit product space decision tree nodes.
 
         Args:
+            angles: (batch, intrinsic_dim) tensor of angles.
+            labels: (batch, n_classes) tensor of labels.
+            comparisons: (query_batch, dim, key_batch) tensor of comparisons.
+            depth: Current depth of the tree.
 
+        Returns:
+            node: The decision node created from the fitting process.
         """
 
         def _halt(labels: Int[torch.Tensor, "batch,"]) -> _DecisionNode:
@@ -620,7 +617,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     def _leaf_values(
         self, y: Float[torch.Tensor, "batch,"]
     ) -> Tuple[Float[torch.Tensor, "batch n_classes"], Float[torch.Tensor, "batch,"]]:
-        """Get majority class and class probabilities"""
+        """Get majority class and class probabilities."""
         if self.task == "regression":
             return y.mean(), y.mean()
         else:
@@ -634,7 +631,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         ).item()
 
     def _traverse(self, x: Float[torch.Tensor, "intrinsic_dim,"], node: _DecisionNode) -> _DecisionNode:
-        """Traverse a decision tree for a single point"""
+        """Traverse a decision tree for a single point."""
         # Leaf case
         if node.left is None and node.right is None:
             return node
@@ -643,7 +640,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
     @torch.no_grad()  # type: ignore
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:
-        """Predict class probabilities for samples in X"""
+        """Predict class probabilities for samples in X."""
         if self.use_special_dims:
             X, _ = self._aggregate_special_dims(X)
         angles, _, _, _ = self._preprocess(X=X)
@@ -652,7 +649,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         return torch.vstack([self._traverse(angles_row, self.tree).probs for angles_row in angles])
 
     def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch,"]:
-        """Predict class labels for samples in X"""
+        """Predict class labels for samples in X."""
         if self.task == "classification":
             return self.classes_[self.predict_proba(X).argmax(dim=1)]
         else:
@@ -664,7 +661,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         y: Float[torch.Tensor, "batch,"],
         sample_weight: Union[Float[torch.Tensor, "batch,"], float] = 1.0,
     ) -> Float[torch.Tensor, "batch,"]:
-        """Return the mean accuracy on the given test data and labels"""
+        """Return the mean accuracy on the given test data and labels."""
         if self.task == "classification":
             return ((self.predict(X) == y) * sample_weight).mean()
         else:
@@ -672,7 +669,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
 
 
 class ProductSpaceRF(BaseEstimator, ClassifierMixin):
-    """Random Forest in the product space"""
+    """Random Forest in the product space."""
 
     def __init__(
         self,
@@ -751,7 +748,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
     @torch.no_grad()  # type: ignore
     def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch,"]) -> None:
-        """Preprocess and fit an ensemble of trees on subsampled data"""
+        """Preprocess and fit an ensemble of trees on subsampled data."""
         # Pre-preprocessing step: aggregate special dimensions
         if self.use_special_dims:
             X, self.pm = self.trees[0]._aggregate_special_dims(X)
@@ -793,11 +790,11 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
     @torch.no_grad()  # type: ignore
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:
-        """Predict class probabilities for samples in X"""
+        """Predict class probabilities for samples in X."""
         return torch.stack([tree.predict_proba(X) for tree in self.trees]).mean(dim=0)
 
     def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch,"]:
-        """Predict class labels for samples in X"""
+        """Predict class labels for samples in X."""
         if self.task == "classification":
             return self.classes_[self.predict_proba(X).argmax(dim=1)]  # type: ignore
         else:
@@ -809,8 +806,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         y: Float[torch.Tensor, "batch,"],
         sample_weight: Union[Float[torch.Tensor, "batch,"], float] = 1.0,
     ) -> Float[torch.Tensor, "batch,"]:
-        """
-        Return the mean accuracy on the given test data and labels
+        """Return the mean accuracy on the given test data and labels.
 
         Args:
             X: (batch, intrinsic_dim) tensor of test data

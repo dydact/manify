@@ -1,4 +1,4 @@
-"""Methods for computing $\delta$-hyperbolicity of a metric space.
+r"""Methods for computing $\delta$-hyperbolicity of a metric space.
 
 The $\delta$-hyperbolicity measures how close a metric space is to a tree. The value $\delta \geq 0$ is a global
 property; smaller values indicate the space is more hyperbolic.
@@ -83,7 +83,6 @@ def delta_hyperbolicity(
     Returns:
         delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor.
     """
-
     n = D.shape[0]
     w = reference_idx
 

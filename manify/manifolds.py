@@ -263,7 +263,7 @@ class Manifold:
         mu: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
     ) -> Float[torch.Tensor, "n_points,"]:
-        """Compute probability density function for $\\mathcal{WN}(\\mathbf{z}; \\mu, \\Sigma)$ on the manifold.
+        r"""Compute probability density function for $\mathcal{WN}(\mathbf{z}; \mu, \Sigma)$ on the manifold.
 
         Args:
             z: Tensor of points on the manifold for which to compute the likelihood.
@@ -274,7 +274,6 @@ class Manifold:
             log_likelihoods: Tensor containing the log-likelihood of the points `z` under the distribution with mean
                 `mu` and covariance `sigma`.
         """
-
         # Default to mu=self.mu0 and sigma=I
         if mu is None:
             mu = self.mu0
@@ -364,7 +363,6 @@ class Manifold:
             stereo_manifold: The manifold in stereographic coordinates.
             stereo_points: The provided points converted to stereographic coordinates (if any).
         """
-
         if self.is_stereographic:
             print("Manifold is already in stereographic coordinates.")
             return self, *points

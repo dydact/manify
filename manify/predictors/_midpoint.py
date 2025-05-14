@@ -1,4 +1,4 @@
-"""Compute the angular midpoints between two angular coordinates in different geometric spaces"""
+"""Compute the angular midpoints between two angular coordinates in different geometric spaces."""
 
 from __future__ import annotations
 
@@ -9,8 +9,7 @@ from ..manifolds import Manifold
 
 
 def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> Float[torch.Tensor, ""]:
-    """
-    Compute the hyperbolic midpoint between two angular coordinates u and v.
+    """Compute the hyperbolic midpoint between two angular coordinates u and v.
 
     Args:
         u: The first angular coordinate.
@@ -31,8 +30,7 @@ def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> 
 
 
 def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
-    """
-    Verifies if m is the true hyperbolic midpoint between u and v.
+    r"""Verify if $\mathbf{m}$ is the true hyperbolic midpoint between $\mathbf{u}$ and $\mathbf{v}$.
 
     Args:
         u (torch.Tensor): The first angular coordinate.
@@ -48,8 +46,7 @@ def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
 
 
 def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
-    """
-    Compute the spherical midpoint between two angular coordinates u and v.
+    """Compute the spherical midpoint between two angular coordinates u and v.
 
     Args:
         u (torch.Tensor): The first angular coordinate.
@@ -62,24 +59,20 @@ def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
 
 
 def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
-    """
-    Compute the euclidean midpoint between two angular coordinates u and v.
+    """Compute the euclidean midpoint between two angular coordinates u and v.
 
     Args:
         u (torch.Tensor): The first angular coordinate.
         v (torch.Tensor): The second angular coordinate.
 
     Returns:
-        torch.Tensor: The computed spherical midpoint between u and v.
+        torch.Tensor: The computed euclidean midpoint between u and v.
     """
     return torch.arctan2(torch.tensor(2.0), (1.0 / torch.tan(u) + 1.0 / torch.tan(v)))
 
 
 def midpoint(
-    u: Float[torch.Tensor, ""],
-    v: Float[torch.Tensor, ""],
-    manifold: Manifold,
-    special_first: bool = False,
+    u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""], manifold: Manifold, special_first: bool = False
 ) -> Float[torch.Tensor, ""]:
     """Compute the midpoint between two angular coordinates given the manifold type.
 

@@ -371,7 +371,6 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         Returns:
             embeddings: Learned embeddings.
         """
-
         # Set random state
         if self.random_state is not None:
             torch.manual_seed(self.random_state)

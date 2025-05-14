@@ -29,10 +29,11 @@ else:
 
 
 class CoordinateLearning(BaseEmbedder):
-    """
-    This embedder implements the approach described in Gu et al., "Learning Mixed-Curvature
-    Representations in Product Spaces". It directly optimizes point coordinates to preserve
-    a given distance matrix, using Riemannian optimization techniques.
+    """Coordinate learning method class.
+
+    This embedder implements the approach described in Gu et al., "Learning Mixed-Curvature Representations in Product
+    Spaces". It directly optimizes point coordinates to preserve a given distance matrix, using Riemannian optimization
+    techniques.
 
     Trains point coordinates in a product manifold to match target distances.
 
@@ -222,8 +223,9 @@ class CoordinateLearning(BaseEmbedder):
     def fit_transform(  # type: ignore[override]
         self, X: None, D: Float[torch.Tensor, "n_points n_points"], **fit_kwargs: Any
     ) -> Float[torch.Tensor, "n_points embedding_dim"]:
-        """Transform data using learned embedding based on the provided distance matrix D. Overrides the base class
-        method `BaseEmbedder.fit_transform()` to not use the input data X.
+        """Transform data using learned embedding based on the provided distance matrix D.
+
+        This method overrides the base class method `BaseEmbedder.fit_transform()` to not use the input data X.
 
         Args:
             X: Ignored.

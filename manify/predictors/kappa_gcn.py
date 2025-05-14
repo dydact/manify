@@ -1,6 +1,4 @@
-"""
-Kappa GCN implementation
-"""
+r"""$\kappa$-GCN implementation."""
 
 from __future__ import annotations
 
@@ -23,8 +21,7 @@ else:
 def get_A_hat(
     A: Float[torch.Tensor, "n_nodes n_nodes"], make_symmetric: bool = True, add_self_loops: bool = True
 ) -> Float[torch.Tensor, "n_nodes n_nodes"]:
-    """
-    Normalize adjacency matrix.
+    """Normalize adjacency matrix.
 
     Args:
         A (torch.Tensor): Adjacency matrix.
@@ -34,7 +31,6 @@ def get_A_hat(
     Returns:
         torch.Tensor: Normalized adjacency matrix.
     """
-
     # Fix nans
     A[torch.isnan(A)] = 0
 
@@ -58,8 +54,7 @@ def get_A_hat(
 
 # A kappa-GCN layer
 class KappaGCNLayer(torch.nn.Module):
-    """
-    Implementation for the Kappa GCN layer
+    """Implementation for the Kappa GCN layer.
 
     Parameters
     ----------
@@ -95,8 +90,9 @@ class KappaGCNLayer(torch.nn.Module):
     def _left_multiply(
         self, A: Float[torch.Tensor, "n_nodes n_nodes"], X: Float[torch.Tensor, "n_nodes dim"], M: Manifold
     ) -> Float[torch.Tensor, "n_nodes dim"]:
-        """
-        Implementation for Kappa left matrix multiplication for message passing in product space
+        r"""$\kappa$-left matrix multiply two matrices $\mathbf{A}$ and $\mathbf{X}$.
+
+        $$\mathbf{A} \boxtimes_\kappa \mathbf{X}$$
 
         Args:
             A: Adjacency matrix of the graph
@@ -106,7 +102,6 @@ class KappaGCNLayer(torch.nn.Module):
         Returns:
             out: result of the Kappa left matrix multiplication.
         """
-
         # Vectorized version:
         return M.manifold.weighted_midpoint(
             xs=X.unsqueeze(0),  # (1, N, D)
@@ -123,8 +118,7 @@ class KappaGCNLayer(torch.nn.Module):
         X: Float[torch.Tensor, "n_nodes dim"],
         A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
     ) -> Float[torch.Tensor, "n_nodes dim"]:
-        """
-        Forward pass for the Kappa GCN layer.
+        """Forward pass for the Kappa GCN layer.
 
         Args:
             X: Embedding matrix
@@ -152,8 +146,7 @@ class KappaGCNLayer(torch.nn.Module):
 
 
 class KappaGCN(torch.nn.Module):
-    """
-    Implementation for the Kappa GCN
+    """Implementation for the Kappa GCN.
 
     Parameters
     ----------
@@ -207,8 +200,7 @@ class KappaGCN(torch.nn.Module):
         aggregate_logits: bool = True,
         softmax: bool = False,
     ) -> Float[torch.Tensor, "n_nodes dim"]:
-        """
-        Forward pass for the Kappa GCN.
+        """Forward pass for the Kappa GCN.
 
         Args:
             X: Embedding matrix
@@ -253,8 +245,7 @@ class KappaGCN(torch.nn.Module):
         ],
         Float[torch.Tensor, "n_nodes n_classes"],
     ]:
-        """Helper function for get_logits"""
-
+        """Helper function for get_logits."""
         # For convenience, get curvature and manifold
         kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
 
@@ -303,8 +294,7 @@ class KappaGCN(torch.nn.Module):
         b: Float[torch.Tensor, "n_classes,"],
         M: ProductManifold,
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
-        """Helper function for get_logits"""
-
+        """Helper function for get_logits."""
         # For convenience, get curvature and manifold
         # kappas = [man.curvature for manifold in M.P]
         Xs = M.factorize(X)
@@ -334,8 +324,7 @@ class KappaGCN(torch.nn.Module):
         W: Optional[Float[torch.Tensor, "dims n_classes"]] = None,
         b: Optional[Float[torch.Tensor, "n_classes,"]] = None,
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
-        """
-        Computes logits given the manifold.
+        """Computes logits given the manifold.
 
         Credit to the Curve Your Attention paper for an implementation we referenced:
         https://openreview.net/forum?id=AN5uo4ByWH
@@ -371,8 +360,7 @@ class KappaGCN(torch.nn.Module):
         lp_indices: Optional[List[Tuple[int]]] = None,
         tqdm_prefix: Optional[str] = None,
     ) -> None:
-        """
-        Fit the Kappa GCN model.
+        """Fit the Kappa GCN model.
 
         Args:
             X (torch.Tensor): Feature matrix.
@@ -444,8 +432,7 @@ class KappaGCN(torch.nn.Module):
     def predict_proba(
         self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
-        """
-        Predict class probabilities using the trained Kappa GCN.
+        """Predict class probabilities using the trained Kappa GCN.
 
         Args:
             X (torch.Tensor): Feature matrix (NxD).
@@ -466,8 +453,7 @@ class KappaGCN(torch.nn.Module):
     def predict(
         self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
     ) -> Float[torch.Tensor, "n_nodes,"]:
-        """
-        Predict class probabilities using the trained Kappa GCN.
+        """Predict class probabilities using the trained Kappa GCN.
 
         Args:
             X (torch.Tensor): Feature matrix (NxD).

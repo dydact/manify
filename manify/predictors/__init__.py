@@ -1,5 +1,4 @@
-r"""
-Initialize predictors in the product space.
+r"""Initialize predictors in the product space.
 
 Implemented predictors include:
 ## Decision Trees and Random Forests: Use geodesic splits in product manifolds via projection angles and manifold-specific geodesic midpoints.

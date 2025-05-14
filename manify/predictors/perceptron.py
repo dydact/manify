@@ -1,4 +1,4 @@
-"""Product space perceptron implementation"""
+"""Product space perceptron implementation."""
 
 from __future__ import annotations
 
@@ -33,8 +33,8 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             self.weights = weights
 
     def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples,"]) -> None:
-        """
-        Trains the perceptron model using the provided data and labels.
+        """Trains the perceptron model using the provided data and labels.
+
         Args:
             X: The training data of shape.
             y: The class labels for the training data.
@@ -99,8 +99,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
     def predict_proba(
         self, X: Float[torch.Tensor, "n_samples n_manifolds"]
     ) -> Float[torch.Tensor, "n_samples n_classes"]:
-        """
-        Predicts the decision values for each class.
+        """Predicts the decision values for each class.
 
         Args:
             X: The test data.
@@ -109,7 +108,6 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             torch.Tensor: The decision values for each test sample and each class,
             of shape (n_samples_test, n_classes).
         """
-
         n_samples = X.shape[0]
         n_classes = len(self.classes_)
         decision_values = torch.zeros((n_samples, n_classes), dtype=X.dtype, device=X.device)
@@ -132,8 +130,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         return decision_values
 
     def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
-        """
-        Predicts the class labels for the given test data X.
+        """Predicts the class labels for the given test data X.
 
         Args:
             X: The test data.

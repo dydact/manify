@@ -1,4 +1,4 @@
-"""Implementation for benchmarking different product space machine learning methods"""
+"""Implementation for benchmarking different product space machine learning methods."""
 
 from __future__ import annotations
 

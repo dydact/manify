@@ -58,7 +58,7 @@ jobs:
 
       # Check docstrings are in Google style      
       - name: Check docstrings are in Google style
-        run: pydocstyle manify/ --convention=google
+        run: pydocstyle --add-ignore=D107 --convention=google manify/
         continue-on-error: true
 
       # Code coverage

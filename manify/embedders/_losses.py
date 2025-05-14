@@ -40,7 +40,6 @@ def distortion_loss(
         This is similar to the `square_loss` in HazyResearch hyperbolics repository:
         https://github.com/HazyResearch/hyperbolics/blob/master/pytorch/hyperbolic_models.py#L178
     """
-
     # Turn into flat vectors of pairwise distances. For pairwise distances, we only consider the upper triangle.
     if pairwise:
         n = D_true.shape[0]
@@ -67,7 +66,6 @@ def d_avg(
     r"""Computes the average relative distance error (D_avg).
 
     The average distance error is the mean relative error between the estimated and true distances:
-
     $$
         D_{\text{avg}} = \frac{1}{N} \sum_{i,j} \frac{
             |D_{\text{est}}(i,j) - D_{\text{true}}(i,j)|
@@ -75,7 +73,6 @@ def d_avg(
             D_{\text{true}}(i,j)
         },
     $$
-
     where $N$ is the number of distances being considered. This metric provides a normalized measure of how accurately
     the embedding preserves the original distances.
 
@@ -87,7 +84,6 @@ def d_avg(
     Returns:
         d_avg: Scalar tensor representing the average relative distance error.
     """
-
     if pairwise:
         n = D_true.shape[0]
         idx = torch.triu_indices(n, n, offset=1)

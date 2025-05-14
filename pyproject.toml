@@ -30,7 +30,8 @@ dev = [
     "pytest-cov",
     "black",
     "isort",
-    "pylint"
+    "pylint",
+    "pydocstyle"
 ]
 docs = [
   "mkdocs",

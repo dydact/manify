@@ -1,4 +1,4 @@
-"""Tools for visualization"""
+"""Manify visualization utilities."""
 
 from __future__ import annotations
 
@@ -7,8 +7,7 @@ from jaxtyping import Float
 
 
 def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim-1"]:
-    """
-    Convert hyperboloid coordinates to Poincaré ball coordinates.
+    """Convert hyperboloid coordinates to Poincaré ball coordinates.
 
     Args:
         X: (n_points, n_dim) Tensor, input coordinates in the hyperboloid model.
@@ -29,8 +28,7 @@ def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[t
 
 
 def spherical_to_polar(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim-1"]:
-    """
-    Convert spherical coordinates to polar coordinates.
+    """Convert spherical coordinates to polar coordinates.
 
     Args:
         X: (n_points, n_dim) Tensor, input coordinates in spherical form.
@@ -63,8 +61,7 @@ def spherical_to_polar(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.
 
 
 def S2_to_polar(X: Float[torch.Tensor, "n_points 3"]) -> Float[torch.Tensor, "n_points 2"]:
-    """
-    Convert S^2 (2-sphere) coordinates to polar coordinates.
+    """Convert S^2 (2-sphere) coordinates to polar coordinates.
 
     Args:
         X: (n_points, 3) Tensor, input coordinates on the 2-sphere.

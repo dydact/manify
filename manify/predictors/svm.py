@@ -1,3 +1,5 @@
+"""Implementation for Support Vector Machine in Product Manifolds."""
+
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -13,6 +15,8 @@ from ._kernel import product_kernel
 
 
 class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
+    """Product Space SVM class."""
+
     def __init__(
         self,
         pm: ProductManifold,
@@ -40,8 +44,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         X: Float[torch.Tensor, "n_samples n_manifolds"],
         y: Int[torch.Tensor, "n_samples,"],
     ) -> None:
-        """
-        Trains the SVM model using the provided data and labels.
+        """Trains the SVM model using the provided data and labels.
 
         Args:
             X: The training data of shape (n_samples, n_features).
@@ -116,8 +119,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def predict_proba(
         self, X: Float[torch.Tensor, "n_samples n_manifolds"]
     ) -> Float[torch.Tensor, "n_samples n_classes"]:
-        """
-        Predicts the probability of each class for the given test data.
+        """Predicts the probability of each class for the given test data.
 
         Args:
             X: The test data of shape (n_samples, n_features).
@@ -158,8 +160,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         return probs
 
     def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
-        """
-        Predicts the class for the given test data.
+        """Predicts the class for the given test data.
 
         Args:
             X: The test data of shape (n_samples, n_features).

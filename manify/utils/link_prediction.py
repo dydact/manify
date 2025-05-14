@@ -1,4 +1,4 @@
-"""Preprocessing with link prediction"""
+"""Preprocessing datasets for link prediction."""
 
 from __future__ import annotations
 
@@ -16,30 +16,24 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[
-    Float[torch.Tensor, "batch**2 n_dim*2"],
-    Float[torch.Tensor, "batch**2"],
-    ProductManifold,
-]:
-    """
-    Generate a dataset for link prediction tasks with product manifold
+) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
+    r"""Preprocess a graph link prediction task into a binary classification problem on a new product manifold.
 
-    This function constructs a dataset for link prediction by creating pairwise
-    embeddings from the input node embeddings, optionally appending pairwise
-    distances, and returning labels from an adjacency matrix. It also updates the
-    manifold signature correspondingly.
+    This function constructs a dataset for link prediction by creating pairwise embeddings from the input node
+    embeddings, optionally appending pairwise distances, and returning labels from an adjacency matrix. It also updates
+    the manifold signature correspondingly.
 
     Args:
-        X_embed (batch, n_dim): A tensor of node embeddings.
+        X_embed: Node embeddings.
         pm : The manifold on which the embeddings lie.
-        adj (batch, batch): A binary adjacency matrix indicating edges between nodes.
+        adj: A binary adjacency matrix indicating edges between nodes.
         add_dists: If True, appends pairwise distances to the feature vectors. Default is True.
 
     Returns:
-        Tuple[Float[torch.Tensor, "batch**2 2*n_dim"], Float[torch.Tensor, "batch**2"], ProductManifold]:
-            - `X` (batch**2, 2*n_dim): A tensor of pairwise embeddings
-            - `y` (batch**2,).: A tensor of labels derived from the adjacency matrix with.
-            - `new_pm`: A new ProductManifold instance with an updated signature reflecting the feature space.
+        X: Node-pair embeddings in $\mathcal{M} \times \mathcal{M}$
+        y: Edge labels derived from the adjacency matrix.
+        new_pm: A new instance of `ProductManifold` with an updated signature reflecting the feature space
+            $\mathcal{M} \times \mathcal{M}$.
 
     """
     # Stack embeddings
@@ -78,7 +72,23 @@ def split_dataset(
     Int[torch.Tensor, "n_pairs,"],
     Int[torch.Tensor, "n_pairs,"],
 ]:
-    """Split a link prediction dataset into train and test sets"""
+    """Split a link prediction dataset into train and test sets in a stratified (non-leaky) manner.
+
+    Args:
+        X: Node-pair embeddings.
+        y: Edge labels derived from the adjacency matrix.
+        test_size: Proportion of the dataset to include in the test split.
+        downsample: Optional number of positive and negative samples to retain.
+        **kwargs: Additional keyword arguments for train_test_split.
+
+    Returns:
+        X_train: Training node-pair embeddings.
+        X_test: Testing node-pair embeddings.
+        y_train: Training edge labels.
+        y_test: Testing edge labels.
+        idx_train: Indices of training nodes.
+        idx_test: Indices of testing nodes.
+    """
     n_pairs, n_dims = X.shape
     n_nodes = int(n_pairs**0.5)
 
