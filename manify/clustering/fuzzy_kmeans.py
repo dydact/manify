@@ -87,7 +87,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         self.random_state = random_state
         self.verbose = verbose
 
-    def _init_centers(self, X: Float[torch.Tensor, "n_points n_features"]):
+    def _init_centers(self, X: Float[torch.Tensor, "n_points n_features"]) -> None:
         if self.random_state is not None:
             torch.manual_seed(self.random_state)
             np.random.seed(self.random_state)

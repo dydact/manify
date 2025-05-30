@@ -82,6 +82,8 @@ python_files = "test_*.py"
 [tool.mypy]
 # Specify the packages to check
 packages = ["manify"]
+disable_error_code = ["name-defined"] # Needed for jaxtyping compatibility - else vector annotations fail
+exclude = ["manify/optimizers/_adan.py"] # Use unmodified adan.py code from original repo
 
 # Ignore missing imports for external libraries
 python_version = "3.10"
