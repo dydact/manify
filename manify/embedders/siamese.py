@@ -118,7 +118,7 @@ class SiameseNetwork(BaseEmbedder, torch.nn.Module):
     ) -> Tuple[
         Float[torch.Tensor, "batch_size n_latent"],
         Float[torch.Tensor, "batch_size n_latent"],
-        Float[torch.Tensor, "batch_size,"],
+        Float[torch.Tensor, "batch_size"],
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_features"],
     ]:

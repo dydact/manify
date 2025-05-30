@@ -20,7 +20,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         pm: ProductManifold,
         max_epochs: int = 1_000,
         patience: int = 5,
-        weights: Optional[Float[torch.Tensor, "n_manifolds,"]] = None,
+        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
     ):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
@@ -32,7 +32,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples,"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
         """Trains the perceptron model using the provided data and labels.
 
         Args:
@@ -129,7 +129,7 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
 
         return decision_values
 
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
         """Predicts the class labels for the given test data X.
 
         Args:

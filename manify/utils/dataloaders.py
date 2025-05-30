@@ -44,7 +44,7 @@ def load_hf(name: str, namespace: str = "manify") -> Tuple[
     Optional[Float[torch.Tensor, "n_points n_features"]],  # features
     Optional[Float[torch.Tensor, "n_points n_points"]],  # pairwise dists
     Optional[Float[torch.Tensor, "n_points n_points"]],  # adjacency labels
-    Optional[Float[torch.Tensor, "n_points,"]],  # labels
+    Optional[Float[torch.Tensor, "n_points"]],  # labels
 ]:
     """Load a dataset from HuggingFace Hub at {namespace}/{name}.
 

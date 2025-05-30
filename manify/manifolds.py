@@ -262,7 +262,7 @@ class Manifold:
         z: Float[torch.Tensor, "n_points n_ambient_dim"],
         mu: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
         sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
-    ) -> Float[torch.Tensor, "n_points,"]:
+    ) -> Float[torch.Tensor, "n_points"]:
         r"""Compute probability density function for $\mathcal{WN}(\mathbf{z}; \mu, \Sigma)$ on the manifold.
 
         Args:
@@ -646,9 +646,9 @@ class ProductManifold(Manifold):
     def log_likelihood(
         self,
         z: Float[torch.Tensor, "batch_size n_dim"],
-        mu: Optional[Float[torch.Tensor, "n_dim,"]] = None,
+        mu: Optional[Float[torch.Tensor, "n_dim"]] = None,
         sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
-    ) -> Float[torch.Tensor, "batch_size,"]:
+    ) -> Float[torch.Tensor, "batch_size"]:
         r"""Compute probability density function for $\mathcal{WN}(\mathbf{z} ; \mu, \Sigma)$ on the product manifold.
 
         Args:
@@ -756,7 +756,7 @@ class ProductManifold(Manifold):
         regression_noise_std: float = 0.1,
         task: Literal["classification", "regression"] = "classification",
         adjust_for_dims: bool = False,
-    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points,"]]:
+    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points"]]:
         """Generate a set of labeled samples from a Gaussian mixture model.
 
         Args:

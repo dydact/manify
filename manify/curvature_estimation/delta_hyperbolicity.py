@@ -19,7 +19,7 @@ from jaxtyping import Float
 
 def sampled_delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], n_samples: int = 1000, reference_idx: int = 0, relative: bool = True
-) -> Tuple[Float[torch.Tensor, "n_samples,"], Float[torch.Tensor, "n_samples 3"]]:
+) -> Tuple[Float[torch.Tensor, "n_samples"], Float[torch.Tensor, "n_samples 3"]]:
     r"""Computes $\delta$-hyperbolicity by sampling random point triplets.
 
     For large metric spaces, this approximates $\delta$-hyperbolicity by randomly sampling triplets. For each triplet
@@ -61,7 +61,7 @@ def sampled_delta_hyperbolicity(
     return deltas, indices
 
 
-def delta_hyperbolicity(
+def vectorized_delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], reference_idx: int = 0, relative: bool = True, full: bool = False
 ) -> Float[torch.Tensor, "n_points n_points n_points"]:
     r"""Computes the exact delta-hyperbolicity of a metric space over all point triplets.

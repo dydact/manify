@@ -20,7 +20,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         pm: ProductManifold,
-        weights: Optional[Float[torch.Tensor, "n_manifolds,"]] = None,
+        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
         h_constraints: bool = True,
         e_constraints: bool = True,
         s_constraints: bool = True,
@@ -42,7 +42,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def fit(
         self,
         X: Float[torch.Tensor, "n_samples n_manifolds"],
-        y: Int[torch.Tensor, "n_samples,"],
+        y: Int[torch.Tensor, "n_samples"],
     ) -> None:
         """Trains the SVM model using the provided data and labels.
 
@@ -159,7 +159,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
 
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples,"]:
+    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
         """Predicts the class for the given test data.
 
         Args:

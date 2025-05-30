@@ -60,17 +60,17 @@ def make_link_prediction_dataset(
 
 def split_dataset(
     X: Float[torch.Tensor, "n_pairs n_dims"],
-    y: Int[torch.Tensor, "n_pairs,"],
+    y: Int[torch.Tensor, "n_pairs"],
     test_size: float = 0.2,
     downsample: Optional[int] = None,
     **kwargs: Any,
 ) -> Tuple[
     Float[torch.Tensor, "n_pairs n_dims"],
     Float[torch.Tensor, "n_pairs n_dims"],
-    Int[torch.Tensor, "n_pairs,"],
-    Int[torch.Tensor, "n_pairs,"],
-    Int[torch.Tensor, "n_pairs,"],
-    Int[torch.Tensor, "n_pairs,"],
+    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs"],
+    Int[torch.Tensor, "n_pairs"],
 ]:
     """Split a link prediction dataset into train and test sets in a stratified (non-leaky) manner.
 

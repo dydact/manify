@@ -13,7 +13,7 @@ from ..manifolds import ProductManifold
 
 
 class BaseEmbedder(BaseEstimator, TransformerMixin, ABC):
-    """Base class for everything in manify.embedders.
+    """Base class for everything in `manify.embedders`.
 
     This is an abstract class that that defines a common interface for all embedding methods. We assume only that a
     ProductManifold object is given. We try to follow the scikit-learn API's fit/transform paradigm as closely as

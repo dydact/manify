@@ -182,7 +182,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         self,
         z_mean: Float[torch.Tensor, "batch_size n_latent"],
         sigma_factorized: List[Float[torch.Tensor, "n_latent n_latent"]],
-    ) -> Float[torch.Tensor, "batch_size,"]:
+    ) -> Float[torch.Tensor, "batch_size"]:
         r"""Computes the KL divergence between posterior and prior distributions in the manifold.
 
         For distributions in Riemannian manifolds, computing the KL divergence analytically
@@ -358,8 +358,8 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         return self
 
     def transform(
-        self, X: Float["n_points n_features"], D: None = None, batch_size: int = 32, expmap: bool = True
-    ) -> Float["n_points embedding_dim"]:
+        self, X: Float[torch.Tensor, "n_points n_features"], D: None = None, batch_size: int = 32, expmap: bool = True
+    ) -> Float[torch.Tensor, "n_points embedding_dim"]:
         """Transform data using the trained VAE. Outputs means of the variational distribution.
 
         Args:

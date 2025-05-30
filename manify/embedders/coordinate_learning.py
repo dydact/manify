@@ -70,7 +70,7 @@ class CoordinateLearning(BaseEmbedder):
         self,
         X: None,
         D: Float[torch.Tensor, "n_points n_points"],
-        test_indices: Int[torch.Tensor, "n_test,"] = torch.tensor([]),
+        test_indices: Int[torch.Tensor, "n_test"] = torch.tensor([]),
         lr: float = 1e-2,
         burn_in_lr: float = 1e-3,
         curvature_lr: float = 0.0,  # Off by default

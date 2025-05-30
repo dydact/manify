@@ -235,7 +235,7 @@ class KappaGCN(torch.nn.Module):
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
         W: Float[torch.Tensor, "dim n_classes"],
-        b: Float[torch.Tensor, "n_classes,"],
+        b: Float[torch.Tensor, "n_classes"],
         M: Manifold,
         return_inner_products: bool = False,
     ) -> Union[
@@ -291,7 +291,7 @@ class KappaGCN(torch.nn.Module):
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
         W: Float[torch.Tensor, "dims n_classes"],
-        b: Float[torch.Tensor, "n_classes,"],
+        b: Float[torch.Tensor, "n_classes"],
         M: ProductManifold,
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """Helper function for get_logits."""
@@ -322,7 +322,7 @@ class KappaGCN(torch.nn.Module):
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
         W: Optional[Float[torch.Tensor, "dims n_classes"]] = None,
-        b: Optional[Float[torch.Tensor, "n_classes,"]] = None,
+        b: Optional[Float[torch.Tensor, "n_classes"]] = None,
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """Computes logits given the manifold.
 
@@ -352,7 +352,7 @@ class KappaGCN(torch.nn.Module):
     def fit(
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
-        y: Float[torch.Tensor, "n_nodes,"],
+        y: Float[torch.Tensor, "n_nodes"],
         A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
         epochs: int = 2_000,
         lr: float = 1e-2,
@@ -452,7 +452,7 @@ class KappaGCN(torch.nn.Module):
 
     def predict(
         self, X: Float[torch.Tensor, "n_nodes dim"], A: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
-    ) -> Float[torch.Tensor, "n_nodes,"]:
+    ) -> Float[torch.Tensor, "n_nodes"]:
         """Predict class probabilities using the trained Kappa GCN.
 
         Args:

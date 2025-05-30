@@ -100,8 +100,8 @@ def benchmark(
     epochs: int = 4_000,
     lr: float = 1e-4,
     kappa_gcn_layers: int = 1,
-    lp_train_idx: Optional[Float[torch.Tensor, "n_samples,"]] = None,
-    lp_test_idx: Optional[Float[torch.Tensor, "n_samples,"]] = None,
+    lp_train_idx: Optional[Float[torch.Tensor, "n_samples"]] = None,
+    lp_test_idx: Optional[Float[torch.Tensor, "n_samples"]] = None,
 ) -> Dict[str, float]:
     """Benchmarks various machine learning models on Riemannian manifold datasets.
 
