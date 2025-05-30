@@ -7,7 +7,7 @@ This module provides tools to estimate various curvature properties of metric sp
 * `sectional_curvature`: Estimates the sectional curvature of a graph from its distance matrix.
 """
 
-from manify.curvature_estimation.delta_hyperbolicity import vectorized_delta_hyperbolicity, sampled_delta_hyperbolicity
+from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
 from manify.curvature_estimation.greedy_method import greedy_signature_selection
 from manify.curvature_estimation.sectional_curvature import sectional_curvature
 
