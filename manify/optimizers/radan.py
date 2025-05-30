@@ -1,7 +1,5 @@
-'''
-Radan is the Riemannian version of the Adaptive Nesterov Momentum algorithm. 
-This code is compatible with both Geoopt and Manifold libraries, 
-and is designed for Riemannian Fuzzy K-Means. 
+"""Radan is the Riemannian version of the Adaptive Nesterov Momentum algorithm.
+This code is compatible with both Geoopt and Manify libraries, and is designed for Riemannian Fuzzy K-Means.
 We recommend using the parameters `[0.7, 0.99, 0.99]` for best performance.**
 
 For more details on the Radan algorithm, please refer to:
@@ -23,8 +21,8 @@ If you're interested in Adan, you can see:
 bibtex
 @ARTICLE{10586270,
   author={Xie, Xingyu and Zhou, Pan and Li, Huan and Lin, Zhouchen and Yan, Shuicheng},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
-  title={Adan: Adaptive Nesterov Momentum Algorithm for Faster Optimizing Deep Models}, 
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  title={Adan: Adaptive Nesterov Momentum Algorithm for Faster Optimizing Deep Models},
   year={2024},
   volume={46},
   number={12},
@@ -33,41 +31,42 @@ bibtex
   doi={10.1109/TPAMI.2024.3423382}
 }
 
-
 If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail.com.
-'''
+"""
 
-import torch.optim
-from torch.optim import Optimizer
-from . import _adan
-from geoopt.optim.mixin import OptimMixin
+from __future__ import annotations
+
+from typing import Any, Callable, Optional
+
 from geoopt import ManifoldParameter, ManifoldTensor
+from geoopt.optim.mixin import OptimMixin
+from jaxtyping import Float
 
-__all__ = ["RiemannianAdan"]
+from . import _adan
+
+
 class RiemannianAdan(OptimMixin, _adan.Adan):
     """
     Riemannian Adan with the same API as :class:`adan.Adan`.
 
-    Parameters
-    ----------
+    Args:
     params : iterable
-        iterable of parameters to optimize or dicts defining
-        parameter groups
+        iterable of parameters to optimize or dicts defining parameter groups
     lr : float (optional)
         learning rate (default: 1e-3)
     betas : Tuple[float, float, float] (optional)
         coefficients used for computing (default: (0.98, 0.92, 0.99))
     eps : float (optional)
-        term added to the denominator to improve
-        numerical stability (default: 1e-8)
+        term added to the denominator to improve numerical stability (default: 1e-8)
     weight_decay : float (optional)
         weight decay (L2 penalty) (default: 0)
     """
 
-    def step(self, closure=None):
+    def step(self, closure: Optional[Callable[[], Float[torch.Tensor]]] = None):
         loss = None
         if closure is not None:
             loss = closure()
+
         with torch.no_grad():
             for group in self.param_groups:
                 betas = group["betas"]
@@ -85,9 +84,7 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
                         manifold = self._default_manifold
 
                     if grad.is_sparse:
-                        raise RuntimeError(
-                            "RiemannianAdan does not support sparse gradients"
-                        )
+                        raise RuntimeError("RiemannianAdan does not support sparse gradients")
 
                     state = self.state[point]
 
@@ -98,69 +95,59 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
                         state["exp_avg"] = torch.zeros_like(point)
                         # Exponential moving average of squared gradient values
                         state["exp_avg_sq"] = torch.zeros_like(point)
-                        #new param
-                        state['exp_avg_diff'] = torch.zeros_like(point)
-                        #last step grad
-                        state['last_grad'] = torch.zeros_like(point)
-                        
+                        # new param
+                        state["exp_avg_diff"] = torch.zeros_like(point)
+                        # last step grad
+                        state["last_grad"] = torch.zeros_like(point)
 
                     state["step"] += 1
                     # make local variables for easy access
                     exp_avg = state["exp_avg"]
                     exp_avg_diff = state["exp_avg_diff"]
                     exp_avg_sq = state["exp_avg_sq"]
-                    last_grad = state['last_grad']
+                    last_grad = state["last_grad"]
                     # actual step
-
-
 
                     grad.add_(point, alpha=weight_decay)
                     grad = manifold.egrad2rgrad(point, grad)
-                    #grad_last_diff
-                    grad_last_diff = grad-last_grad
+                    # grad_last_diff
+                    grad_last_diff = grad - last_grad
                     exp_avg.mul_(betas[0]).add_(grad, alpha=1 - betas[0])
-                    #grad_last_diff
-                    exp_avg_diff.mul_(betas[1]).add_(grad_last_diff,alpha=1-betas[1])
-                    #z_t
+                    # grad_last_diff
+                    exp_avg_diff.mul_(betas[1]).add_(grad_last_diff, alpha=1 - betas[1])
+                    # z_t
                     zt = grad_last_diff.mul(betas[1]).add_(grad)
-                    #z_t^2
-                    exp_avg_sq.mul_(betas[2]).add_(
-                        manifold.component_inner(point, zt), alpha=1 - betas[2]
-                    )
+                    # z_t^2
+                    exp_avg_sq.mul_(betas[2]).add_(manifold.component_inner(point, zt), alpha=1 - betas[2])
                     bias_correction1 = 1 - betas[0] ** state["step"]
                     bias_correction2 = 1 - betas[1] ** state["step"]
                     bias_correction3 = 1 - betas[2] ** state["step"]
-                
-                    denom = exp_avg_sq.div(bias_correction3).sqrt_()
 
+                    denom = exp_avg_sq.div(bias_correction3).sqrt_()
 
                     # copy the state, we need it for retraction
                     # get the direction for ascend
-                    direction = ((exp_avg.div(bias_correction1)).add_(
-                        (exp_avg_diff.div(bias_correction2)),alpha=betas[1])) / denom.add_(eps)
+                    direction = (
+                        (exp_avg.div(bias_correction1)).add_((exp_avg_diff.div(bias_correction2)), alpha=betas[1])
+                    ) / denom.add_(eps)
 
                     # transport the exponential averaging to the new point
-                    new_point, exp_avg_new = manifold.retr_transp(
-                        point, -learning_rate * direction, exp_avg
-                    )
-                    
-                    last_grad.copy_(manifold.transp(point,new_point,grad))
-                    #transport v_t
-                    exp_avg_diff.copy_(manifold.transp(point,new_point, exp_avg_diff))
+                    new_point, exp_avg_new = manifold.retr_transp(point, -learning_rate * direction, exp_avg)
+
+                    last_grad.copy_(manifold.transp(point, new_point, grad))
+                    # transport v_t
+                    exp_avg_diff.copy_(manifold.transp(point, new_point, exp_avg_diff))
                     exp_avg.copy_(exp_avg_new)
                     point.copy_(new_point)
 
-                    if (
-                        group["stabilize"] is not None
-                        and state["step"] % group["stabilize"] == 0
-                    ):
+                    if group["stabilize"] is not None and state["step"] % group["stabilize"] == 0:
                         stablilize = True
                 if stablilize:
                     self.stabilize_group(group)
         return loss
 
     @torch.no_grad()
-    def stabilize_group(self, group):
+    def stabilize_group(self, group: dict[str, Any]):
         for p in group["params"]:
             if not isinstance(p, (ManifoldParameter, ManifoldTensor)):
                 continue
@@ -174,4 +161,4 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
             p.copy_(manifold.projx(p))
             exp_avg.copy_(manifold.proju(p, exp_avg))
             exp_avg_diff.copy_(manifold.proju(p, exp_avg_diff))
-            last_grad.copy_(manifold.proju(p,last_grad))
+            last_grad.copy_(manifold.proju(p, last_grad))

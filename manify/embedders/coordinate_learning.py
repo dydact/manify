@@ -52,7 +52,6 @@ class CoordinateLearning(BaseEmbedder):
 
     Attributes:
         pm: Product manifold defining the target embedding space.
-        lr: Learning rate for the optimizer.
         embeddings_: Optimized point coordinates after fitting.
         loss_history_: Training loss history.
         is_fitted_: Boolean flag indicating if the embedder has been fitted.
