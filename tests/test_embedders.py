@@ -10,7 +10,7 @@ from manify.manifolds import ProductManifold
 def test_train_coords():
     # Load karate club dataset
     _, D, _, _ = load_hf("karate_club")
-    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
 
     # Init embedder
     embedder = CoordinateLearning(pm=pm, random_state=42)
@@ -47,7 +47,7 @@ def test_vae():
     # Load MNIST dataset
     X, _, _, _ = load_hf("mnist")
     X = X.reshape(X.shape[0], -1)
-    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
 
     # Init embedder
     encoder = torch.nn.Sequential(torch.nn.Linear(784, 128), torch.nn.ReLU(), torch.nn.Linear(128, 2 * pm.dim))
@@ -68,7 +68,7 @@ def test_siamese():
     X, D, _, _ = load_hf("qiita")
     X = X[:128]
     D = D[:128, :128] / D.max()
-    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
 
     # Init embedder
     encoder = torch.nn.Sequential(torch.nn.Linear(152, 64), torch.nn.ReLU(), torch.nn.Linear(64, pm.dim))

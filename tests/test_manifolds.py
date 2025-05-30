@@ -95,7 +95,7 @@ def _shared_tests(M, X1, X2, is_euclidean):
 
 def test_manifold_methods():
     print("Checking Manifold class...")
-    for curv, dim in [(-1, 2), (0, 2), (1, 2), (-1, 64), (0, 64), (1, 64)]:
+    for curv, dim in [(-1.0, 2), (0.0, 2), (1.0, 2), (-1.0, 64), (0.0, 64), (1.0, 64)]:
         print(f"  Signature: [({curv}, {dim})]")
         M = Manifold(curvature=curv, dim=dim)
 
@@ -120,7 +120,14 @@ def test_manifold_methods():
 
 def test_product_manifold_methods():
     print("Checking ProductManifold class...")
-    for signature in [[(-1, 8)], [(0, 8)], [(1, 8)], [(-1, 8), (1, 8)], [(-1, 8), (0, 8), (1, 8)], [(0, 8), (0, 8)]]:
+    for signature in [
+        [(-1.0, 8)],
+        [(0.0, 8)],
+        [(1.0, 8)],
+        [(-1.0, 8), (1.0, 8)],
+        [(-1.0, 8), (0.0, 8), (1.0, 8)],
+        [(0.0, 8), (0.0, 8)],
+    ]:
         print(f"  Signature: [({signature})]")
         pm = ProductManifold(signature=signature)
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 
 import torch
+from beartype.typing import Any
 from jaxtyping import Float
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -27,18 +27,18 @@ class BaseEmbedder(BaseEstimator, TransformerMixin, ABC):
         is_fitted_: Boolean flag indicating if the embedder has been fitted.
     """
 
-    def __init__(self, pm: ProductManifold, random_state: Optional[int] = None, device: Optional[str] = None) -> None:
+    def __init__(self, pm: ProductManifold, random_state: int | None = None, device: str | None = None) -> None:
         self.pm = pm
         self.random_state = random_state
         self.device = pm.device if device is None else device
-        self.loss_history_: Dict[str, List[float]] = {}
+        self.loss_history_: dict[str, list[float]] = {}
         self.is_fitted_: bool = False
 
     @abstractmethod
     def fit(
         self,
-        X: Optional[Float[torch.Tensor, "n_points n_features"]] = None,
-        D: Optional[Float[torch.Tensor, "n_points n_points"]] = None,
+        X: Float[torch.Tensor, "n_points n_features"] | None = None,
+        D: Float[torch.Tensor, "n_points n_points"] | None = None,
         lr: float = 1e-2,
         burn_in_lr: float = 1e-3,
         curvature_lr: float = 0.0,  # Off by default
@@ -67,7 +67,7 @@ class BaseEmbedder(BaseEstimator, TransformerMixin, ABC):
 
     @abstractmethod
     def transform(
-        self, X: Optional[Float[torch.Tensor, "n_points n_features"]]
+        self, X: Float[torch.Tensor, "n_points n_features"] | None
     ) -> Float[torch.Tensor, "n_points embedding_dim"]:
         """Apply embedding to new data. Not defined for coordinate learning.
 
@@ -81,8 +81,8 @@ class BaseEmbedder(BaseEstimator, TransformerMixin, ABC):
 
     def fit_transform(
         self,
-        X: Optional[Float[torch.Tensor, "n_points n_features"]] = None,
-        D: Optional[Float[torch.Tensor, "n_points n_points"]] = None,
+        X: Float[torch.Tensor, "n_points n_features"] | None = None,
+        D: Float[torch.Tensor, "n_points n_points"] | None = None,
         **fit_kwargs: Any,
     ) -> Float[torch.Tensor, "n_points embedding_dim"]:
         """Fit the embedder and transform the data in one step.

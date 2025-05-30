@@ -1,20 +1,21 @@
 """Implementation for direct coordinate optimization in Riemannian manifolds.
 
 This module provides functions for learning optimal embeddings in product manifolds by directly optimizing the
-coordinates using Riemannian optimization. This approach is particularly useful for embedding graphs using metric learning
-to maintain pairwise distances in the target space. The optimization is performed using Riemannian gradient descent
-with support for non-transductive training, in which gradients from the test set to the training set are masked out.
+coordinates using Riemannian optimization. This approach is particularly useful for embedding graphs using metric
+learning to maintain pairwise distances in the target space. The optimization is performed using Riemannian gradient
+descent with support for non-transductive training, in which gradients from the test set to the training set are masked
+out.
 """
 
 from __future__ import annotations
 
 import sys
 import warnings
-from typing import Any, Dict, List, Optional
 
 import geoopt
 import numpy as np
 import torch
+from beartype.typing import Any
 from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
@@ -62,7 +63,7 @@ class CoordinateLearning(BaseEmbedder):
         device: Optional device for tensor computations.
     """
 
-    def __init__(self, pm: ProductManifold, random_state: Optional[int] = None, device: Optional[str] = None) -> None:
+    def __init__(self, pm: ProductManifold, random_state: int | None = None, device: str | None = None) -> None:
         super().__init__(pm=pm, random_state=random_state, device=device)
 
     def fit(  # type: ignore[override]
@@ -105,7 +106,8 @@ class CoordinateLearning(BaseEmbedder):
             raise ValueError("Distance matrix D is needed for coordinate learning")
         if X is not None:
             warnings.warn(
-                "Input X has been given. This will be ignored during fitting. If you have provided a distance matrix, please run embedder.fit(None, D) instead."
+                "Input X has been given. This will be ignored during fitting. If you have provided a distance matrix,"
+                "please run embedder.fit(None, D) instead."
             )
 
         # Set random seed if provided
@@ -115,7 +117,7 @@ class CoordinateLearning(BaseEmbedder):
         # Move everything to the device; initialize random embeddings
         n = D.shape[0]
         covs = [torch.stack([torch.eye(M.dim) / self.pm.dim] * n).to(self.device) for M in self.pm.P]
-        means = torch.stack([self.pm.mu0] * n).to(self.device)
+        means = torch.vstack([self.pm.mu0] * n).to(self.device)
         X_embed, _ = self.pm.sample(z_mean=means, sigma_factorized=covs)
         D = D.to(self.device)
 
@@ -134,7 +136,7 @@ class CoordinateLearning(BaseEmbedder):
         my_tqdm = tqdm(total=burn_in_iterations + training_iterations, leave=False)
 
         # Outer training loop - mostly setting optimizer learning rates up here
-        losses: Dict[str, List[float]] = {"train_train": [], "test_test": [], "train_test": [], "total": []}
+        losses: dict[str, list[float]] = {"train_train": [], "test_test": [], "train_test": [], "total": []}
 
         # Actual training loop
         for i in range(burn_in_iterations + training_iterations):

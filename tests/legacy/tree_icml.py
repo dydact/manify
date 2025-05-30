@@ -1,6 +1,6 @@
 """Roll back to ICML version of the tree code, which I know works"""
 
-from typing import Tuple, Optional, Literal
+from beartype.typing import Tuple, Optional, Literal
 import torch
 
 # from joblib import Parallel, delayed

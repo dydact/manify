@@ -11,7 +11,6 @@ The SiameseNetwork class supports both encoding (embedding) data into a manifold
 from __future__ import annotations
 
 import sys
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -59,10 +58,10 @@ class SiameseNetwork(BaseEmbedder, torch.nn.Module):
         self,
         pm: ProductManifold,
         encoder: torch.nn.Module,
-        decoder: Optional[torch.nn.Module] = None,
+        decoder: torch.nn.Module | None = None,
         reconstruction_loss: str = "mse",
         beta: float = 1.0,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         device: str = "cpu",
     ):
         # Init both base classes

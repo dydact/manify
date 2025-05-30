@@ -36,8 +36,7 @@ If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional
-
+from beartype.typing import Any, Callable
 from geoopt import ManifoldParameter, ManifoldTensor
 from geoopt.optim.mixin import OptimMixin
 from jaxtyping import Float
@@ -62,7 +61,7 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
         weight decay (L2 penalty) (default: 0)
     """
 
-    def step(self, closure: Optional[Callable[[], Float[torch.Tensor]]] = None) -> Optional[Float[torch.Tensor, "1"]]:
+    def step(self, closure: Callable | None = None) -> Float[torch.Tensor, ""] | None:
         loss = None
         if closure is not None:
             loss = closure()
@@ -147,7 +146,7 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
         return loss
 
     @torch.no_grad()  # type: ignore
-    def stabilize_group(self, group: Dict[str, Any]) -> None:
+    def stabilize_group(self, group: dict[str, Any]) -> None:
         for p in group["params"]:
             if not isinstance(p, (ManifoldParameter, ManifoldTensor)):
                 continue

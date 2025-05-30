@@ -20,10 +20,9 @@ If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Union
-
 import numpy as np
 import torch
+from beartype.typing import Literal
 from geoopt import ManifoldParameter
 from geoopt.optim import RiemannianAdam
 from jaxtyping import Float, Int
@@ -66,13 +65,13 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
     def __init__(
         self,
         n_clusters: int,
-        manifold: Union[Manifold, ProductManifold],
+        manifold: Manifold | ProductManifold,
         m: float = 2.0,
         lr: float = 0.1,
         max_iter: int = 100,
         tol: float = 1e-4,
         optimizer: Literal["adan", "adam"] = "adan",
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         verbose: bool = False,
     ):
         self.n_clusters = n_clusters

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional
-
 import cvxpy
 import numpy as np
 import torch
+from beartype.typing import Literal
 from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -20,7 +19,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         pm: ProductManifold,
-        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
+        weights: Float[torch.Tensor, "n_manifolds"] | None = None,
         h_constraints: bool = True,
         e_constraints: bool = True,
         s_constraints: bool = True,
@@ -39,11 +38,7 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(
-        self,
-        X: Float[torch.Tensor, "n_samples n_manifolds"],
-        y: Int[torch.Tensor, "n_samples"],
-    ) -> None:
+    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
         """Trains the SVM model using the provided data and labels.
 
         Args:

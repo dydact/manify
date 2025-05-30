@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Literal, Optional
 
 import numpy as np
 import torch
+from beartype.typing import Literal, TypeAlias
 from jaxtyping import Float, Real
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -23,7 +23,7 @@ from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
 
-MODELTYPE = Literal[
+MODELTYPE: TypeAlias = Literal[
     "sklearn_dt",
     "sklearn_rf",
     "product_dt",
@@ -45,21 +45,25 @@ MODELTYPE = Literal[
     "kappa_mlr",
     "single_manifold_rf",
 ]
-SCORETYPE = Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse", "time"]
-TASKTYPE = Literal["classification", "regression", "link_prediction"]
+SCORETYPE: TypeAlias = Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse", "time"]
+TASKTYPE: TypeAlias = Literal["classification", "regression", "link_prediction"]
 
 
 def _score(
-    _X: Float[torch.Tensor, "n_samples n_dims"],
-    _y: Real[torch.Tensor, "n_samples,"],
-    model: BaseEstimator,
-    y_pred_override: Optional[Real[torch.Tensor, "n_samples,"]] = None,
+    _X: Float[torch.Tensor | np.ndarray, "batch dim"] | None,
+    _y: Real[np.ndarray, "batch"],
+    model: BaseEstimator | torch.nn.Module | None,
+    y_pred_override: Real[torch.Tensor, "batch"] | None = None,
     use_torch: bool = False,
-    score: Optional[List[SCORETYPE]] = None,
-) -> Dict[SCORETYPE, float]:
+    score: list[SCORETYPE] | None = None,
+) -> dict[SCORETYPE, float]:
     if score is None:
         score = ["accuracy", "f1-micro"]
-    y_pred = y_pred_override if y_pred_override is not None else model.predict(_X)
+    if y_pred_override is not None:
+        y_pred = y_pred_override
+    else:
+        assert model is not None, "Model must be provided if y_pred_override is not given"
+        y_pred = model.predict(_X)
     if use_torch:
         y_pred = y_pred.detach().cpu().numpy()
     scoring_funcs = {
@@ -75,34 +79,34 @@ def _score(
 
 def benchmark(
     X: Float[torch.Tensor, "batch dim"],
-    y: Real[torch.Tensor, "batch,"],
+    y: Real[torch.Tensor, "batch"],
     pm: ProductManifold,
     device: Literal["cpu", "cuda", "mps"] = "cpu",
-    score: Optional[List[SCORETYPE]] = None,
-    models: Optional[List[MODELTYPE]] = None,
+    score: list[SCORETYPE] | None = None,
+    models: list[MODELTYPE] | None = None,
     max_depth: int = 5,
     n_estimators: int = 12,
     min_samples_split: int = 2,
     min_samples_leaf: int = 1,
     task: TASKTYPE = "classification",
-    seed: Optional[int] = None,
+    seed: int | None = None,
     use_special_dims: bool = False,
     n_features: Literal["d", "d_choose_2"] = "d_choose_2",
-    X_train: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
-    X_test: Optional[Float[torch.Tensor, "n_samples n_manifolds"]] = None,
-    y_train: Optional[Real[torch.Tensor, "n_samples,"]] = None,
-    y_test: Optional[Real[torch.Tensor, "n_samples,"]] = None,
-    batch_size: Optional[int] = None,
-    adj: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
-    A_train: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
-    A_test: Optional[Float[torch.Tensor, "n_samples n_samples"]] = None,
-    hidden_dims: Optional[List[int]] = None,
+    X_train: Float[torch.Tensor, "n_samples n_manifolds"] | None = None,
+    X_test: Float[torch.Tensor, "n_samples n_manifolds"] | None = None,
+    y_train: Real[torch.Tensor, "n_samples"] | None = None,
+    y_test: Real[torch.Tensor, "n_samples"] | None = None,
+    batch_size: int | None = None,
+    adj: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
+    A_train: Float[torch.Tensor, "n_samples n_samples"] | None = None,
+    A_test: Float[torch.Tensor, "n_samples n_samples"] | None = None,
+    hidden_dims: list[int] | None = None,
     epochs: int = 4_000,
     lr: float = 1e-4,
     kappa_gcn_layers: int = 1,
-    lp_train_idx: Optional[Float[torch.Tensor, "n_samples"]] = None,
-    lp_test_idx: Optional[Float[torch.Tensor, "n_samples"]] = None,
-) -> Dict[str, float]:
+    lp_train_idx: Float[torch.Tensor, "n_samples"] | None = None,
+    lp_test_idx: Float[torch.Tensor, "n_samples"] | None = None,
+) -> dict[str, float]:
     """Benchmarks various machine learning models on Riemannian manifold datasets.
 
     Evaluates and compares different machine learning models on datasets with a
@@ -273,7 +277,7 @@ def benchmark(
     X_test_stereo = X_test_stereo.detach()
 
     # Also euclidean """PM"""
-    pm_euc = ProductManifold(signature=[(0, X.shape[1])], device=device, stereographic=True)
+    pm_euc = ProductManifold(signature=[(0.0, X.shape[1])], device=device, stereographic=True)
 
     # Get A_hat
     if adj is not None:

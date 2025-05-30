@@ -1,7 +1,6 @@
-from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, delta_hyperbolicity
+from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
 from manify.manifolds import ProductManifold
 import torch
-from jaxtyping import Float
 
 
 def iterative_delta_hyperbolicity(D, reference_idx=0, relative=True):
@@ -37,8 +36,8 @@ def gromov_product(i, j, k, D):
 
 def test_delta_hyperbolicity():
     torch.manual_seed(42)
-    pm = ProductManifold(signature=[(-1, 2)])
-    X, _ = pm.sample(z_mean=torch.stack([pm.mu0] * 10))
+    pm = ProductManifold(signature=[(-1.0, 2)])
+    X, _ = pm.sample(z_mean=torch.vstack([pm.mu0] * 10))
     dists = pm.pdist(X)
     dists_max = dists.max()
 
@@ -51,7 +50,7 @@ def test_delta_hyperbolicity():
     assert iterative_deltas.shape == (10, 10, 10)
 
     # Vectorized deltas
-    vectorized_deltas = delta_hyperbolicity(dists, full=True, relative=True)
+    vectorized_deltas = vectorized_delta_hyperbolicity(dists, full=True, relative=True)
     assert (vectorized_deltas <= 1).all(), "Deltas should be in the range [-2, 1]"
     assert (vectorized_deltas >= -2).all(), "Deltas should be in the range [-2, 1]"
     assert vectorized_deltas.shape == (10, 10, 10)

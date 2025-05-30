@@ -18,7 +18,7 @@ limitations under the License.
 """
 
 import math
-from typing import List
+from beartype.typing import List
 
 import torch
 from torch import Tensor

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import torch
 from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -20,12 +18,12 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         pm: ProductManifold,
         max_epochs: int = 1_000,
         patience: int = 5,
-        weights: Optional[Float[torch.Tensor, "n_manifolds"]] = None,
+        weights: Float[torch.Tensor, "n_manifolds"] | None = None,
     ):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
-        self.classes_: List[int] = []
+        self.classes_: list[int] = []
         if weights is None:
             self.weights = torch.ones(len(pm.P), dtype=torch.float32)
         else:

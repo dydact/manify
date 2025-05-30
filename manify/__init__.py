@@ -1,15 +1,11 @@
 """Manify: A Python Library for Learning Non-Euclidean Representations."""
 
-from jaxtyping import install_import_hook
+if os.getenv("BEARTYPE_ENABLE", "false").lower() == "true":
+    from jaxtyping import install_import_hook
 
-install_import_hook("manify", "beartype.beartype")
+    install_import_hook("manify", "beartype.beartype")
 
-from manify.curvature_estimation import (
-    delta_hyperbolicity,
-    greedy_signature_selection,
-    sampled_delta_hyperbolicity,
-    sectional_curvature,
-)
+from manify.curvature_estimation import greedy_signature_selection, sampled_delta_hyperbolicity, sectional_curvature
 from manify.embedders import CoordinateLearning, ProductSpaceVAE, SiameseNetwork
 from manify.manifolds import Manifold, ProductManifold
 from manify.predictors import KappaGCN, ProductSpaceDT, ProductSpacePerceptron, ProductSpaceRF, ProductSpaceSVM

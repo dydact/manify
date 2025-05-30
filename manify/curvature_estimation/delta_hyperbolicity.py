@@ -11,15 +11,13 @@ This module provides two implementations:
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import torch
-from jaxtyping import Float
+from jaxtyping import Float, Int
 
 
 def sampled_delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], n_samples: int = 1000, reference_idx: int = 0, relative: bool = True
-) -> Tuple[Float[torch.Tensor, "n_samples"], Float[torch.Tensor, "n_samples 3"]]:
+) -> tuple[Float[torch.Tensor, "n_samples"], Int[torch.Tensor, "n_samples 3"]]:
     r"""Computes $\delta$-hyperbolicity by sampling random point triplets.
 
     For large metric spaces, this approximates $\delta$-hyperbolicity by randomly sampling triplets. For each triplet

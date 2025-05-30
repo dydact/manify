@@ -8,7 +8,9 @@ from jaxtyping import Float
 from ..manifolds import Manifold
 
 
-def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> Float[torch.Tensor, ""]:
+def hyperbolic_midpoint(
+    u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""], assert_hyperbolic: bool = False
+) -> Float[torch.Tensor, ""]:
     """Compute the hyperbolic midpoint between two angular coordinates u and v.
 
     Args:
@@ -29,7 +31,7 @@ def hyperbolic_midpoint(u: float, v: float, assert_hyperbolic: bool = False) -> 
     return m
 
 
-def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
+def is_hyperbolic_midpoint(u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""], m: Float[torch.Tensor, ""]) -> bool:
     r"""Verify if $\mathbf{m}$ is the true hyperbolic midpoint between $\mathbf{u}$ and $\mathbf{v}$.
 
     Args:
@@ -45,7 +47,7 @@ def is_hyperbolic_midpoint(u: float, v: float, m: float) -> bool:
     return torch.isclose(d(u, m), d(m, v))  # type: ignore
 
 
-def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
+def spherical_midpoint(u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""]) -> Float[torch.Tensor, ""]:
     """Compute the spherical midpoint between two angular coordinates u and v.
 
     Args:
@@ -58,7 +60,7 @@ def spherical_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
     return (u + v) / 2.0
 
 
-def euclidean_midpoint(u: float, v: float) -> Float[torch.Tensor, ""]:
+def euclidean_midpoint(u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""]) -> Float[torch.Tensor, ""]:
     """Compute the euclidean midpoint between two angular coordinates u and v.
 
     Args:

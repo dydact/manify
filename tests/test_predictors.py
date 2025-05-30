@@ -61,7 +61,7 @@ def _test_kappa_gcn_model(model, X_train, X_test, y_train, y_test, pm, task="cla
 
 def test_all_classifiers():
     print("Testing basic classifier functionality")
-    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
     X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
@@ -85,7 +85,7 @@ def test_all_classifiers():
 
 def test_all_regressors():
     print("Testing basic regressor functionality")
-    pm = ProductManifold(signature=[(-1, 2), (0, 2), (1, 2)])
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
     X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42, task="regression")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 

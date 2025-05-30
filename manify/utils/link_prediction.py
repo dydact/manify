@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
-
 import torch
+from beartype.typing import Any
 from jaxtyping import Float, Int
 from sklearn.model_selection import train_test_split
 
@@ -16,7 +15,7 @@ def make_link_prediction_dataset(
     pm: ProductManifold,
     adj: Float[torch.Tensor, "batch batch"],
     add_dists: bool = True,
-) -> Tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
+) -> tuple[Float[torch.Tensor, "batch**2 n_dim*2"], Float[torch.Tensor, "batch**2"], ProductManifold]:
     r"""Preprocess a graph link prediction task into a binary classification problem on a new product manifold.
 
     This function constructs a dataset for link prediction by creating pairwise embeddings from the input node
@@ -62,9 +61,9 @@ def split_dataset(
     X: Float[torch.Tensor, "n_pairs n_dims"],
     y: Int[torch.Tensor, "n_pairs"],
     test_size: float = 0.2,
-    downsample: Optional[int] = None,
+    downsample: int | None = None,
     **kwargs: Any,
-) -> Tuple[
+) -> tuple[
     Float[torch.Tensor, "n_pairs n_dims"],
     Float[torch.Tensor, "n_pairs n_dims"],
     Int[torch.Tensor, "n_pairs"],

@@ -33,18 +33,16 @@ Earlier versions of Manify included scripts to process raw data, which we have r
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import torch
 from datasets import load_dataset
-from jaxtyping import Float
+from jaxtyping import Float, Real
 
 
-def load_hf(name: str, namespace: str = "manify") -> Tuple[
-    Optional[Float[torch.Tensor, "n_points n_features"]],  # features
-    Optional[Float[torch.Tensor, "n_points n_points"]],  # pairwise dists
-    Optional[Float[torch.Tensor, "n_points n_points"]],  # adjacency labels
-    Optional[Float[torch.Tensor, "n_points"]],  # labels
+def load_hf(name: str, namespace: str = "manify") -> tuple[
+    Float[torch.Tensor, "n_points ..."] | None,  # features
+    Float[torch.Tensor, "n_points n_points"] | None,  # pairwise dists
+    Float[torch.Tensor, "n_points n_points"] | None,  # adjacency labels
+    Real[torch.Tensor, "n_points"] | None,  # labels
 ]:
     """Load a dataset from HuggingFace Hub at {namespace}/{name}.
 

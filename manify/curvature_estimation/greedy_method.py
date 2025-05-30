@@ -6,8 +6,6 @@ This module implements the greedy signature selection approach described in Taba
 
 from __future__ import annotations
 
-from typing import Any, Tuple
-
 import torch
 from jaxtyping import Float
 
@@ -17,9 +15,9 @@ from ..manifolds import ProductManifold
 def greedy_signature_selection(
     pm: ProductManifold,
     dists: Float[torch.Tensor, "n_points n_points"],
-    candidate_components: Tuple[Tuple[float, int], ...] = ((-1.0, 2), (0.0, 2), (1.0, 2)),
+    candidate_components: tuple[tuple[float, int], ...] = ((-1.0, 2), (0.0, 2), (1.0, 2)),
     max_components: int = 3,
-) -> Any:
+) -> None:
     r"""Greedily estimates an optimal product manifold signature.
 
     This implements the greedy signature selection algorithm that incrementally builds a product manifold

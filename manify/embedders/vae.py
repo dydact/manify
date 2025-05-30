@@ -11,7 +11,6 @@ For more information, see Skopek et al (2020): Mixed Curvature Variational Autoe
 from __future__ import annotations
 
 import sys
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -74,7 +73,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         pm: ProductManifold,
         encoder: torch.nn.Module,
         decoder: torch.nn.Module,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
         device: str = "cpu",
         beta: float = 1.0,
         reconstruction_loss: torch.nn.modules.loss._Loss = torch.nn.MSELoss(reduction="none"),
@@ -102,7 +101,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
 
     def encode(
         self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"]]:
+    ) -> tuple[Float[torch.Tensor, "batch_size n_latent"], Float[torch.Tensor, "batch_size n_latent"]]:
         r"""Encodes input data to obtain latent means and log-variances in the manifold.
 
         This method processes input data through the encoder network to obtain parameters of the approximate posterior
@@ -140,10 +139,10 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         """
         return self.decoder(z)
 
-    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> Tuple[
+    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> tuple[
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_ambient"],
-        List[Float[torch.Tensor, "n_latent n_latent"]],
+        list[Float[torch.Tensor, "batch_size n_latent n_latent"]],
     ]:
         r"""Performs the forward pass of the VAE in product manifold space.
 
@@ -181,7 +180,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
     def kl_divergence(
         self,
         z_mean: Float[torch.Tensor, "batch_size n_latent"],
-        sigma_factorized: List[Float[torch.Tensor, "n_latent n_latent"]],
+        sigma_factorized: list[Float[torch.Tensor, "batch_size manifold_dim manifold_dim"]],
     ) -> Float[torch.Tensor, "batch_size"]:
         r"""Computes the KL divergence between posterior and prior distributions in the manifold.
 
@@ -214,7 +213,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
 
     def elbo(
         self, x: Float[torch.Tensor, "batch_size n_features"]
-    ) -> Tuple[Float[torch.Tensor, ""], Float[torch.Tensor, ""], Float[torch.Tensor, ""]]:
+    ) -> tuple[Float[torch.Tensor, ""], Float[torch.Tensor, ""], Float[torch.Tensor, ""]]:
         r"""Computes the Evidence Lower Bound (ELBO) for the VAE objective.
 
         The ELBO is the standard objective function for variational autoencoders, consisting of a reconstruction term

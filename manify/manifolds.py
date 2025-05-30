@@ -10,11 +10,11 @@ include methods for different key geometric operations, and are built on top of 
 from __future__ import annotations
 
 import warnings
-from typing import Callable, List, Literal, Optional, Tuple
 
 import geoopt
 import torch
-from jaxtyping import Float
+from beartype.typing import Callable, Literal
+from jaxtyping import Float, Real
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributions")  # Singular samples from Wishart
 
@@ -94,7 +94,7 @@ class Manifold:
         # Couple of assertions to check
         assert self.manifold.check_point(self.mu0)
 
-    def to(self, device: str) -> "Manifold":
+    def to(self, device: str) -> Manifold:
         """Move the Manifold object to a specified device.
 
         Args:
@@ -208,9 +208,9 @@ class Manifold:
 
     def sample(
         self,
-        z_mean: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
-        sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
-    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
+        z_mean: Float[torch.Tensor, "n_points n_ambient_dim"] | None = None,
+        sigma: Float[torch.Tensor, "n_points n_dim n_dim"] | None = None,
+    ) -> tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
         """Sample points from the variational distribution on the manifold.
 
         Args:
@@ -260,8 +260,8 @@ class Manifold:
     def log_likelihood(
         self,
         z: Float[torch.Tensor, "n_points n_ambient_dim"],
-        mu: Optional[Float[torch.Tensor, "n_points n_ambient_dim"]] = None,
-        sigma: Optional[Float[torch.Tensor, "n_points n_dim n_dim"]] = None,
+        mu: Float[torch.Tensor, "n_points n_ambient_dim"] | None = None,
+        sigma: Float[torch.Tensor, "n_points n_dim n_dim"] | None = None,
     ) -> Float[torch.Tensor, "n_points"]:
         r"""Compute probability density function for $\mathcal{WN}(\mathbf{z}; \mu, \Sigma)$ on the manifold.
 
@@ -314,7 +314,9 @@ class Manifold:
         return ll - (n - 1) * torch.log(R * torch.abs(sin_M(u_norm / R) / u_norm) + 1e-8)
 
     def logmap(
-        self, x: Float[torch.Tensor, "n_points n_dim"], base: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
+        self,
+        x: Float[torch.Tensor, "n_points n_dim"],
+        base: Float[torch.Tensor, "n_points n_dim"] | Float[torch.Tensor, "1 n_dim"] | None = None,
     ) -> Float[torch.Tensor, "n_points n_dim"]:
         """Compute the logarithmic map of points on the manifold at a base point.
 
@@ -330,7 +332,9 @@ class Manifold:
         return self.manifold.logmap(x=base, y=x)
 
     def expmap(
-        self, u: Float[torch.Tensor, "n_points n_dim"], base: Optional[Float[torch.Tensor, "n_points n_dim"]] = None
+        self,
+        u: Float[torch.Tensor, "n_points n_dim"],
+        base: Float[torch.Tensor, "n_points n_dim"] | Float[torch.Tensor, "1 n_dim"] | None = None,
     ) -> Float[torch.Tensor, "n_points n_dim"]:
         r"""Compute the exponential map of a tangent vector $\mathbf{u}$ at base point.
 
@@ -346,7 +350,7 @@ class Manifold:
             base = self.mu0
         return self.manifold.expmap(x=base, u=u)
 
-    def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> Tuple["Manifold", ...]:
+    def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> tuple[Manifold, ...]:
         r"""Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
 
         Formula for stereographic projection (for $i \geq 1$):
@@ -384,7 +388,7 @@ class Manifold:
 
         return stereo_manifold, *stereo_points
 
-    def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> Tuple["Manifold", ...]:
+    def inverse_stereographic(self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]) -> tuple[Manifold, ...]:
         r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
 
         If points are given, convert them as well.
@@ -499,7 +503,7 @@ class ProductManifold(Manifold):
         stereographic: Whether to use stereographic coordinates.
     """
 
-    def __init__(self, signature: List[Tuple[float, int]], device: str = "cpu", stereographic: bool = False):
+    def __init__(self, signature: list[tuple[float, int]], device: str = "cpu", stereographic: bool = False):
         # Device management
         self.device = device
 
@@ -546,7 +550,7 @@ class ProductManifold(Manifold):
             for j, k in zip(intrinsic_dims, ambient_dims[-len(intrinsic_dims) :]):
                 self.projection_matrix[j, k] = 1.0
 
-    def parameters(self) -> List[torch.nn.parameter.Parameter]:
+    def parameters(self) -> list[torch.nn.parameter.Parameter]:
         """Get scale parameters for all component manifolds.
 
         Returns:
@@ -554,7 +558,7 @@ class ProductManifold(Manifold):
         """
         return [x._log_scale for x in self.manifold.manifolds]
 
-    def to(self, device: str) -> "ProductManifold":
+    def to(self, device: str) -> ProductManifold:
         """Move all components to a new device.
 
         Args:
@@ -589,7 +593,7 @@ class ProductManifold(Manifold):
 
     def factorize(
         self, X: Float[torch.Tensor, "n_points n_dim"], intrinsic: bool = False
-    ) -> List[Float[torch.Tensor, "n_points n_dim_manifold"]]:
+    ) -> list[Float[torch.Tensor, "n_points n_dim_manifold"]]:
         """Factorize the embeddings into the individual manifolds.
 
         Args:
@@ -604,9 +608,9 @@ class ProductManifold(Manifold):
 
     def sample(
         self,
-        z_mean: Optional[Float[torch.Tensor, "n_points n_dim"]] = None,
-        sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
-    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
+        z_mean: Float[torch.Tensor, "n_points n_ambient_dim"] | None = None,
+        sigma_factorized: list[Float[torch.Tensor, "n_points ..."]] | None = None,  # TODO: fix ... annotations
+    ) -> tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points total_intrinsic_dim"]]:
         """Sample from the variational distribution.
 
         Args:
@@ -646,8 +650,8 @@ class ProductManifold(Manifold):
     def log_likelihood(
         self,
         z: Float[torch.Tensor, "batch_size n_dim"],
-        mu: Optional[Float[torch.Tensor, "n_dim"]] = None,
-        sigma_factorized: Optional[List[Float[torch.Tensor, "n_points n_dim_manifold n_dim_manifold"]]] = None,
+        mu: Float[torch.Tensor, "batch_size n_dim"] | None = None,
+        sigma_factorized: list[Float[torch.Tensor, "batch_size ..."]] | None = None,
     ) -> Float[torch.Tensor, "batch_size"]:
         r"""Compute probability density function for $\mathcal{WN}(\mathbf{z} ; \mu, \Sigma)$ on the product manifold.
 
@@ -663,7 +667,7 @@ class ProductManifold(Manifold):
         """
         n = z.shape[0]
         if mu is None:
-            mu = torch.stack([self.mu0] * n).to(self.device)
+            mu = torch.vstack([self.mu0] * n).to(self.device)
 
         if sigma_factorized is None:
             sigma_factorized = [torch.stack([torch.eye(M.dim)] * n) for M in self.P]
@@ -677,7 +681,7 @@ class ProductManifold(Manifold):
         ]
         return torch.cat(component_lls, axis=1).sum(axis=1)
 
-    def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> Tuple["ProductManifold", ...]:
+    def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> tuple[ProductManifold, ...]:
         r"""Convert the manifold to its stereographic equivalent. If points are given, convert them as well.
 
         Formula for stereographic projection (for $i \geq 1$):
@@ -711,7 +715,7 @@ class ProductManifold(Manifold):
 
     def inverse_stereographic(
         self, *points: Float[torch.Tensor, "n_points n_dim_stereo"]
-    ) -> Tuple["ProductManifold", ...]:
+    ) -> tuple[ProductManifold, ...]:
         r"""Convert the manifold from its stereographic coordinates back to the original coordinates.
 
         If points are given, convert them as well.
@@ -749,14 +753,14 @@ class ProductManifold(Manifold):
         self,
         num_points: int = 1_000,
         num_classes: int = 2,
-        num_clusters: Optional[int] = None,
-        seed: Optional[int] = None,
+        num_clusters: int | None = None,
+        seed: int | None = None,
         cov_scale_means: float = 1.0,
         cov_scale_points: float = 1.0,
         regression_noise_std: float = 0.1,
         task: Literal["classification", "regression"] = "classification",
         adjust_for_dims: bool = False,
-    ) -> Tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points"]]:
+    ) -> tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Real[torch.Tensor, "n_points"]]:
         """Generate a set of labeled samples from a Gaussian mixture model.
 
         Args:
@@ -791,7 +795,7 @@ class ProductManifold(Manifold):
 
         # Generate cluster means
         cluster_means, _ = self.sample(
-            z_mean=torch.stack([self.mu0] * num_clusters),
+            z_mean=torch.vstack([self.mu0] * num_clusters),
             sigma_factorized=[torch.stack([torch.eye(M.dim)] * num_clusters) * cov_scale_means for M in self.P],
         )
         assert cluster_means.shape == (num_clusters, self.ambient_dim)

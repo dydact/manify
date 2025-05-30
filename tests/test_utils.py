@@ -5,7 +5,7 @@ from manify.manifolds import ProductManifold
 
 def test_benchmark():
     print("Testing benchmark")
-    pm = ProductManifold(signature=[(-1, 4), (-1, 2), (0, 2), (1, 2), (1, 4)])
+    pm = ProductManifold(signature=[(-1.0, 4), (-1.0, 2), (0.0, 2), (1.0, 2), (1.0, 4)])
     X, y = pm.gaussian_mixture(num_points=100)
     out = benchmark(X, y, pm, task="classification", epochs=10)
     target_keys = set(

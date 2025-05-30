@@ -7,18 +7,18 @@ and other evaluation measures for both graph and general embedding tasks.
 
 from __future__ import annotations
 
-from typing import List
-
 import networkx as nx
 import torch
 from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 
+# TODO: Fix shape annotations for Float tensors with "..." placeholders
+
 
 def distortion_loss(
-    D_est: Float[torch.Tensor, "n_points n_points"],
-    D_true: Float[torch.Tensor, "n_points n_points"],
+    D_est: Float[torch.Tensor, "..."],
+    D_true: Float[torch.Tensor, "..."],
     pairwise: bool = False,
 ) -> Float[torch.Tensor, ""]:
     r"""Computes the distortion loss between estimated and true squared distances.
@@ -59,8 +59,8 @@ def distortion_loss(
 
 
 def d_avg(
-    D_est: Float[torch.Tensor, "n_points n_points"],
-    D_true: Float[torch.Tensor, "n_points n_points"],
+    D_est: Float[torch.Tensor, "..."],
+    D_true: Float[torch.Tensor, "..."],
     pairwise: bool = False,
 ) -> Float[torch.Tensor, ""]:
     r"""Computes the average relative distance error (D_avg).
@@ -102,7 +102,9 @@ def d_avg(
     return torch.mean(torch.abs(D_est - D_true) / D_true)
 
 
-def mean_average_precision(x_embed: Float[torch.Tensor, "n_points n_dim"], graph: nx.Graph) -> Float[torch.Tensor, ""]:
+def mean_average_precision(
+    x_embed: Float[torch.Tensor, "n_points_dists n_dim"], graph: nx.Graph
+) -> Float[torch.Tensor, ""]:
     r"""Computes the mean average precision (mAP) for graph embedding evaluation.
 
     This metric is used to evaluate how well an embedding preserves the neighborhood structure of a graph, as described
@@ -121,7 +123,9 @@ def mean_average_precision(x_embed: Float[torch.Tensor, "n_points n_dim"], graph
     raise NotImplementedError
 
 
-def dist_component_by_manifold(pm: ProductManifold, x_embed: Float[torch.Tensor, "n_points n_dim"]) -> List[float]:
+def dist_component_by_manifold(
+    pm: ProductManifold, x_embed: Float[torch.Tensor, "n_points_dists n_dim"]
+) -> list[float]:
     r"""Computes the proportion of variance in pairwise distances explained by each manifold component.
 
     The contribution is calculated as the ratio of the sum of squared distances in each component to the total squared

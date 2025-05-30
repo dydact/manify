@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 
 import torch
+from beartype.typing import Literal
 from jaxtyping import Float
 from sklearn.base import BaseEstimator
 
@@ -32,8 +32,8 @@ class BasePredictor(BaseEstimator, ABC):
         self,
         pm: ProductManifold,
         task: Literal["classification", "regression"],
-        random_state: Optional[int] = None,
-        device: Optional[str] = None,
+        random_state: int | None = None,
+        device: str | None = None,
     ) -> None:
         self.pm = pm
         self.task = task
@@ -59,7 +59,7 @@ class BasePredictor(BaseEstimator, ABC):
 
     @abstractmethod
     def predict_proba(
-        self, X: Optional[Float[torch.Tensor, "n_points n_features"]]
+        self, X: Float[torch.Tensor, "n_points n_features"] | None = None
     ) -> Float[torch.Tensor, "n_points n_classes"]:
         """Compute the predicted probabilities for the given features.
 
@@ -72,7 +72,7 @@ class BasePredictor(BaseEstimator, ABC):
         pass
 
     def predict(
-        self, X: Optional[Float[torch.Tensor, "n_points n_features"]]
+        self, X: Float[torch.Tensor, "n_points n_features"] | None = None
     ) -> Float[torch.Tensor, "n_points n_classes"]:
         """Compute the predicted classes for the given features.
 

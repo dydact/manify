@@ -5,10 +5,9 @@ For more information, see Chlenski et al. (2024): https://arxiv.org/abs/2410.138
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
-
 import torch
-from jaxtyping import Bool, Float, Int
+from beartype.typing import Any, Literal
+from jaxtyping import Bool, Float, Int, Real
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from ..manifolds import ProductManifold
@@ -16,8 +15,8 @@ from ._midpoint import midpoint
 
 
 def _angular_greater(
-    queries: Float[torch.Tensor, "query_batch"], keys: Float[torch.Tensor, "key_batch"]
-) -> Bool[torch.Tensor, "query_batch key_batch"]:
+    queries: Float[torch.Tensor, "query_batch ..."], keys: Float[torch.Tensor, "key_batch ..."]
+) -> Bool[torch.Tensor, "query_batch key_batch ..."]:
     r"""Given an angle $\theta$, check whether a tensor of inputs is in $[\theta, \theta + \pi)$.
 
     Args:
@@ -33,7 +32,7 @@ def _angular_greater(
 
 def _get_info_gains(
     comparisons: Float[torch.Tensor, "query_batch dims key_batch"],
-    labels: Int[torch.Tensor, "query_batch n_classes"],
+    labels: Float[torch.Tensor, "query_batch n_classes"] | Float[torch.Tensor, "query_batch"],
     criterion: Literal["gini", "mse"] = "gini",
     min_values_leaf: int = 1,
     eps: float = 1e-10,
@@ -111,7 +110,7 @@ def _get_info_gains(
 
 def _get_info_gains_nobatch(
     angles: Float[torch.Tensor, "batch n_dims"],
-    labels: Int[torch.Tensor, "batch n_classes"],
+    labels: Float[torch.Tensor, "batch n_classes"] | Float[torch.Tensor, "batch"],
     criterion: Literal["gini", "mse"] = "gini",
     min_values_leaf: int = 1,
     eps: float = 1e-10,
@@ -181,18 +180,18 @@ def _get_info_gains_nobatch(
 def _get_split(
     mask: Bool[torch.Tensor, "query_batch"],
     angles: Float[torch.Tensor, "query_batch dims"],
-    comparisons: Bool[torch.Tensor, "query_batch dims key_batch"],
-    labels: Int[torch.Tensor, "query_batch n_classes"],
-) -> Tuple[
-    Tuple[
+    comparisons: Float[torch.Tensor, "query_batch dims key_batch"],
+    labels: Float[torch.Tensor, "query_batch n_classes"] | Float[torch.Tensor, "query_batch"],
+) -> tuple[
+    tuple[
         Float[torch.Tensor, "query_batch_neg dims"],
-        Bool[torch.Tensor, "query_batch_neg dims key_batch"],
-        Int[torch.Tensor, "query_batch_neg n_classes"],
+        Float[torch.Tensor, "query_batch_neg dims query_batch_neg"],
+        Float[torch.Tensor, "query_batch_neg n_classes"] | Float[torch.Tensor, "query_batch_neg"],
     ],
-    Tuple[
+    tuple[
         Float[torch.Tensor, "query_batch_pos dims"],
-        Bool[torch.Tensor, "query_batch_pos dims key_batch"],
-        Int[torch.Tensor, "query_batch_pos n_classes"],
+        Float[torch.Tensor, "query_batch_pos dims query_batch_pos"],
+        Float[torch.Tensor, "query_batch_pos n_classes"] | Float[torch.Tensor, "query_batch_pos"],
     ],
 ]:
     """Split tensors into negative and positive classes based on the mask.
@@ -241,12 +240,12 @@ class _DecisionNode:
 
     def __init__(
         self,
-        value: Union[float, int] = 0.0,
+        value: float | int = 0.0,
         probs: Float[torch.Tensor, "batch n_classes"] = torch.tensor([]),
         feature: int = 0,
         theta: float = 0.0,
-        left: Optional["_DecisionNode"] = None,
-        right: Optional["_DecisionNode"] = None,
+        left: _DecisionNode | None = None,
+        right: _DecisionNode | None = None,
     ):
         self.value = value
         self.probs = probs  # predicted class probabilities of all samples in the leaf
@@ -262,13 +261,13 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         pm: ProductManifold,
-        max_depth: Optional[int] = None,
+        max_depth: int | None = None,
         min_samples_leaf: int = 1,
         min_samples_split: int = 2,
         min_impurity_decrease: float = 0.0,
         task: Literal["classification", "regression", "link_prediction"] = "classification",
         use_special_dims: bool = False,
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
         n_features: Literal["d", "d_choose_2"] = "d",
         ablate_midpoints: bool = False,
     ):
@@ -316,12 +315,12 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.signature: List[Tuple[float, int]] = pm.signature  # The signature of the manifold
 
     def _preprocess(
-        self, X: Float[torch.Tensor, "batch ambient_dim"], y: Optional[Float[torch.Tensor, "batch"]] = None
-    ) -> Tuple[
-        Float[torch.Tensor, "batch intrinsic_dim"],
-        Int[torch.Tensor, "batch n_classes"],
-        Int[torch.Tensor, "n_classes"],
-        Float[torch.Tensor, "batch intrinsic_dim batch"],
+        self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"] | None = None
+    ) -> tuple[
+        Float[torch.Tensor, "batch intrinsic_dim"],  # angles
+        Float[torch.Tensor, "batch n_classes"] | Float[torch.Tensor, "batch"] | Float[torch.Tensor, "0"],  # labels
+        Int[torch.Tensor, "n_classes"] | Int[torch.Tensor, "0"],  # classes
+        Float[torch.Tensor, "batch intrinsic_dim batch"],  # comparisons
     ]:
         """Preprocessing function for the new version of ProductDT.
 
@@ -423,10 +422,10 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             n_classes = len(classes)
             labels = torch.nn.functional.one_hot(y_relabeled, num_classes=n_classes)
         elif y is not None and self.task == "regression":
-            classes = torch.tensor([])
+            classes = torch.tensor([], dtype=torch.int64)
             labels = y
         else:
-            classes = torch.tensor([])
+            classes = torch.tensor([], dtype=torch.int64)
             labels = torch.tensor([])
         labels = labels.to(dtype=X.dtype)
         comparisons_reshaped = comparisons_reshaped.to(dtype=X.dtype)
@@ -437,8 +436,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self,
         ig: Float[torch.Tensor, "query_batch dims"],
         angles: Float[torch.Tensor, "query_batch intrinsic_dim"],
-        comparisons: Bool[torch.Tensor, "query_batch dims key_batch"],
-    ) -> Tuple[Int[torch.Tensor, ""], Int[torch.Tensor, ""], Float[torch.Tensor, ""]]:
+        comparisons: Float[torch.Tensor, "query_batch dims key_batch"],
+    ) -> tuple[Int[torch.Tensor, ""], Int[torch.Tensor, ""], Float[torch.Tensor, ""]]:
         """All of the postprocessing for an information gain check.
 
         Args:
@@ -485,7 +484,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         return n, d, m
 
     @torch.no_grad()  # type: ignore
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> None:
         """Reworked fit function for new version of ProductDT.
 
         Args:
@@ -506,16 +505,11 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self.classes_ = classes
 
         # Fit node
-        self.tree = self._fit_node(
-            angles=angles,
-            labels=labels,
-            comparisons=comparisons_reshaped,
-            depth=self.max_depth,
-        )
+        self.tree = self._fit_node(angles=angles, labels=labels, comparisons=comparisons_reshaped, depth=self.max_depth)
 
     def _aggregate_special_dims(
         self, X: Float[torch.Tensor, "batch ambient_dim"]
-    ) -> Tuple[Float[torch.Tensor, "batch ambient_dim"], ProductManifold]:
+    ) -> tuple[Float[torch.Tensor, "batch ambient_dim"], ProductManifold]:
         special_dims = []
         for i, M in enumerate(self.pm.P):
             if M.type in ["H", "S"]:
@@ -529,8 +523,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
     def _fit_node(
         self,
         angles: Float[torch.Tensor, "batch intrinsic_dim"],
-        labels: Int[torch.Tensor, "batch n_classes"],
-        comparisons: Bool[torch.Tensor, "query_batch dim key_batch"],
+        labels: Float[torch.Tensor, "batch n_classes"] | Real[torch.Tensor, "batch"],
+        comparisons: Float[torch.Tensor, "query_batch dim key_batch"],
         depth: int,
     ) -> _DecisionNode:
         """Recursively fit product space decision tree nodes.
@@ -545,7 +539,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             node: The decision node created from the fitting process.
         """
 
-        def _halt(labels: Int[torch.Tensor, "batch"]) -> _DecisionNode:
+        def _halt(labels: Float[torch.Tensor, "batch n_classes"] | Real[torch.Tensor, "batch"]) -> _DecisionNode:
+            """Create a leaf node when halting conditions are met."""
             probs, value = self._leaf_values(labels)
             node = _DecisionNode(value=value.item(), probs=probs)
             self.nodes.append(node)
@@ -585,8 +580,8 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         return node
 
     def _leaf_values(
-        self, y: Float[torch.Tensor, "batch"]
-    ) -> Tuple[Float[torch.Tensor, "batch n_classes"], Float[torch.Tensor, "batch"]]:
+        self, y: Float[torch.Tensor, "batch n_classes"] | Float[torch.Tensor, "batch"]
+    ) -> tuple[Float[torch.Tensor, "n_classes"] | Float[torch.Tensor, ""], Real[torch.Tensor, ""]]:
         """Get majority class and class probabilities."""
         if self.task == "regression":
             return y.mean(), y.mean()
@@ -618,7 +613,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             angles = angles[:, self.permutations]
         return torch.vstack([self._traverse(angles_row, self.tree).probs for angles_row in angles])
 
-    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch"]:
+    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Real[torch.Tensor, "batch"]:
         """Predict class labels for samples in X."""
         if self.task == "classification":
             return self.classes_[self.predict_proba(X).argmax(dim=1)]
@@ -629,7 +624,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         self,
         X: Float[torch.Tensor, "batch intrinsic_dim"],
         y: Float[torch.Tensor, "batch"],
-        sample_weight: Union[Float[torch.Tensor, "batch"], float] = 1.0,
+        sample_weight: Float[torch.Tensor, "batch"] | float = 1.0,
     ) -> Float[torch.Tensor, "batch"]:
         """Return the mean accuracy on the given test data and labels."""
         if self.task == "classification":
@@ -647,7 +642,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         task: Literal["classification", "regression"] = "classification",
         use_special_dims: bool = False,
         n_features: Literal["d", "d_choose_2"] = "d",
-        max_depth: Optional[int] = None,
+        max_depth: int | None = None,
         min_samples_leaf: int = 1,
         min_samples_split: int = 2,
         min_impurity_decrease: float = 0.0,
@@ -655,8 +650,8 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         n_estimators: int = 100,
         max_features: Literal["sqrt", "log2", "none", "all"] = "sqrt",
         max_samples: float = 1.0,
-        batch_size: Optional[int] = None,
-        random_state: Optional[int] = None,
+        batch_size: int | None = None,
+        random_state: int | None = None,
         n_jobs: int = -1,
     ):
         # Tree hyperparameters
@@ -697,7 +692,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
 
     def _generate_subsample(
         self, n_rows: int, n_cols: int, n_trees: int
-    ) -> Tuple[Int[torch.Tensor, "n_trees n_rows"], Int[torch.Tensor, "n_trees n_cols"]]:
+    ) -> tuple[Int[torch.Tensor, "n_trees n_rows"], Int[torch.Tensor, "n_trees n_cols"]]:
         # Get number of dimensions in our subsample
         if isinstance(self.max_features, int) and self.max_features <= n_cols:
             n_cols_sample = n_cols
@@ -717,7 +712,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         return idx_sample, idx_dim
 
     @torch.no_grad()  # type: ignore
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Float[torch.Tensor, "batch"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> None:
         """Preprocess and fit an ensemble of trees on subsampled data."""
         # Pre-preprocessing step: aggregate special dimensions
         if self.use_special_dims:
@@ -763,7 +758,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         """Predict class probabilities for samples in X."""
         return torch.stack([tree.predict_proba(X) for tree in self.trees]).mean(dim=0)
 
-    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch"]:
+    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Real[torch.Tensor, "batch"]:
         """Predict class labels for samples in X."""
         if self.task == "classification":
             return self.classes_[self.predict_proba(X).argmax(dim=1)]  # type: ignore
@@ -774,7 +769,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         self,
         X: Float[torch.Tensor, "batch intrinsic_dim"],
         y: Float[torch.Tensor, "batch"],
-        sample_weight: Union[Float[torch.Tensor, "batch"], float] = 1.0,
+        sample_weight: Float[torch.Tensor, "batch"] | float = 1.0,
     ) -> Float[torch.Tensor, "batch"]:
         """Return the mean accuracy on the given test data and labels.
 

@@ -54,7 +54,7 @@ jobs:
 
       # Unit testing
       - name: Run unit tests & collect coverage
-        run: pytest tests --cov=manify --cov-report=xml:coverage.xml
+        run: pytest BEARTYPE_ENABLE=true tests --cov=manify --cov-report=xml:coverage.xml
 
       # Check docstrings are in Google style      
       - name: Check docstrings are in Google style
