@@ -1,5 +1,7 @@
 """Manify: A Python Library for Learning Non-Euclidean Representations."""
 
+import os
+
 if os.getenv("BEARTYPE_ENABLE", "false").lower() == "true":
     from jaxtyping import install_import_hook
 
