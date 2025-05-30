@@ -28,6 +28,9 @@ nav:
   - API Reference:
     - Overview: reference/index.md
     - Manifolds: reference/manifolds.md
+    - Clustering:
+      - Overview: reference/clustering/index.md
+      - Riemannian Fuzzy K-Means: reference/clustering/kmeans.md
     - Curvature Estimation: 
       - Overview: reference/curvature_estimation/index.md
       - Delta Hyperbolicity: reference/curvature_estimation/delta_hyperbolicity.md
@@ -39,6 +42,9 @@ nav:
       - Siamese: reference/embedders/siamese.md
       - VAE: reference/embedders/vae.md
       - Losses: reference/embedders/_losses.md
+    - Optimizers:
+      - Overview: reference/optimizers/index.md
+      - Riemannian Adan: reference/optimizers/radan.md
     - Predictors:
       - Overview: reference/predictors/index.md
       - Decision Tree: reference/predictors/decision_tree.md

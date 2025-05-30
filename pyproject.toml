@@ -97,3 +97,8 @@ warn_return_any = true
 warn_unused_ignores = false
 follow_imports = "skip"
 ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = ["manify/optimizers/_adan.py"] # Use unmodified adan.py code from original repo

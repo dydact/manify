@@ -36,7 +36,7 @@ If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Dict
+from typing import Any, Callable, Dict, Optional
 
 from geoopt import ManifoldParameter, ManifoldTensor
 from geoopt.optim.mixin import OptimMixin
