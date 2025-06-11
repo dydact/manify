@@ -20,13 +20,17 @@ If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import torch
-from beartype.typing import Literal
 from geoopt import ManifoldParameter
 from geoopt.optim import RiemannianAdam
-from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClusterMixin
+
+if TYPE_CHECKING:
+    from beartype.typing import Literal
+    from jaxtyping import Float, Int
 
 from ..manifolds import Manifold, ProductManifold
 from ..optimizers.radan import RiemannianAdan

@@ -5,10 +5,14 @@ For more information, see Chlenski et al. (2024): https://arxiv.org/abs/2410.138
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
 import torch
-from beartype.typing import Any, Literal
-from jaxtyping import Bool, Float, Int, Real
 from sklearn.base import BaseEstimator, ClassifierMixin
+
+if TYPE_CHECKING:
+    from beartype.typing import Any, Literal
+    from jaxtyping import Bool, Float, Int, Real
 
 from ..manifolds import ProductManifold
 from ._midpoint import midpoint

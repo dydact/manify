@@ -11,8 +11,12 @@ This module provides two implementations:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
-from jaxtyping import Float, Int
+
+if TYPE_CHECKING:
+    from jaxtyping import Float, Int
 
 
 def sampled_delta_hyperbolicity(

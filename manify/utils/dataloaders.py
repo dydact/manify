@@ -33,9 +33,13 @@ Earlier versions of Manify included scripts to process raw data, which we have r
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional
+
 import torch
 from datasets import load_dataset
-from jaxtyping import Float, Real
+
+if TYPE_CHECKING:
+    from jaxtyping import Float, Real
 
 
 def load_hf(name: str, namespace: str = "manify") -> tuple[

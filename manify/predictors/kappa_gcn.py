@@ -3,11 +3,14 @@ r"""$\kappa$-GCN implementation."""
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING, Optional
 
 import geoopt
 import torch
-from beartype.typing import Callable, Literal
-from jaxtyping import Float, Real
+
+if TYPE_CHECKING:
+    from beartype.typing import Callable, Literal
+    from jaxtyping import Float, Real
 
 from ..manifolds import Manifold, ProductManifold
 

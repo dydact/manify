@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import torch
-from beartype.typing import Literal
-from jaxtyping import Float
 from sklearn.base import BaseEstimator
+
+if TYPE_CHECKING:
+    from beartype.typing import Literal
+    from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 

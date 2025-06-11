@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
-from beartype.typing import Any
-from jaxtyping import Float, Int
 from sklearn.model_selection import train_test_split
+
+if TYPE_CHECKING:
+    from beartype.typing import Any
+    from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
 

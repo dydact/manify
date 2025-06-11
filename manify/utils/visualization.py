@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
-from jaxtyping import Float
+
+if TYPE_CHECKING:
+    from jaxtyping import Float
 
 
 def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.Tensor, "n_points n_dim-1"]:

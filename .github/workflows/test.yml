@@ -43,7 +43,7 @@ jobs:
         run: black --check manify/ --line-length 120
 
       - name: Check import ordering with isort
-        run: isort --check-only --profile black manify/ --line-width 120
+        run: isort --check-only --diff manify/
 
       - name: Run pylint
         run: pylint manify/

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING, Dict
 
 import numpy as np
 import torch
-from beartype.typing import Literal, TypeAlias
-from jaxtyping import Float, Real
 from sklearn.base import BaseEstimator
+
+if TYPE_CHECKING:
+    from beartype.typing import Literal, TypeAlias
+    from jaxtyping import Float, Real
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error

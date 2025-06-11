@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import cvxpy
 import numpy as np
 import torch
-from beartype.typing import Literal
-from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
+
+if TYPE_CHECKING:
+    from beartype.typing import Literal
+    from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
 from ._kernel import product_kernel

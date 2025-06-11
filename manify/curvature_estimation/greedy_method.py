@@ -6,8 +6,12 @@ This module implements the greedy signature selection approach described in Taba
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
-from jaxtyping import Float
+
+if TYPE_CHECKING:
+    from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 

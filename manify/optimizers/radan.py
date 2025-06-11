@@ -36,10 +36,15 @@ If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail
 
 from __future__ import annotations
 
-from beartype.typing import Any, Callable
+from typing import TYPE_CHECKING
+
+import torch
 from geoopt import ManifoldParameter, ManifoldTensor
 from geoopt.optim.mixin import OptimMixin
-from jaxtyping import Float
+
+if TYPE_CHECKING:
+    from beartype.typing import Any, Callable
+    from jaxtyping import Float
 
 from . import _adan
 

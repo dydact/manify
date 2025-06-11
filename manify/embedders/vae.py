@@ -11,10 +11,13 @@ For more information, see Skopek et al (2020): Mixed Curvature Variational Autoe
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-from jaxtyping import Float
+
+if TYPE_CHECKING:
+    from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 from ._base import BaseEmbedder

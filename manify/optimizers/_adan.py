@@ -18,9 +18,12 @@ limitations under the License.
 """
 
 import math
-from beartype.typing import List
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from beartype.typing import List
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
 

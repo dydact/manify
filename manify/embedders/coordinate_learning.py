@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import sys
 import warnings
+from typing import TYPE_CHECKING
 
 import geoopt
 import numpy as np
 import torch
-from beartype.typing import Any
-from jaxtyping import Float, Int
+
+if TYPE_CHECKING:
+    from beartype.typing import Any
+    from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
 from ._base import BaseEmbedder

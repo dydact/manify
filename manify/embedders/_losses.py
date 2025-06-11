@@ -7,9 +7,13 @@ and other evaluation measures for both graph and general embedding tasks.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import networkx as nx
 import torch
-from jaxtyping import Float
+
+if TYPE_CHECKING:
+    from jaxtyping import Float
 
 from ..manifolds import ProductManifold
 

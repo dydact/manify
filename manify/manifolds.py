@@ -10,11 +10,14 @@ include methods for different key geometric operations, and are built on top of 
 from __future__ import annotations
 
 import warnings
+from typing import TYPE_CHECKING
 
 import geoopt
 import torch
-from beartype.typing import Callable, Literal
-from jaxtyping import Float, Real
+
+if TYPE_CHECKING:
+    from beartype.typing import Callable, Literal
+    from jaxtyping import Float, Real
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.distributions")  # Singular samples from Wishart
 

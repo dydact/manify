@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
-from jaxtyping import Float, Int
 from sklearn.base import BaseEstimator, ClassifierMixin
+
+if TYPE_CHECKING:
+    from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
 from ._kernel import product_kernel
