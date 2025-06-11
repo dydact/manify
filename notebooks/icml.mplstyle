@@ -1,0 +1,25 @@
+# icml.mplstyle
+figure.figsize: 6.5, 2.5
+figure.dpi: 300
+font.family: serif
+font.serif: Times New Roman, DejaVu Serif, Bitstream Vera Serif, Computer Modern Roman, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times, Palatino, Charter, serif
+mathtext.fontset: cm
+axes.titlesize: 10
+axes.labelsize: 10
+axes.titleweight: bold
+xtick.labelsize: 9
+ytick.labelsize: 9
+legend.fontsize: 9
+legend.title_fontsize: 10
+axes.spines.right: False
+axes.spines.top: False
+axes.grid: False
+savefig.transparent: True
+savefig.bbox: tight
+savefig.pad_inches: 0.05
+lines.linewidth: 1
+axes.linewidth: 0.8
+xtick.major.width: 0.8
+ytick.major.width: 0.8
+legend.frameon: False
+legend.fancybox: False

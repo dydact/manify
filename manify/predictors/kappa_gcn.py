@@ -417,6 +417,11 @@ class KappaGCN(torch.nn.Module):
                 my_tqdm.update(1)
                 my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
 
+            # Early termination for nan loss
+            if torch.isnan(loss):
+                print("Loss is NaN, stopping training.")
+                break
+
         if use_tqdm:
             my_tqdm.close()
 
