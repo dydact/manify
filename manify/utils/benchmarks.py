@@ -12,6 +12,32 @@ from sklearn.base import BaseEstimator
 if TYPE_CHECKING:
     from beartype.typing import Literal, TypeAlias
     from jaxtyping import Float, Real
+
+    MODELTYPE: TypeAlias = Literal[
+        "sklearn_dt",
+        "sklearn_rf",
+        "product_dt",
+        "product_rf",
+        "tangent_dt",
+        "tangent_rf",
+        "knn",
+        "ps_perceptron",
+        "svm",
+        "ps_svm",
+        "kappa_mlp",
+        "tangent_mlp",
+        "ambient_mlp",
+        "tangent_gcn",
+        "ambient_gcn",
+        "kappa_gcn",
+        "ambient_mlr",
+        "tangent_mlr",
+        "kappa_mlr",
+        "single_manifold_rf",
+    ]
+    SCORETYPE: TypeAlias = Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse", "time"]
+    TASKTYPE: TypeAlias = Literal["classification", "regression", "link_prediction"]
+
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error
@@ -25,31 +51,6 @@ from ..predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
 from ..predictors.kappa_gcn import KappaGCN, get_A_hat
 from ..predictors.perceptron import ProductSpacePerceptron
 from ..predictors.svm import ProductSpaceSVM
-
-MODELTYPE: TypeAlias = Literal[
-    "sklearn_dt",
-    "sklearn_rf",
-    "product_dt",
-    "product_rf",
-    "tangent_dt",
-    "tangent_rf",
-    "knn",
-    "ps_perceptron",
-    "svm",
-    "ps_svm",
-    "kappa_mlp",
-    "tangent_mlp",
-    "ambient_mlp",
-    "tangent_gcn",
-    "ambient_gcn",
-    "kappa_gcn",
-    "ambient_mlr",
-    "tangent_mlr",
-    "kappa_mlr",
-    "single_manifold_rf",
-]
-SCORETYPE: TypeAlias = Literal["accuracy", "f1-micro", "f1-macro", "mse", "percent_rmse", "time"]
-TASKTYPE: TypeAlias = Literal["classification", "regression", "link_prediction"]
 
 
 def _score(
