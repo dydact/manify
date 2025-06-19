@@ -79,6 +79,12 @@ print(tree.score(X_test, y_test))
 - `manify.predictors.perceptron` - Product space perceptron
 - `manify.predictors.svm` - Product space SVM
 
+**Clustering**
+- `manify.clustering.fuzzy_kmeans` - Riemannian fuzzy K-Means for clustering
+
+**Optimizers**
+- `manify.optimizers.radan` - Riemannian version of Adan optimizer
+
 **Utilities**
 - `manify.utils.benchmarks` - Tools for benchmarking
 - `manify.utils.dataloaders` - Loading datasets
