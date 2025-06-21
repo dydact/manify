@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import torch
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 if TYPE_CHECKING:
     from beartype.typing import Literal
@@ -34,7 +34,7 @@ class BasePredictor(BaseEstimator, ABC):
     def __init__(
         self,
         pm: ProductManifold,
-        task: Literal["classification", "regression"],
+        task: Literal["classification", "regression", "link_prediction"],
         random_state: int | None = None,
         device: str | None = None,
     ) -> None:
@@ -42,8 +42,19 @@ class BasePredictor(BaseEstimator, ABC):
         self.task = task
         self.random_state = random_state
         self.device = pm.device if device is None else device
-        self.loss_history_: Dict[str, List[float]] = {}
+        self.loss_history_: dict[str, list[float]] = {}
         self.is_fitted_: bool = False
+
+        # Initialize appropriate base class depending on task
+        if task == "classification":
+            ClassifierMixin.__init__(self)
+        elif task == "regression":
+            RegressorMixin.__init__(self)
+        elif task == "link_prediction":
+            # For link prediction, we also use ClassifierMixin, as we think of it as binary classificaiton.
+            ClassifierMixin.__init__(self)
+        else:
+            raise ValueError(f"Unknown task type: {task}")
 
     @abstractmethod
     def fit(

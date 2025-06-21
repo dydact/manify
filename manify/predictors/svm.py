@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
+from ._base import BasePredictor
 from ._kernel import product_kernel
 
 
@@ -30,6 +31,9 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         task: Literal["classification", "regression"] = "classification",
         epsilon: float = 1e-5,
     ):
+        # Initialize base class
+        super().__init__(pm, task=task, random_state=random_state, device=device)
+
         self.pm = pm
         self.h_constraints = h_constraints
         self.s_constraints = s_constraints

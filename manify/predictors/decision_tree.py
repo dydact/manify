@@ -8,13 +8,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import torch
-from sklearn.base import BaseEstimator, ClassifierMixin
 
 if TYPE_CHECKING:
     from beartype.typing import Any, Literal
     from jaxtyping import Bool, Float, Int, Real
 
 from ..manifolds import ProductManifold
+from ._base import BasePredictor
 from ._midpoint import midpoint
 
 
@@ -259,7 +259,7 @@ class _DecisionNode:
         self.right = right
 
 
-class ProductSpaceDT(BaseEstimator, ClassifierMixin):
+class ProductSpaceDT(BasePredictor):
     """Decision tree in the product space to handle hyperbolic, euclidean, and hyperspherical data."""
 
     def __init__(
@@ -274,7 +274,12 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
         batch_size: int | None = None,
         n_features: Literal["d", "d_choose_2"] = "d",
         ablate_midpoints: bool = False,
+        random_state: int | None = None,
+        device: str | None = None,
     ):
+        # Initialize the base class
+        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
+
         # Raise error if manifold is stereographic
         if pm.is_stereographic:
             raise ValueError("Stereographic manifolds are not supported. Use a different representation.")
@@ -637,7 +642,7 @@ class ProductSpaceDT(BaseEstimator, ClassifierMixin):
             return ((self.predict(X) - y) ** 2 * sample_weight).mean()
 
 
-class ProductSpaceRF(BaseEstimator, ClassifierMixin):
+class ProductSpaceRF(BasePredictor):
     """Random Forest in the product space."""
 
     def __init__(
@@ -657,7 +662,19 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         batch_size: int | None = None,
         random_state: int | None = None,
         n_jobs: int = -1,
+        device: str | None = None,
     ):
+        # Initialize the base class
+        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
+
+        # Raise error if manifold is stereographic
+        if pm.is_stereographic:
+            raise ValueError("Stereographic manifolds are not supported. Use a different representation.")
+        if task == "link_prediction":
+            raise ValueError(
+                "Link prediction is not supported for decision trees. Please use utils.link_prediction to reframe as classification"
+            )
+
         # Tree hyperparameters
         tree_kwargs: Dict[str, Any] = {}
         self.pm = tree_kwargs["pm"] = pm

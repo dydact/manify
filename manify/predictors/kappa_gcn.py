@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from beartype.typing import Callable, Literal
     from jaxtyping import Float, Real
 
+from ._base import BasePredictor
 from ..manifolds import Manifold, ProductManifold
 
 # TQDM: notebook or regular
@@ -142,7 +143,7 @@ class KappaGCNLayer(torch.nn.Module):
         return AXW
 
 
-class KappaGCN(torch.nn.Module):
+class KappaGCN(torch.nn.Module, BasePredictor):
     """Implementation for the Kappa GCN.
 
     Parameters
@@ -159,8 +160,11 @@ class KappaGCN(torch.nn.Module):
         hidden_dims: list[int] | None = None,
         nonlinearity: Callable = torch.relu,
         task: Literal["classification", "regression", "link_prediction"] = "classification",
+        random_state: int | None = None,
+        device: str | None = None,
     ):
-        super().__init__()
+        torch.nn.Module.__init__(self)
+        BasePredictor.__init__(self, pm=pm, task=task, random_state=random_state, device=device)
         self.pm = pm
         self.task = task
 

@@ -5,16 +5,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-from sklearn.base import BaseEstimator, ClassifierMixin
 
 if TYPE_CHECKING:
     from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
+from ._base import BasePredictor
 from ._kernel import product_kernel
 
 
-class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
+class ProductSpacePerceptron(BasePredictor):
     """A product-space perceptron model for multiclass classification in the product manifold space."""
 
     def __init__(
@@ -23,7 +23,12 @@ class ProductSpacePerceptron(BaseEstimator, ClassifierMixin):
         max_epochs: int = 1_000,
         patience: int = 5,
         weights: Float[torch.Tensor, "n_manifolds"] | None = None,
+        task: str = "classification",
+        random_state: int | None = None,
+        device: str | None = None,
     ):
+        # Initialize base class
+        super().__init__(pm, task=task, random_state=random_state, device=device)
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
