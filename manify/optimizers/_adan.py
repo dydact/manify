@@ -22,8 +22,6 @@ from typing import TYPE_CHECKING
 
 import torch
 
-if TYPE_CHECKING:
-    from beartype.typing import List
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
 
@@ -242,12 +240,12 @@ class Adan(Optimizer):
 
 
 def _single_tensor_adan(
-    params: List[Tensor],
-    grads: List[Tensor],
-    exp_avgs: List[Tensor],
-    exp_avg_sqs: List[Tensor],
-    exp_avg_diffs: List[Tensor],
-    neg_pre_grads: List[Tensor],
+    params: list[Tensor],
+    grads: list[Tensor],
+    exp_avgs: list[Tensor],
+    exp_avg_sqs: list[Tensor],
+    exp_avg_diffs: list[Tensor],
+    neg_pre_grads: list[Tensor],
     *,
     beta1: float,
     beta2: float,
@@ -297,12 +295,12 @@ def _single_tensor_adan(
 
 
 def _multi_tensor_adan(
-    params: List[Tensor],
-    grads: List[Tensor],
-    exp_avgs: List[Tensor],
-    exp_avg_sqs: List[Tensor],
-    exp_avg_diffs: List[Tensor],
-    neg_pre_grads: List[Tensor],
+    params: list[Tensor],
+    grads: list[Tensor],
+    exp_avgs: list[Tensor],
+    exp_avg_sqs: list[Tensor],
+    exp_avg_diffs: list[Tensor],
+    neg_pre_grads: list[Tensor],
     *,
     beta1: float,
     beta2: float,
@@ -356,12 +354,12 @@ def _multi_tensor_adan(
 
 
 def _fused_adan_multi_tensor(
-    params: List[Tensor],
-    grads: List[Tensor],
-    exp_avgs: List[Tensor],
-    exp_avg_sqs: List[Tensor],
-    exp_avg_diffs: List[Tensor],
-    neg_pre_grads: List[Tensor],
+    params: list[Tensor],
+    grads: list[Tensor],
+    exp_avgs: list[Tensor],
+    exp_avg_sqs: list[Tensor],
+    exp_avg_diffs: list[Tensor],
+    neg_pre_grads: list[Tensor],
     *,
     beta1: float,
     beta2: float,
@@ -400,12 +398,12 @@ def _fused_adan_multi_tensor(
 
 
 def _fused_adan_single_tensor(
-    params: List[Tensor],
-    grads: List[Tensor],
-    exp_avgs: List[Tensor],
-    exp_avg_sqs: List[Tensor],
-    exp_avg_diffs: List[Tensor],
-    neg_pre_grads: List[Tensor],
+    params: list[Tensor],
+    grads: list[Tensor],
+    exp_avgs: list[Tensor],
+    exp_avg_sqs: list[Tensor],
+    exp_avg_diffs: list[Tensor],
+    neg_pre_grads: list[Tensor],
     *,
     beta1: float,
     beta2: float,

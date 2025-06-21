@@ -12,12 +12,12 @@ authors = [
 ]
 dependencies = [
     "torch",
-    "geoopt",
+    "geoopt>=0.5.1",
     "numpy",
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
-    "scipy<=1.9.3", # Ensure scalar_search_wolfe2 import works correctly
+    "geoopt",
     "datasets"
 ]
 
