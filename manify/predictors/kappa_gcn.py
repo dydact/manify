@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from beartype.typing import Callable, Literal
     from jaxtyping import Float, Real
 
-from ._base import BasePredictor
 from ..manifolds import Manifold, ProductManifold
+from ._base import BasePredictor
 
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:
@@ -143,7 +143,7 @@ class KappaGCNLayer(torch.nn.Module):
         return AXW
 
 
-class KappaGCN(torch.nn.Module, BasePredictor):
+class KappaGCN(BasePredictor, torch.nn.Module):
     """Implementation for the Kappa GCN.
 
     Parameters
@@ -163,8 +163,8 @@ class KappaGCN(torch.nn.Module, BasePredictor):
         random_state: int | None = None,
         device: str | None = None,
     ):
-        torch.nn.Module.__init__(self)
         BasePredictor.__init__(self, pm=pm, task=task, random_state=random_state, device=device)
+        torch.nn.Module.__init__(self)
         self.pm = pm
         self.task = task
 
@@ -452,23 +452,3 @@ class KappaGCN(torch.nn.Module, BasePredictor):
         self.eval()
         y_pred = self(X, A)
         return y_pred
-
-    def predict(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A: Float[torch.Tensor, "n_nodes n_nodes"] | None = None
-    ) -> Real[torch.Tensor, "n_nodes"]:
-        """Predict class probabilities using the trained Kappa GCN.
-
-        Args:
-            X (torch.Tensor): Feature matrix (NxD).
-            A (torch.Tensor): Adjacency or distance matrix (NxN).
-
-        Returns:
-            torch.Tensor: Predicted labels or outputs.
-        """
-        probs = self.predict_proba(X, A)
-        if self.task == "classification":
-            return torch.argmax(probs, dim=1)
-        elif self.task == "link_prediction":
-            return (probs > 0.5).float()
-        else:
-            return probs  # Regression uses raw logits

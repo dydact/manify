@@ -50,7 +50,7 @@ class ProductSpacePerceptron(BasePredictor):
             self: The fitted model.
         """
         # Identify unique classes for multiclass classification
-        self.classes_ = [int(c.item()) for c in torch.unique(y)]
+        self._store_classes(y)
         n_samples = X.shape[0]
 
         # Precompute kernel matrix
@@ -70,8 +70,10 @@ class ProductSpacePerceptron(BasePredictor):
         best_epoch, least_errors = 0, n_samples + 1
 
         for class_label in self.classes_:
+            class_label_item = class_label.item()
+
             # One-vs-rest labels
-            y_binary = torch.where(y == class_label, 1, -1)  # Shape: (n_samples,)
+            y_binary = torch.where(y == class_label_item, 1, -1)  # Shape: (n_samples,)
 
             # Initialize alpha coefficients for this class
             alpha = torch.zeros(n_samples, dtype=X.dtype, device=X.device)
@@ -101,7 +103,7 @@ class ProductSpacePerceptron(BasePredictor):
                 alpha[misclassified] += 1
 
             # Store the alpha coefficients for the current class
-            self.alpha[class_label] = alpha
+            self.alpha[class_label_item] = alpha
 
     def predict_proba(
         self, X: Float[torch.Tensor, "n_samples n_manifolds"]
@@ -127,25 +129,12 @@ class ProductSpacePerceptron(BasePredictor):
         # K_test = self.X_train_ @ X.T
 
         for idx, class_label in enumerate(self.classes_):
-            alpha = self.alpha[class_label]  # Shape: (n_samples_train,)
-            y_binary = torch.where(self.y_train_ == class_label, 1, -1)  # Shape: (n_samples_train,)
+            class_label_item = class_label.item()
+            alpha = self.alpha[class_label_item]  # Shape: (n_samples_train,)
+            y_binary = torch.where(self.y_train_ == class_label_item, 1, -1)  # Shape: (n_samples_train,)
 
             # Compute decision function for test samples
             f = (alpha * y_binary) @ K_test  # Shape: (n_samples_test,)
             decision_values[:, idx] = f
 
         return decision_values
-
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
-        """Predicts the class labels for the given test data X.
-
-        Args:
-            X: The test data.
-
-        Returns:
-            torch.Tensor: The predicted class labels for each test sample.
-        """
-        decision_values = self.predict_proba(X)
-        # Return the class with the highest decision value
-        argmax_idx = torch.argmax(decision_values, dim=1)
-        return torch.tensor([self.classes_[i] for i in argmax_idx])

@@ -328,7 +328,6 @@ class ProductSpaceDT(BasePredictor):
     ) -> tuple[
         Float[torch.Tensor, "batch intrinsic_dim"],  # angles
         Float[torch.Tensor, "batch n_classes"] | Float[torch.Tensor, "batch"] | Float[torch.Tensor, "0"],  # labels
-        Int[torch.Tensor, "n_classes"] | Int[torch.Tensor, "0"],  # classes
         Float[torch.Tensor, "batch intrinsic_dim batch"],  # comparisons
     ]:
         """Preprocessing function for the new version of ProductDT.
@@ -398,8 +397,7 @@ class ProductSpaceDT(BasePredictor):
                 angle_dims += [(-1, dim) for dim in dims]
 
                 if self.n_features == "d_choose_2":
-                    # Note that we do the entire loop over dims here
-                    # This is because we faked a dimension at the start
+                    # Note that we do the entire loop over dims here. This is because we faked a dimension at the start
                     # That's also why we don't subtract 1 from len(dims)
                     for j, dim in enumerate(dims[:-1]):
                         num = X[:, dim : dim + 1]
@@ -426,20 +424,21 @@ class ProductSpaceDT(BasePredictor):
             comparisons_reshaped = torch.tensor([])
 
         # One-hot encode labels
-        if y is not None and self.task == "classification":
-            classes, y_relabeled = y.unique(return_inverse=True)
-            n_classes = len(classes)
-            labels = torch.nn.functional.one_hot(y_relabeled, num_classes=n_classes)
-        elif y is not None and self.task == "regression":
-            classes = torch.tensor([], dtype=torch.int64)
-            labels = y
+        if y is not None:
+            y_processed = self._store_classes(y)  # This handles class storage
+            if self.task == "classification":
+                n_classes = len(self.classes_)
+                labels = torch.nn.functional.one_hot(y_processed, num_classes=n_classes)
+            else:  # regression
+                labels = y_processed
         else:
-            classes = torch.tensor([], dtype=torch.int64)
             labels = torch.tensor([])
+
+        # Convert to appropriate dtypes
         labels = labels.to(dtype=X.dtype)
         comparisons_reshaped = comparisons_reshaped.to(dtype=X.dtype)
 
-        return angles, labels, classes, comparisons_reshaped
+        return angles, labels, comparisons_reshaped
 
     def _get_best_split(
         self,
@@ -508,10 +507,8 @@ class ProductSpaceDT(BasePredictor):
             X, self.pm = self._aggregate_special_dims(X)
 
         # Preprocess data
-        angles, labels, classes, comparisons_reshaped = self._preprocess(X=X, y=y)
-
-        # Store classes for predictions
-        self.classes_ = classes
+        angles, labels, comparisons_reshaped = self._preprocess(X=X, y=y)
+        y_processed = self._store_classes(y)
 
         # Fit node
         self.tree = self._fit_node(angles=angles, labels=labels, comparisons=comparisons_reshaped, depth=self.max_depth)
@@ -617,29 +614,10 @@ class ProductSpaceDT(BasePredictor):
         """Predict class probabilities for samples in X."""
         if self.use_special_dims:
             X, _ = self._aggregate_special_dims(X)
-        angles, _, _, _ = self._preprocess(X=X)
+        angles, _, _ = self._preprocess(X=X)
         if self.permutations is not None:
             angles = angles[:, self.permutations]
         return torch.vstack([self._traverse(angles_row, self.tree).probs for angles_row in angles])
-
-    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Real[torch.Tensor, "batch"]:
-        """Predict class labels for samples in X."""
-        if self.task == "classification":
-            return self.classes_[self.predict_proba(X).argmax(dim=1)]
-        else:
-            return self.predict_proba(X).flatten()  # Simplified version
-
-    def score(
-        self,
-        X: Float[torch.Tensor, "batch intrinsic_dim"],
-        y: Float[torch.Tensor, "batch"],
-        sample_weight: Float[torch.Tensor, "batch"] | float = 1.0,
-    ) -> Float[torch.Tensor, "batch"]:
-        """Return the mean accuracy on the given test data and labels."""
-        if self.task == "classification":
-            return ((self.predict(X) == y) * sample_weight).mean()
-        else:
-            return ((self.predict(X) - y) ** 2 * sample_weight).mean()
 
 
 class ProductSpaceRF(BasePredictor):
@@ -742,14 +720,14 @@ class ProductSpaceRF(BasePredictor):
                 tree.pm = self.pm
 
         # Can use any tree to preprocess X and y
-        angles, labels, classes, comparisons = self.trees[0]._preprocess(X=X, y=y)
-        self.classes_ = classes if classes is not None else torch.tensor([])
+        angles, labels, comparisons = self.trees[0]._preprocess(X=X, y=y)
 
         # Also update angle2man and special_first
         for tree in self.trees:
-            tree.classes_ = self.classes_
             tree.angle2man = self.trees[0].angle2man
             tree.special_first = self.trees[0].special_first
+            tree.classes_ = self.trees[0].classes_
+        self.classes_ = self.trees[0].classes_
 
         # Use seed here
         if self.random_state is not None:
@@ -762,7 +740,6 @@ class ProductSpaceRF(BasePredictor):
         # Fit trees
         for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all):
             tree.permutations = idx_dim
-            tree.classes_ = classes
             if self.batched:
                 comparisons_subsample = comparisons[idx_sample][:, idx_dim][:, :, idx_sample]
             else:
@@ -778,28 +755,3 @@ class ProductSpaceRF(BasePredictor):
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:
         """Predict class probabilities for samples in X."""
         return torch.stack([tree.predict_proba(X) for tree in self.trees]).mean(dim=0)
-
-    def predict(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Real[torch.Tensor, "batch"]:
-        """Predict class labels for samples in X."""
-        if self.task == "classification":
-            return self.classes_[self.predict_proba(X).argmax(dim=1)]  # type: ignore
-        else:
-            return self.predict_proba(X).flatten()  # Simplified version
-
-    def score(
-        self,
-        X: Float[torch.Tensor, "batch intrinsic_dim"],
-        y: Float[torch.Tensor, "batch"],
-        sample_weight: Float[torch.Tensor, "batch"] | float = 1.0,
-    ) -> Float[torch.Tensor, "batch"]:
-        """Return the mean accuracy on the given test data and labels.
-
-        Args:
-            X: (batch, intrinsic_dim) tensor of test data
-            y: (batch,) tensor of labels
-            sample_weight: (batch,) tensor of sample weights
-        """
-        if self.task == "classification":
-            return ((self.predict(X) == y) * sample_weight).mean()
-        else:
-            return ((self.predict(X) - y) ** 2 * sample_weight).mean()

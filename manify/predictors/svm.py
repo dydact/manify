@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import cvxpy
 import numpy as np
 import torch
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator
 
 if TYPE_CHECKING:
     from beartype.typing import Literal
@@ -18,7 +18,7 @@ from ._base import BasePredictor
 from ._kernel import product_kernel
 
 
-class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
+class ProductSpaceSVM(BaseEstimator):
     """Product Space SVM class."""
 
     def __init__(
@@ -30,9 +30,11 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         s_constraints: bool = True,
         task: Literal["classification", "regression"] = "classification",
         epsilon: float = 1e-5,
+        random_state: int | None = None,
+        device: str | None = None,
     ):
         # Initialize base class
-        super().__init__(pm, task=task, random_state=random_state, device=device)
+        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
 
         self.pm = pm
         self.h_constraints = h_constraints
@@ -161,14 +163,3 @@ class ProductSpaceSVM(BaseEstimator, ClassifierMixin):
         exp_scores = np.exp(decision_function - np.max(decision_function, axis=1, keepdims=True))
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
-
-    def predict(self, X: Float[torch.Tensor, "n_samples n_manifolds"]) -> Int[torch.Tensor, "n_samples"]:
-        """Predicts the class for the given test data.
-
-        Args:
-            X: The test data of shape (n_samples, n_features).
-        """
-        probs = self.predict_proba(X)
-        class_indices = np.argmax(probs, axis=1)
-        predictions = np.array([self.classes_[idx] for idx in class_indices])
-        return predictions

@@ -56,9 +56,27 @@ class BasePredictor(BaseEstimator, ABC):
         else:
             raise ValueError(f"Unknown task type: {task}")
 
+    def _store_classes(
+        self, y: Float[torch.Tensor, "n_points n_classes"] | Float[torch.Tensor, "n_points"]
+    ) -> Float[torch.Tensor, "n_points"]:
+        """Store unique classes and return relabeled y for classification tasks."""
+        if self.task == "classification":
+            self.classes_, y_relabeled = y.unique(return_inverse=True)
+            return y_relabeled
+        else:
+            return y
+
+    def _get_class_predictions(self, class_indices: torch.Tensor) -> torch.Tensor:
+        """Convert class indices back to original labels."""
+        if hasattr(self, "classes_") and self.task == "classification":
+            return self.classes_[class_indices]
+        return class_indices
+
     @abstractmethod
     def fit(
-        self, X: Float[torch.Tensor, "n_points n_features"], y: Float[torch.Tensor, "n_points n_classes"]
+        self,
+        X: Float[torch.Tensor, "n_points n_features"],
+        y: Float[torch.Tensor, "n_points n_classes"] | Float[torch.Tensor, "n_points"],
     ) -> "BasePredictor":
         """Abstract method to fit a predictor. Requires features and labels.
 
@@ -86,16 +104,47 @@ class BasePredictor(BaseEstimator, ABC):
         pass
 
     def predict(
-        self, X: Float[torch.Tensor, "n_points n_features"] | None = None
-    ) -> Float[torch.Tensor, "n_points n_classes"]:
+        self, X: Float[torch.Tensor, "n_points n_features"] | None = None, **kwargs: dict
+    ) -> Float[torch.Tensor, "n_points"]:
         """Compute the predicted classes for the given features.
 
         Args:
             X: New inputs for which to make predictions.
+            **kwargs: Additional keyword arguments that get passed to `self.predict_proba()`.
 
         Returns:
             X_proba: Predicted probabilities for the input features.
         """
         if self.task == "regression":
-            return self.predict_proba(X=X)
-        return self.predict_proba(X=X).argmax(dim=-1)
+            return self.predict_proba(X=X, **kwargs).squeeze(-1)
+        elif self.task == "link_prediction":
+            logits = self.predict_proba(X=X, **kwargs)
+            return (logits > 0.5).float()  # Threshold at 0.5
+        else:  # classification
+            class_indices = self.predict_proba(X=X, **kwargs).argmax(dim=-1)
+            return self._get_class_predictions(class_indices)
+
+    def score(
+        self,
+        X: Float[torch.Tensor, "n_points n_features"],
+        y: Float[torch.Tensor, "n_points n_classes"] | Float[torch.Tensor, "n_points"],
+        **kwargs: dict,
+    ) -> float:
+        """Return the mean accuracy/R² score.
+
+        Args:
+            X: Input features.
+            y: Target labels.
+            **kwargs: Additional keyword arguments that get passed to `self.predict_proba()`.
+
+        Returns:
+            score: Mean accuracy (classification) or R² score (regression).
+        """
+        predictions = self.predict(X, **kwargs)
+
+        if self.task == "classification":
+            return ((predictions == y).float() * sample_weight).mean().item()
+        elif self.task == "regression":
+            return (((predictions - y) ** 2 * sample_weight).mean()).item()
+        else:  # link_prediction
+            return ((predictions == y).float() * sample_weight).mean().item()

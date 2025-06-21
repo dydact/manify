@@ -72,6 +72,7 @@ def test_all_classifiers():
         ProductSpacePerceptron,
         # ProductSpaceSVM,
     ]:
+        print(f"Testing model: {model_class.__name__}")
         model = model_class(pm=pm)
         _test_base_classifier(model, X_train, X_test, y_train, y_test)
 
