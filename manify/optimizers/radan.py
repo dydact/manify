@@ -1,4 +1,6 @@
-"""Radan is the Riemannian version of the Adaptive Nesterov Momentum algorithm.
+"""Riemannian Adan (Radan).
+
+Radan is the Riemannian version of the Adaptive Nesterov Momentum algorithm.
 This code is compatible with both Geoopt and Manify libraries, and is designed for Riemannian Fuzzy K-Means.
 We recommend using the parameters `[0.7, 0.99, 0.99]` for best performance.**
 
@@ -50,23 +52,29 @@ from . import _adan
 
 
 class RiemannianAdan(OptimMixin, _adan.Adan):
-    """
-    Riemannian Adan with the same API as :class:`adan.Adan`.
+    """Riemannian Adan with the same API as :class:`adan.Adan`.
+
+    Attributes:
+        param_groups: iterable of parameter groups, each containing parameters to optimize and optimization options
+        _default_manifold: the default manifold used for optimization if not specified in parameters
 
     Args:
-    params : iterable
-        iterable of parameters to optimize or dicts defining parameter groups
-    lr : float (optional)
-        learning rate (default: 1e-3)
-    betas : Tuple[float, float, float] (optional)
-        coefficients used for computing (default: (0.98, 0.92, 0.99))
-    eps : float (optional)
-        term added to the denominator to improve numerical stability (default: 1e-8)
-    weight_decay : float (optional)
-        weight decay (L2 penalty) (default: 0)
+        params: iterable of parameters to optimize or dicts defining parameter groups
+        lr: learning rate (default: 1e-3)
+        betas: coefficients used for computing (default: (0.98, 0.92, 0.99))
+        eps: term added to the denominator to improve numerical stability (default: 1e-8)
+        weight_decay: weight decay (L2 penalty) (default: 0)
     """
 
     def step(self, closure: Callable | None = None) -> Float[torch.Tensor, ""] | None:
+        """Performs a single optimization step.
+
+        Args:
+            closure: A closure that reevaluates the model and returns the loss.
+
+        Returns:
+            The loss value if closure is provided, otherwise None.
+        """
         loss = None
         if closure is not None:
             loss = closure()
@@ -152,6 +160,14 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
 
     @torch.no_grad()  # type: ignore
     def stabilize_group(self, group: dict[str, Any]) -> None:
+        """Stabilizes the parameters in the group by projecting them onto their respective manifolds.
+
+        Args:
+            group: A dictionary containing the parameters and their states.
+
+        Returns:
+            None
+        """
         for p in group["params"]:
             if not isinstance(p, (ManifoldParameter, ManifoldTensor)):
                 continue

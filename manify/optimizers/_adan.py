@@ -1,4 +1,6 @@
-"""This file contains code adapted from the Adan optimizer implementation in PyTorch:
+"""Adaptive Nesterov Momentum Algorithm (Adan) Optimizer.
+
+This file contains code adapted from the Adan optimizer implementation in PyTorch:
 https://github.com/sail-sg/Adan
 
 The remainder of this file is unmodified from the original source, including the license:

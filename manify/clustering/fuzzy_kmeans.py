@@ -1,4 +1,6 @@
-"""The Riemannian Fuzzy K-Means algorithm is a clustering algorithm that operates on Riemannian manifolds.
+"""Riemannian Fuzzy K-Means.
+
+The Riemannian Fuzzy K-Means algorithm is a clustering algorithm that operates on Riemannian manifolds.
 Compared to a straightforward extension of K-Means or Fuzzy K-Means to Riemannian manifolds,
 it offers significant acceleration while achieving lower loss. For more details,
 please refer to the paper: https://openreview.net/forum?id=9VmOgMN4Ie

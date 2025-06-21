@@ -1,3 +1,7 @@
+# =============================================================================
+# Project Configuration
+# =============================================================================
+
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -17,7 +21,6 @@ dependencies = [
     "tqdm",
     "cvxpy",
     "scikit-learn==1.5.1",
-    "geoopt",
     "datasets"
 ]
 
@@ -48,7 +51,22 @@ packages = ["manify"]
 [tool.setuptools.package-data]
 "manify" = ["../data/**/*"]
 
-# Pylint configuration
+# =============================================================================
+# CI/CD Tool Configuration
+# =============================================================================
+
+# Code formatting with Black
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+# Import sorting with isort
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = ["manify/optimizers/_adan.py"]  # Use unmodified adan.py code from original repo
+
+# Static analysis with Pylint
 [tool.pylint.master]
 init-hook = "import sys; sys.path.append('.')"
 fail-under = 8.0
@@ -74,18 +92,10 @@ module-rgx = "([a-z_][a-z0-9_]*)"
 [tool.pylint.typecheck]
 generated-members = "torch.*,nn.*"
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "--jaxtyping-packages=beartype.beartype"
-python_files = "test_*.py"
-
+# Type checking with MyPy
 [tool.mypy]
-# Specify the packages to check
 packages = ["manify"]
-disable_error_code = ["name-defined"] # Needed for jaxtyping compatibility - else vector annotations fail
-exclude = ["manify/optimizers/_adan.py"] # Use unmodified adan.py code from original repo
-
-# Ignore missing imports for external libraries
+exclude = ["manify/optimizers/_adan.py"]  # Use unmodified adan.py code from original repo
 python_version = "3.10"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -97,8 +107,28 @@ warn_return_any = true
 warn_unused_ignores = false
 follow_imports = "skip"
 ignore_missing_imports = true
+disable_error_code = ["name-defined"]  # Needed for jaxtyping compatibility - else vector annotations fail
 
-[tool.isort]
-profile = "black"
-line_length = 120
-skip = ["manify/optimizers/_adan.py"] # Use unmodified adan.py code from original repo
+# Unit testing with pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--jaxtyping-packages=beartype.beartype"
+python_files = "test_*.py"
+
+# Code coverage
+[tool.coverage.run]
+source = ["manify"]
+branch = true
+omit = ["manify/optimizers/_adan.py"]  # Exclude from coverage reporting
+
+[tool.coverage.report]
+fail_under = 80
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# Docstring style checking with pydocstyle
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D107"]
+match = "(?!_adan).*\\.py$"  # Exclude _adan.py from docstring checks

@@ -40,10 +40,10 @@ jobs:
 
       # Code quality checks
       - name: Check code formatting with Black
-        run: black --check manify/ --line-length 120
+        run: black --check manify/
 
       - name: Check import ordering with isort
-        run: isort --check-only --diff manify/
+        run: isort --check-only manify/
 
       - name: Run pylint
         run: pylint manify/
@@ -54,11 +54,11 @@ jobs:
 
       # Unit testing
       - name: Run unit tests & collect coverage
-        run: BEARTYPE_ENABLE=true pytest tests --cov=manify --cov-report=xml:coverage.xml
+        run: BEARTYPE_ENABLE=true pytest tests --cov --cov-report=xml
 
       # Check docstrings are in Google style      
       - name: Check docstrings are in Google style
-        run: pydocstyle --add-ignore=D107 --convention=google manify/
+        run: pydocstyle manify/
         continue-on-error: true
 
       # Code coverage
