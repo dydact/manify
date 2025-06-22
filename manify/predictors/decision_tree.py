@@ -492,7 +492,7 @@ class ProductSpaceDT(BasePredictor):
         return n, d, m
 
     @torch.no_grad()  # type: ignore
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> ProductSpaceDT:
         """Reworked fit function for new version of ProductDT.
 
         Args:
@@ -512,6 +512,9 @@ class ProductSpaceDT(BasePredictor):
 
         # Fit node
         self.tree = self._fit_node(angles=angles, labels=labels, comparisons=comparisons_reshaped, depth=self.max_depth)
+
+        self.is_fitted_ = True  # Mark the model as fitted
+        return self
 
     def _aggregate_special_dims(
         self, X: Float[torch.Tensor, "batch ambient_dim"]
@@ -711,7 +714,7 @@ class ProductSpaceRF(BasePredictor):
         return idx_sample, idx_dim
 
     @torch.no_grad()  # type: ignore
-    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> None:
+    def fit(self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"]) -> ProductSpaceRF:
         """Preprocess and fit an ensemble of trees on subsampled data."""
         # Pre-preprocessing step: aggregate special dimensions
         if self.use_special_dims:
@@ -750,6 +753,9 @@ class ProductSpaceRF(BasePredictor):
                 comparisons=comparisons_subsample,
                 depth=self.max_depth,
             )
+
+        self.is_fitted_ = True
+        return self
 
     @torch.no_grad()  # type: ignore
     def predict_proba(self, X: Float[torch.Tensor, "batch intrinsic_dim"]) -> Float[torch.Tensor, "batch n_classes"]:

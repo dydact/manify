@@ -48,7 +48,9 @@ class ProductSpaceSVM(BaseEstimator):
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(
+        self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]
+    ) -> ProductSpaceSVM:
         """Trains the SVM model using the provided data and labels.
 
         Args:
@@ -120,6 +122,9 @@ class ProductSpaceSVM(BaseEstimator):
 
             # Need to store X for prediction
             self.X_train_ = torch.tensor(X, dtype=torch.float32)
+
+        self.is_fitted_ = True
+        return self
 
     def predict_proba(
         self, X: Float[torch.Tensor, "n_samples n_manifolds"]

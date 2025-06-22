@@ -357,7 +357,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         use_tqdm: bool = True,
         lp_indices: list[tuple[int]] | None = None,
         tqdm_prefix: str | None = None,
-    ) -> None:
+    ) -> KappaGCN:
         """Fit the Kappa GCN model.
 
         Args:
@@ -431,6 +431,10 @@ class KappaGCN(BasePredictor, torch.nn.Module):
 
         if use_tqdm:
             my_tqdm.close()
+
+        self.is_fitted_ = True
+        self.loss_history_["train"] = [loss.item()]
+        return self
 
     def predict_proba(
         self, X: Float[torch.Tensor, "n_nodes dim"], A: Float[torch.Tensor, "n_nodes n_nodes"] | None = None

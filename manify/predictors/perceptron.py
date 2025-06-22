@@ -32,14 +32,15 @@ class ProductSpacePerceptron(BasePredictor):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
-        self.classes_: list[int] = []
         if weights is None:
             self.weights = torch.ones(len(pm.P), dtype=torch.float32)
         else:
             assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
             self.weights = weights
 
-    def fit(self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]) -> None:
+    def fit(
+        self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]
+    ) -> ProductSpacePerceptron:
         """Trains the perceptron model using the provided data and labels.
 
         Args:
@@ -105,9 +106,12 @@ class ProductSpacePerceptron(BasePredictor):
             # Store the alpha coefficients for the current class
             self.alpha[class_label_item] = alpha
 
+        self.is_fitted_ = True
+        return self
+
     def predict_proba(
-        self, X: Float[torch.Tensor, "n_samples n_manifolds"]
-    ) -> Float[torch.Tensor, "n_samples n_classes"]:
+        self, X: Float[torch.Tensor, "n_points n_features"]  # type: ignore[override]
+    ) -> Float[torch.Tensor, "n_points n_classes"]:
         """Predicts the decision values for each class.
 
         Args:

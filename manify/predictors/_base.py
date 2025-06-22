@@ -90,9 +90,7 @@ class BasePredictor(BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def predict_proba(
-        self, X: Float[torch.Tensor, "n_points n_features"] | None = None
-    ) -> Float[torch.Tensor, "n_points n_classes"]:
+    def predict_proba(self, X: Float[torch.Tensor, "n_points n_features"]) -> Float[torch.Tensor, "n_points n_classes"]:
         """Compute the predicted probabilities for the given features.
 
         Args:
@@ -103,9 +101,7 @@ class BasePredictor(BaseEstimator, ABC):
         """
         pass
 
-    def predict(
-        self, X: Float[torch.Tensor, "n_points n_features"] | None = None, **kwargs: dict
-    ) -> Float[torch.Tensor, "n_points"]:
+    def predict(self, X: Float[torch.Tensor, "n_points n_features"], **kwargs: dict) -> Float[torch.Tensor, "n_points"]:
         """Compute the predicted classes for the given features.
 
         Args:
@@ -143,8 +139,10 @@ class BasePredictor(BaseEstimator, ABC):
         predictions = self.predict(X, **kwargs)
 
         if self.task == "classification":
-            return ((predictions == y).float() * sample_weight).mean().item()
+            out = ((predictions == y).float() * sample_weight).mean().item()
         elif self.task == "regression":
-            return (((predictions - y) ** 2 * sample_weight).mean()).item()
+            out = (((predictions - y) ** 2 * sample_weight).mean()).item()
         else:  # link_prediction
-            return ((predictions == y).float() * sample_weight).mean().item()
+            out = ((predictions == y).float() * sample_weight).mean().item()
+
+        return float(out)
