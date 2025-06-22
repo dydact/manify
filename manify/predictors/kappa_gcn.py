@@ -3,7 +3,7 @@ r"""$\kappa$-GCN implementation."""
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import geoopt
 import torch
@@ -12,8 +12,9 @@ if TYPE_CHECKING:
     from beartype.typing import Callable, Literal
     from jaxtyping import Float, Real
 
-from ..manifolds import Manifold, ProductManifold
+from ..manifolds import ProductManifold
 from ._base import BasePredictor
+from .nn import FermiDiracDecoder, KappaGCNLayer, KappaSequential, StereographicLogits
 
 # TQDM: notebook or regular
 if "ipykernel" in sys.modules:
@@ -56,101 +57,33 @@ def get_A_hat(
     return A_hat.detach()
 
 
-# A kappa-GCN layer
-class KappaGCNLayer(torch.nn.Module):
-    """Implementation for the Kappa GCN layer.
-
-    Parameters
-    ----------
-    in_features: Number of input features
-    out_features: Number of output features
-    manifold: Manifold object for the Kappa GCN
-    nonlinearity: Function for nonlinear activation.
-    """
-
-    def __init__(
-        self, in_features: int, out_features: int, manifold: Manifold, nonlinearity: Callable | None = torch.relu
-    ):
-        super().__init__()
-
-        # Parameters are Euclidean, straightforardly
-        # self.W = torch.rand(in_features, out_features)
-        self.W = torch.nn.Parameter(torch.randn(in_features, out_features) * 0.01)
-        # self.b = torch.nn.Parameter(torch.rand(out_features))
-
-        # Noninearity must be applied via the manifold
-        if nonlinearity is None:
-            self.sigma = lambda x: x
-        else:
-            self.sigma = lambda x: manifold.expmap(nonlinearity(manifold.logmap(x)))
-
-        # Also store manifold
-        self.manifold = manifold
-
-    def _left_multiply(
-        self, A: Float[torch.Tensor, "n_nodes n_nodes"], X: Float[torch.Tensor, "n_nodes dim"], M: Manifold
-    ) -> Float[torch.Tensor, "n_nodes dim"]:
-        r"""$\kappa$-left matrix multiply two matrices $\mathbf{A}$ and $\mathbf{X}$.
-
-        $$\mathbf{A} \boxtimes_\kappa \mathbf{X}$$
-
-        Args:
-            A: Adjacency matrix of the graph
-            X: Embedding matrix of the graph.
-            M: Manifold object for the Kappa GCN - need to specify in case we're going by component
-
-        Returns:
-            out: result of the Kappa left matrix multiplication.
-        """
-        # Vectorized version:
-        return M.manifold.weighted_midpoint(
-            xs=X.unsqueeze(0),  # (1, N, D)
-            weights=A,  # (N, N)
-            reducedim=[1],  # Sum over the N points dimension (dim 1)
-            dim=-1,  # Compute conformal factors along the points dimension
-            keepdim=False,  # Squeeze the batch dimension out
-            lincomb=True,  # Scale by sum of weights (A.sum(dim=1))
-            posweight=False,
-        )
-
-    def forward(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
-    ) -> Float[torch.Tensor, "n_nodes dim"]:
-        """Forward pass for the Kappa GCN layer.
-
-        Args:
-            X: Embedding matrix
-            A_hat: Normalized adjacency matrix
-
-        Returns:
-            AXW: Transformed node features after message passing and nonlinear activation.
-        """
-        # 1. right-multiply X by W - mobius_matvec broadcasts correctly (verified)
-        XW = self.manifold.manifold.mobius_matvec(m=self.W, x=X)
-
-        # 2. left-multiply (X @ W) by A_hat - we need our own implementation for this
-        if A_hat is None:
-            AXW = XW
-        elif isinstance(self.manifold, ProductManifold):
-            XWs = self.manifold.factorize(XW)
-            AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
-        else:
-            AXW = self._left_multiply(A_hat, XW, self.manifold)
-
-        # 3. Apply nonlinearity - note that sigma is wrapped with our manifold.apply decorator
-        AXW = self.sigma(AXW)
-
-        return AXW
-
-
 class KappaGCN(BasePredictor, torch.nn.Module):
     """Implementation for the Kappa GCN.
 
-    Parameters
-    ----------
-    pm: ProductManifold object for the Kappa GCN
-    out_features: Number of output features
-    nonlinearity: Function for nonlinear activation.
+    Attributes:
+        pm: ProductManifold object for the Kappa GCN.
+        output_dim: Number of output features.
+        hidden_dims: List of hidden layer dimensions.
+        nonlinearity: Function for nonlinear activation.
+        task: Task type, one of ["classification", "regression", "link_prediction"]
+        random_state: Random seed for reproducibility.
+        device: Device to run the model on (default: None, uses current device).
+        is_fitted_: Whether the model has been fitted.
+        loss_history_: History of loss values during training.
+
+    Args:
+        pm: ProductManifold object for the Kappa GCN
+        output_dim: Number of output features
+        hidden_dims: List of hidden layer dimensions (default: [pm.dim, pm.dim, pm.dim])
+        nonlinearity: Function for nonlinear activation.
+        task: Task type, one of ["classification", "regression", "link_prediction"].
+        random_state: Random seed for reproducibility.
+        device: Device to run the model on (default: None, uses current device).
+
+    Raises:
+        ValueError: If the ProductManifold is not stereographic or if hidden dimensions are not
+            compatible with the manifold's curvature.
+        ValueError: If hidden dimensions are specified for a non-Euclidean manifold.
     """
 
     def __init__(
@@ -165,16 +98,19 @@ class KappaGCN(BasePredictor, torch.nn.Module):
     ):
         BasePredictor.__init__(self, pm=pm, task=task, random_state=random_state, device=device)
         torch.nn.Module.__init__(self)
+
         self.pm = pm
         self.task = task
+        self.output_dim = output_dim
 
         # Ensure pm is stereographic
         if not pm.is_stereographic:
             raise ValueError(
-                "ProductManifold must be stereographic for KappaGCN to work. Please use pm.stereographic() to convert."
+                "ProductManifold must be stereographic for KappaGCN to work. "
+                "Please use pm.stereographic() to convert."
             )
 
-        # Hidden layers
+        # Build layer dimensions
         if hidden_dims is None:
             dims = [pm.dim, pm.dim, pm.dim]  # 2 hidden layers
         elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
@@ -182,17 +118,22 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         else:
             dims = [pm.dim] + hidden_dims
 
-        self.layers = torch.nn.ModuleList(
-            [KappaGCNLayer(dims[i], dims[i + 1], pm, nonlinearity) for i in range(len(dims) - 1)]
-        )
+        # Build the main GCN layers using Sequential
+        gcn_layers = []
+        for i in range(len(dims) - 1):
+            gcn_layers.append(KappaGCNLayer(dims[i], dims[i + 1], pm, nonlinearity))
 
-        # Final layer params
+        self.gcn_layers = KappaSequential(*gcn_layers)
+
+        # Task-specific output layers - much cleaner now!
         if task == "link_prediction":
-            self.fermi_dirac_temperature = torch.nn.Parameter(torch.tensor(1.0))
-            self.fermi_dirac_bias = torch.nn.Parameter(torch.tensor(0.0))
-        else:
-            self.W_logits = torch.nn.Parameter(torch.randn(dims[-1], output_dim) * 0.01)
-            self.p_ks = geoopt.ManifoldParameter(torch.zeros(output_dim, pm.dim), manifold=pm.manifold)
+            self.output_layer = FermiDiracDecoder(pm, learnable_params=True)
+        elif task == "classification":
+            self.output_layer = StereographicLogits(
+                dims[-1], output_dim, pm, apply_softmax=False  # Apply softmax in loss
+            )
+        else:  # regression
+            self.output_layer = StereographicLogits(dims[-1], output_dim, pm, apply_softmax=False)
 
     def forward(
         self,
@@ -201,151 +142,21 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         aggregate_logits: bool = True,
         softmax: bool = False,
     ) -> Float[torch.Tensor, "n_nodes n_classes"] | Float[torch.Tensor, "n_nodes"]:
-        """Forward pass for the Kappa GCN.
+        """Forward pass through the GCN layers and output head."""
+        # Pass through main GCN layers
+        H = self.gcn_layers(X, A_hat)
 
-        Args:
-            X: Embedding matrix
-            A_hat: Normalized adjacency matrix
-            aggregate_logits: boolean for whether to aggregate logits
-            softmax: boolean for whether to use softmax function
-
-        Returns:
-            logits_agg: output of Kappa GCN network
-        """
-        H = X
-
-        # Pass through kappa-GCN layers
-        for layer in self.layers:
-            H = layer(H, A_hat)
-
-        # Final layer is to get logits
+        # Task-specific output using the specialized layers
         if self.task == "link_prediction":
-            # Taken from https://arxiv.org/pdf/1910.12933
-            return (-(self.pm.pdist2(H) - self.fermi_dirac_bias) / self.fermi_dirac_temperature).flatten()
+            return self.output_layer(H, return_pairwise=False)  # Flattened for link prediction
         else:
-            logits = self.get_logits(X=X, W=self.W_logits, b=self.p_ks)
-            if A_hat is not None and aggregate_logits:
-                logits = A_hat @ logits
+            # For classification/regression, use stereographic logits
+            logits = self.output_layer(H, A_hat, aggregate_logits=aggregate_logits)
 
             if softmax:
-                logits = torch.softmax(logits, dim=1)
+                logits = torch.softmax(logits, dim=-1)
 
             return logits.squeeze()
-
-    def _get_logits_single_manifold(
-        self,
-        X: Float[torch.Tensor, "n_nodes dim"],
-        W: Float[torch.Tensor, "dim n_classes"],
-        b: Float[torch.Tensor, "n_classes dim"],
-        M: Manifold,
-        return_inner_products: bool = False,
-    ) -> (
-        tuple[Float[torch.Tensor, "n_nodes n_classes"], Float[torch.Tensor, "n_nodes n_classes"]]
-        | Float[torch.Tensor, "n_nodes n_classes"]
-    ):
-        """Helper function for get_logits."""
-        # For convenience, get curvature and manifold
-        kappa = torch.tensor(M.curvature, dtype=X.dtype, device=X.device)
-
-        # # Need transposes because column vectors live in the tangent space
-        # W = M.manifold.transp0(b, W.T).T  # (d, k)
-
-        # Change shapes
-        b = b[None, :]  # (1, k)
-        X = X[:, None]  # (n, 1, d)
-
-        # 1. Get z_k = -p_k \oplus_\kappa x (vectorized)
-        # This works for the Euclidean case too - it becomes a simple subtraction
-        z_ks = M.manifold.mobius_add(-b, X)  # (n, k, d)
-        # z_ks = M.manifold.projx(z_ks)  # (n, k, d)
-
-        # 2. Get norms for relevant terms
-        z_k_norms = torch.norm(z_ks, dim=-1).clamp_min(1e-10)  # (n, k)
-        a_k_norms = torch.norm(W, dim=0).clamp_min(1e-10)  # (k,)
-
-        # 3. Get the distance to the hyperplane
-        za = torch.einsum("nkd,dk->nk", z_ks, W)  # (n, k)
-
-        # 4. Get the logits
-        if abs(kappa) < 1e-4:
-            # Euclidean case: it's just a dot product
-            logits = 4 * za
-        else:
-            # Non-Euclidean case: need to do the arsinh
-            dist = 2 * za / ((1 + kappa * z_k_norms**2) * a_k_norms)
-            dist = geoopt.manifolds.stereographic.math.arsin_k(dist, kappa * abs(kappa))
-
-            # Get the coefficients
-            lambda_pks = M.manifold.lambda_x(b)  # (k,)
-            coeffs = lambda_pks * a_k_norms  # / abs(kappa) ** 0.5
-            logits = coeffs * dist
-
-        if return_inner_products:
-            return logits, za
-        else:
-            return logits
-
-    def _get_logits_product_manifold(
-        self,
-        X: Float[torch.Tensor, "n_nodes dim"],
-        W: Float[torch.Tensor, "dims n_classes"],
-        b: Float[torch.Tensor, "n_classes dim"],
-        M: ProductManifold,
-    ) -> Float[torch.Tensor, "n_nodes n_classes"]:
-        """Helper function for get_logits."""
-        # For convenience, get curvature and manifold
-        # kappas = [man.curvature for manifold in M.P]
-        Xs = M.factorize(X)
-        bs = M.factorize(b)
-        Ws = [w.T for w in M.factorize(W.T)]
-        res = [
-            self._get_logits_single_manifold(X_man, W_man, b_man, man, return_inner_products=True)
-            for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P)
-        ]
-
-        # Each result is (n, k) logits and (n, k) inner products
-        logits, inner_products = zip(*res)
-
-        # Final logits: l2 norm of logits * sign of inner product
-        stacked_logits = torch.stack(logits, dim=2)  # (n, k, m)
-        stack_products = torch.stack(inner_products, dim=2)  # (n, k, m)
-
-        # Reduce
-        logits = torch.norm(stacked_logits, dim=2)  # (n, k)
-        signs = torch.sign(stack_products.sum(dim=2))  # (n, k)
-
-        return logits * signs
-
-    def get_logits(
-        self,
-        X: Float[torch.Tensor, "n_nodes dim"],
-        W: Float[torch.Tensor, "dims n_classes"] | None = None,
-        b: Float[torch.Tensor, "n_classes dim"] | None = None,
-    ) -> Float[torch.Tensor, "n_nodes n_classes"]:
-        """Computes logits given the manifold.
-
-        Credit to the Curve Your Attention paper for an implementation we referenced:
-        https://openreview.net/forum?id=AN5uo4ByWH
-
-        Args:
-            X: Input points tensor of shape (n, d), where n is the number of points and d is the dimensionality.
-            W: Weight tensor of shape (d, k), where k is the number of classes.
-            b: Bias tensor of shape (k,)
-
-        Returns:
-            Logits: tensor of shape (n, k).
-        """
-        if W is None:
-            W = self.W_logits
-        if b is None:
-            b = self.p_ks
-
-        if isinstance(self.pm, ProductManifold):
-            return self._get_logits_product_manifold(X, W, b, self.pm)
-        elif isinstance(self.pm, Manifold):
-            return self._get_logits_single_manifold(X, W, b, self.pm, return_inner_products=False)
-        else:
-            raise ValueError("Manifold must be a Manifold or ProductManifold object.")
 
     def fit(
         self,
@@ -378,17 +189,23 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         y = y.clone()
         A = A.clone() if A is not None else None
 
-        # Standard fit
-        opt_params = [layer.W for layer in self.layers]
-        ropt_params = []
+        # Convert A to A_hat
+        A_hat = get_A_hat(A, make_symmetric=True, add_self_loops=True) if A is not None else None
+
+        # Collect all paramters
+        euclidean_params = []
+        riemannian_params = []
+        for layer in self.gcn_layers.layers:
+            euclidean_params.append(layer.W)
         if self.task == "link_prediction":
-            opt_params += [self.fermi_dirac_temperature, self.fermi_dirac_bias]
+            euclidean_params += [self.output_layer.temperature, self.output_layer.bias]
         else:
-            opt_params += [self.W_logits]
-            ropt_params += [self.p_ks]
-        opt = torch.optim.Adam(opt_params, lr=lr)
-        if ropt_params:
-            ropt = geoopt.optim.RiemannianAdam(ropt_params, lr=lr)
+            euclidean_params += [self.output_layer.W]
+            riemannian_params += [self.output_layer.p_ks]
+
+        # Optimizers
+        opt = torch.optim.Adam(euclidean_params, lr=lr)
+        ropt = geoopt.optim.RiemannianAdam(riemannian_params, lr=lr)
 
         if self.task == "classification":
             loss_fn = torch.nn.CrossEntropyLoss()
@@ -408,15 +225,15 @@ class KappaGCN(BasePredictor, torch.nn.Module):
 
         for i in range(epochs):
             opt.zero_grad()
-            if ropt_params:
+            if riemannian_params:
                 ropt.zero_grad()
-            y_pred = self(X, A)
+            y_pred = self(X, A_hat)
             if self.task == "link_prediction":
                 y_pred = y_pred[lp_indices]
             loss = loss_fn(y_pred, y)
             loss.backward()
             opt.step()
-            if ropt_params:
+            if riemannian_params:
                 ropt.step()
 
             # Progress bar
@@ -451,8 +268,9 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         # Copy everything
         X = X.clone()
         A = A.clone() if A is not None else None
+        A_hat = get_A_hat(A, make_symmetric=True, add_self_loops=True) if A is not None else None
 
         # Get edges for test set
         self.eval()
-        y_pred = self(X, A)
+        y_pred = self(X, A_hat)
         return y_pred
