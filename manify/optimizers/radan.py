@@ -9,7 +9,7 @@ https://openreview.net/forum?id=9VmOgMN4Ie
 
 If you find this work useful, please cite the paper as follows:
 
-bibtex
+```bibtex
 @article{Yuan2025,
   title={Riemannian Fuzzy K-Means},
   author={Anonymous},
@@ -17,10 +17,11 @@ bibtex
   year={2025},
   url={https://openreview.net/forum?id=9VmOgMN4Ie}
 }
+```
 
 If you're interested in Adan, you can see:
 
-bibtex
+```bibtex
 @ARTICLE{10586270,
   author={Xie, Xingyu and Zhou, Pan and Li, Huan and Lin, Zhouchen and Yan, Shuicheng},
   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
@@ -32,6 +33,7 @@ bibtex
   keywords={Training;Convergence;Complexity theory;Deep learning;Computer architecture;Task analysis;Stochastic processes;Adaptive optimizer;fast DNN training;DNN optimizer},
   doi={10.1109/TPAMI.2024.3423382}
 }
+```
 
 If you have questions about the code, feel free to contact: yuanjinghuiiii@gmail.com.
 """

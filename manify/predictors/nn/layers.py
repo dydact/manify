@@ -162,27 +162,23 @@ class StereographicLogits(nn.Module):
     Can optionally apply softmax for classification tasks.
 
     Args:
-        in_features: Number of input features (dimensionality of input space)
         out_features: Number of output classes (dimensionality of output space)
         manifold: Manifold or ProductManifold object defining the geometry
         apply_softmax: Whether to apply softmax to the output logits (default: False)
     """
 
-    def __init__(
-        self, in_features: int, out_features: int, manifold: Manifold | ProductManifold, apply_softmax: bool = False
-    ):
+    def __init__(self, out_features: int, manifold: Manifold | ProductManifold, apply_softmax: bool = False):
         super().__init__()
 
-        self.in_features = in_features
         self.out_features = out_features
         self.manifold = manifold
         self.apply_softmax = apply_softmax
 
         # Weight matrix (Euclidean parameters)
-        self.W = nn.Parameter(torch.randn(in_features, out_features) * 0.01)
+        self.W = nn.Parameter(torch.randn(manifold.dim, out_features) * 0.01)
 
         # Bias points on the manifold
-        self.p_ks = geoopt.ManifoldParameter(torch.zeros(out_features, in_features), manifold=manifold.manifold)
+        self.p_ks = geoopt.ManifoldParameter(torch.zeros(out_features, manifold.dim), manifold=manifold.manifold)
 
     def _get_logits_single_manifold(
         self,

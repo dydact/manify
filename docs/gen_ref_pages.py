@@ -14,9 +14,11 @@ doc_dir = "reference"
 
 # Custom titles mapping
 module_titles = {
+    "clustering": "Clustering",
     "curvature_estimation": "Curvature Estimation",
     "embedders": "Embedders",
     "manifolds": "Manifolds",
+    "optimizers": "Optimizers",
     "predictors": "Predictors",
     "utils": "Utilities",
 }

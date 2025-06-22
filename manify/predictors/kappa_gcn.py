@@ -128,12 +128,9 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         # Task-specific output layers - much cleaner now!
         if task == "link_prediction":
             self.output_layer = FermiDiracDecoder(pm, learnable_params=True)
-        elif task == "classification":
-            self.output_layer = StereographicLogits(
-                dims[-1], output_dim, pm, apply_softmax=False  # Apply softmax in loss
-            )
-        else:  # regression
-            self.output_layer = StereographicLogits(dims[-1], output_dim, pm, apply_softmax=False)
+        else:
+            # This is the same for classification/regression since we apply softmax in the loss function, not here
+            self.output_layer = StereographicLogits(output_dim, pm, apply_softmax=False)
 
     def forward(
         self,
