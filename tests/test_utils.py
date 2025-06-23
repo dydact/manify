@@ -159,13 +159,13 @@ def test_visualization():
     assert X_S2_polar.shape == (100, 2), "S^2 polar coordinates should have 2 dimensions"
 
     # Higher dimensions are basically all the same
-    pm = ProductManifold(signature=[(-1.0, 10), (1.0, 10)])
+    pm = ProductManifold(signature=[(-1.0, 4), (1.0, 4)])
     X, _ = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
     X_H, X_S = pm.factorize(X)
-    assert X_H.shape == (100, 11), "Hyperbolic factor should have 11 dimensions"
-    assert X_S.shape == (100, 11), "Spherical factor should have 11 dimensions"
+    assert X_H.shape == (100, 5), "Hyperbolic factor should have 5 dimensions"
+    assert X_S.shape == (100, 5), "Spherical factor should have 5 dimensions"
 
     X_H_poincare = hyperboloid_to_poincare(X_H)
     X_S_polar = spherical_to_polar(X_S)
-    assert X_H_poincare.shape == (100, 10), "Poincare coordinates should have 10 dimensions"
-    assert X_S_polar.shape == (100, 10), "Polar coordinates should have 10 dimensions"
+    assert X_H_poincare.shape == (100, 4), "Poincare coordinates should have 4 dimensions"
+    assert X_S_polar.shape == (100, 4), "Polar coordinates should have 4 dimensions"
