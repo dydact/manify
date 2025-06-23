@@ -25,6 +25,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
+      # Cache HuggingFace - this saves time running tests/test_utils.py on subsequent runs
+      - name: Cache HuggingFace datasets
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-huggingface-${{ hashFiles('tests/test_*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-huggingface-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

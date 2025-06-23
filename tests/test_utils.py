@@ -1,5 +1,6 @@
 from manify.utils.dataloaders import load_hf
 from manify.utils.benchmarks import benchmark
+from manify.utils.visualization import hyperboloid_to_poincare, spherical_to_polar, S2_to_polar
 from manify.manifolds import ProductManifold
 
 
@@ -137,3 +138,34 @@ def test_dataloaders():
             assert labels is None, f"Labels should be None for {dataset_name}"
 
         print("Done testing dataloaders")
+
+
+def test_visualization():
+    print("Testing visualization functions")
+
+    # 2-D (special case)
+    pm = ProductManifold(signature=[(-1.0, 2), (1.0, 2)])
+    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+
+    X_H, X_S = pm.factorize(X)
+    assert X_H.shape == (100, 3), "Hyperbolic factor should have 3 dimensions"
+    assert X_S.shape == (100, 3), "Spherical factor should have 3 dimensions"
+
+    X_H_poincare = hyperboloid_to_poincare(X_H)
+    X_S_polar = spherical_to_polar(X_S)
+    X_S2_polar = S2_to_polar(X_S)
+    assert X_H_poincare.shape == (100, 2), "Poincare coordinates should have 2 dimensions"
+    assert X_S_polar.shape == (100, 2), "Polar coordinates should have  2 dimensions"
+    assert X_S2_polar.shape == (100, 2), "S^2 polar coordinates should have 2 dimensions"
+
+    # Higher dimensions are basically all the same
+    pm = ProductManifold(signature=[(-1.0, 10), (1.0, 10)])
+    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X_H, X_S = pm.factorize(X)
+    assert X_H.shape == (100, 11), "Hyperbolic factor should have 11 dimensions"
+    assert X_S.shape == (100, 11), "Spherical factor should have 11 dimensions"
+
+    X_H_poincare = hyperboloid_to_poincare(X_H)
+    X_S_polar = spherical_to_polar(X_S)
+    assert X_H_poincare.shape == (100, 10), "Poincare coordinates should have 10 dimensions"
+    assert X_S_polar.shape == (100, 10), "Polar coordinates should have 10 dimensions"

@@ -319,8 +319,7 @@ class FermiDiracDecoder(nn.Module):
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
         A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
-        return_pairwise: bool = True,
-    ) -> Float[torch.Tensor, "n_nodes n_nodes"] | Float[torch.Tensor, "n_edges"]:
+    ) -> Float[torch.Tensor, "n_nodes n_nodes"]:
         """Forward pass through Fermi-Dirac decoder.
 
         Args:
@@ -337,11 +336,7 @@ class FermiDiracDecoder(nn.Module):
         # Apply Fermi-Dirac transformation
         logits = -(pairwise_dist - self.bias) / self.temperature
 
-        if return_pairwise:
-            return logits
-        else:
-            # Return flattened upper triangle (common for link prediction)
-            return logits.flatten()
+        return logits
 
 
 class StereographicLayerNorm(nn.Module):

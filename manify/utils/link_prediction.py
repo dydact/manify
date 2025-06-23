@@ -61,7 +61,7 @@ def make_link_prediction_dataset(
     return X, y, new_pm
 
 
-def split_dataset(
+def split_link_prediction_dataset(
     X: Float[torch.Tensor, "n_pairs n_dims"],
     y: Int[torch.Tensor, "n_pairs"],
     test_size: float = 0.2,

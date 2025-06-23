@@ -106,7 +106,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         # Ensure pm is stereographic
         if not pm.is_stereographic:
             raise ValueError(
-                "ProductManifold must be stereographic for KappaGCN to work. "
+                "ProductManifold must be stereographic for KappaGCN to work."
                 "Please use pm.stereographic() to convert."
             )
 
@@ -133,14 +133,18 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
         aggregate_logits: bool = True,
         softmax: bool = False,
-    ) -> Float[torch.Tensor, "n_nodes n_classes"] | Float[torch.Tensor, "n_nodes"]:
+    ) -> (
+        Float[torch.Tensor, "n_nodes n_classes"]
+        | Float[torch.Tensor, "n_nodes"]
+        | Float[torch.Tensor, "n_nodes n_nodes"]
+    ):
         """Forward pass through the GCN layers and output head."""
         # Pass through main GCN layers
         H = self.gcn_layers(X, A_hat)
 
         # Task-specific output using the specialized layers
         if self.task == "link_prediction":
-            return self.output_layer(H, return_pairwise=False)  # Flattened for link prediction
+            return self.output_layer(H)  # Flattened for link prediction
         else:
             # For classification/regression, use stereographic logits
             logits = self.output_layer(H, A_hat, aggregate_logits=aggregate_logits)
@@ -158,7 +162,6 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         epochs: int = 2_000,
         lr: float = 1e-2,
         use_tqdm: bool = True,
-        lp_indices: list[tuple[int]] | None = None,
         tqdm_prefix: str | None = None,
     ) -> KappaGCN:
         """Fit the Kappa GCN model.
@@ -170,11 +173,8 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             epochs: Number of training epochs (default=200).
             lr: Learning rate (default=1e-2).
             use_tqdm: Whether to use tqdm for progress bar.
-            lp_indices: Indices for link prediction task (e.g.: [(0, 1), (2, 3), ...]).
             tqdm_prefix: Prefix for tqdm progress bar.
         """
-        if lp_indices is None and self.task == "link_prediction":
-            raise ValueError("Must provide indices for link prediction task!")
 
         # Copy everything
         X = X.clone()
@@ -197,7 +197,10 @@ class KappaGCN(BasePredictor, torch.nn.Module):
 
         # Optimizers
         opt = torch.optim.Adam(euclidean_params, lr=lr)
-        ropt = geoopt.optim.RiemannianAdam(riemannian_params, lr=lr)
+        if riemannian_params:
+            ropt = geoopt.optim.RiemannianAdam(riemannian_params, lr=lr)
+        else:
+            ropt = None
 
         if self.task == "classification":
             loss_fn = torch.nn.CrossEntropyLoss()
@@ -207,7 +210,8 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             y = y.float()
         elif self.task == "link_prediction":
             loss_fn = torch.nn.BCEWithLogitsLoss()
-            y = y.flatten().float()
+            # y = y.flatten().float()
+            y = y.float()
         else:
             raise ValueError("Invalid task!")
 
@@ -220,8 +224,6 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             if riemannian_params:
                 ropt.zero_grad()
             y_pred = self(X, A_hat)
-            if self.task == "link_prediction":
-                y_pred = y_pred[lp_indices]
             loss = loss_fn(y_pred, y)
             loss.backward()
             opt.step()
