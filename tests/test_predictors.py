@@ -120,7 +120,7 @@ def test_all_regressors():
 def test_all_link_predictors():
     print("Testing basic link predictor functionality")
     pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
-    X, _ = pm.gaussian_mixture(num_points=20, num_classes=1, seed=42, task="classification")
+    X, _ = pm.gaussian_mixture(num_points=100, num_classes=1, seed=42, task="classification")
 
     # Compute adjacency matrix: top 3 neighbors for each node
     with torch.no_grad():
@@ -137,7 +137,7 @@ def test_all_link_predictors():
 
     # Use split_link_prediction_dataset for train/test split
     X_train_lp, X_test_lp, y_train_lp, y_test_lp, idx_train, idx_test = split_link_prediction_dataset(
-        X_lp, y_lp, test_size=0.2, random_state=42
+        X_lp, y_lp, test_size=0.2, random_state=42, downsample=20
     )
 
     # Test traditional models - these treat data as a classification task
