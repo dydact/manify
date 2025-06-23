@@ -66,39 +66,6 @@ def split_link_prediction_dataset(
     y: Int[torch.Tensor, "n_pairs"],
     test_size: float = 0.2,
     downsample: int | None = None,
-    **kwargs: Any,
-) -> tuple[
-    Float[torch.Tensor, "n_pairs n_dims"],
-    Float[torch.Tensor, "n_pairs n_dims"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-    Int[torch.Tensor, "n_pairs"],
-]:
-    """Split a link prediction dataset into train and test sets in a stratified (non-leaky) manner.
-
-    Args:
-        X: Node-pair embeddings.
-        y: Edge labels derived from the adjacency matrix.
-        test_size: Proportion of the dataset to include in the test split.
-        downsample: Optional number of positive and negative samples to retain.
-        **kwargs: Additional keyword arguments for train_test_split.
-
-    Returns:
-        X_train: Training node-pair embeddings.
-        X_test: Testing node-pair embeddings.
-        y_train: Training edge labels.
-        y_test: Testing edge labels.
-        idx_train: Indices of training nodes.
-        idx_test: Indices of testing nodes.
-    """
-
-
-def split_link_prediction_dataset(
-    X: Float[torch.Tensor, "n_pairs n_dims"],
-    y: Int[torch.Tensor, "n_pairs"],
-    test_size: float = 0.2,
-    downsample: int | None = None,
     random_state: int | None = None,
     **kwargs: Any,
 ) -> tuple[
