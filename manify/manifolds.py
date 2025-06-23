@@ -232,9 +232,13 @@ class Manifold:
             sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device)
         else:
             sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
-        assert sigma.shape == (n, self.dim, self.dim)
-        assert torch.all(sigma == sigma.transpose(-1, -2))
-        assert z_mean.shape[-1] == self.ambient_dim
+        assert sigma.shape == (
+            n,
+            self.dim,
+            self.dim,
+        ), f"Expected sigma shape {(n, self.dim, self.dim)}, got {sigma.shape}"
+        assert torch.allclose(sigma, sigma.transpose(-1, -2)), "Covariance matrix must be symmetric"
+        assert z_mean.shape[-1] == self.ambient_dim, f"Expected z_mean shape {self.ambient_dim}, got {z_mean.shape[-1]}"
 
         # Sample initial vector from N(0, sigma)
         N = torch.distributions.MultivariateNormal(
@@ -252,7 +256,9 @@ class Manifold:
 
         # If we're sampling at the origin, z and v should be the same
         mask = torch.all(z == self.mu0, dim=1)
-        assert torch.allclose(v_tangent[mask], z[mask])
+        assert torch.allclose(
+            v_tangent[mask], z[mask]
+        ), "Tangent vectors at the origin should be equal to the sampled points at the origin"
 
         # Exp map onto the manifold
         x = self.manifold.expmap(x=z_mean, u=z)
@@ -387,7 +393,9 @@ class Manifold:
         for X in denom:
             X[X.abs() < 1e-6] = 1e-6  # Avoid division by zero
         stereo_points = [n / d for n, d in zip(num, denom)]
-        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points)
+        assert all(
+            stereo_manifold.manifold.check_point(X) for X in stereo_points
+        ), "Generated points do not lie on the target manifold"
 
         return stereo_manifold, *stereo_points
 
@@ -638,8 +646,12 @@ class ProductManifold(Manifold):
                 for M, sigma in zip(self.P, sigma_factorized)
             ]
 
-        assert all(sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized))
-        assert z_mean.shape[-1] == self.ambient_dim
+        assert all(
+            sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized)
+        ), "Sigma matrices must match the dimensions of the manifolds."
+        assert (
+            z_mean.shape[-1] == self.ambient_dim
+        ), "z_mean must have the same ambient dimension as the product manifold."
 
         # Sample initial vector from N(0, sigma)
         samples = [M.sample(z_M, sigma_M) for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)]
@@ -712,7 +724,9 @@ class ProductManifold(Manifold):
         stereo_points = [
             torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
         ]
-        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points)
+        assert all(
+            stereo_manifold.manifold.check_point(X) for X in stereo_points
+        ), "Generated points do not lie on the target manifold"
 
         return stereo_manifold, *stereo_points
 
@@ -747,7 +761,9 @@ class ProductManifold(Manifold):
         orig_points = [
             torch.hstack([M.inverse_stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
         ]
-        assert all(orig_manifold.manifold.check_point(X) for X in orig_points)
+        assert all(
+            orig_manifold.manifold.check_point(X) for X in orig_points
+        ), "Generated points do not lie on the target manifold"
 
         return orig_manifold, *orig_points
 
@@ -789,7 +805,7 @@ class ProductManifold(Manifold):
         if num_clusters is None:
             num_clusters = num_classes
         else:
-            assert num_clusters >= num_classes
+            assert num_clusters >= num_classes, "Number of clusters must be at least as large as number of classes."
 
         # Adjust covariance matrices for number of dimensions
         if adjust_for_dims:
@@ -801,7 +817,7 @@ class ProductManifold(Manifold):
             z_mean=torch.vstack([self.mu0] * num_clusters),
             sigma_factorized=[torch.stack([torch.eye(M.dim)] * num_clusters) * cov_scale_means for M in self.P],
         )
-        assert cluster_means.shape == (num_clusters, self.ambient_dim)
+        assert cluster_means.shape == (num_clusters, self.ambient_dim), "Cluster means shape mismatch."
 
         # Generate class assignments
         cluster_probs = torch.rand(num_clusters)
@@ -810,7 +826,7 @@ class ProductManifold(Manifold):
         cluster_assignments = torch.multinomial(input=cluster_probs, num_samples=num_points, replacement=True)
         while (cluster_assignments.bincount() < 2).any():
             cluster_assignments = torch.multinomial(input=cluster_probs, num_samples=num_points, replacement=True)
-        assert cluster_assignments.shape == (num_points,)
+        assert cluster_assignments.shape == (num_points,), "Cluster assignments shape mismatch."
 
         # Generate covariance matrices for each class - Wishart distribution
         cov_matrices = [
@@ -823,10 +839,10 @@ class ProductManifold(Manifold):
 
         # Generate random samples for each cluster
         sample_means = torch.stack([cluster_means[c] for c in cluster_assignments])
-        assert sample_means.shape == (num_points, self.ambient_dim)
+        assert sample_means.shape == (num_points, self.ambient_dim), "Sample means shape mismatch."
         sample_covs = [torch.stack([cov_matrix[c] for c in cluster_assignments]) for cov_matrix in cov_matrices]
         samples, tangent_vals = self.sample(z_mean=sample_means, sigma_factorized=sample_covs)
-        assert samples.shape == (num_points, self.ambient_dim)
+        assert samples.shape == (num_points, self.ambient_dim), "Sample shape mismatch."
 
         # Map clusters to classes
         cluster_to_class = torch.cat(
@@ -835,8 +851,10 @@ class ProductManifold(Manifold):
                 torch.randint(0, num_classes, (num_clusters - num_classes,), device=self.device),
             ]
         )
-        assert cluster_to_class.shape == (num_clusters,)
-        assert torch.unique(cluster_to_class).shape == (num_classes,)
+        assert cluster_to_class.shape == (num_clusters,), "Cluster to class mapping shape mismatch."
+        assert torch.unique(cluster_to_class).shape == (
+            num_classes,
+        ), "Cluster to class mapping must cover all classes."
 
         # Generate outputs
         if task == "classification":

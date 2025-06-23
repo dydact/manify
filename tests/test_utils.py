@@ -145,7 +145,7 @@ def test_visualization():
 
     # 2-D (special case)
     pm = ProductManifold(signature=[(-1.0, 2), (1.0, 2)])
-    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X, _ = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
 
     X_H, X_S = pm.factorize(X)
     assert X_H.shape == (100, 3), "Hyperbolic factor should have 3 dimensions"
@@ -160,7 +160,7 @@ def test_visualization():
 
     # Higher dimensions are basically all the same
     pm = ProductManifold(signature=[(-1.0, 10), (1.0, 10)])
-    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X, _ = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
     X_H, X_S = pm.factorize(X)
     assert X_H.shape == (100, 11), "Hyperbolic factor should have 11 dimensions"
     assert X_S.shape == (100, 11), "Spherical factor should have 11 dimensions"
