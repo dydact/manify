@@ -28,7 +28,7 @@ class ProductSpacePerceptron(BasePredictor):
         device: str | None = None,
     ):
         # Initialize base class
-        super().__init__(pm, task=task, random_state=random_state, device=device)
+        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence

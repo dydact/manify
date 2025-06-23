@@ -345,14 +345,19 @@ class FermiDiracDecoder(nn.Module):
 
 
 class StereographicLayerNorm(nn.Module):
+    """Stereographic Layer Normalization."""
+
     def __init__(self, manifold: Manifold | ProductManifold, num_heads: int):
         raise NotImplementedError
 
     def forward(self, X: Float[torch.Tensor, "n_nodes dim"]) -> Float[torch.Tensor, "n_nodes dim"]:
+        """Apply layer normalization on the stereographic manifold."""
         raise NotImplementedError
 
 
 class StereographicAttention(nn.Module):
+    """Stereographic Attention Layer."""
+
     def __init__(self, manifold: Manifold | ProductManifold, num_heads: int):
         raise NotImplementedError
 
@@ -361,10 +366,13 @@ class StereographicAttention(nn.Module):
         X: Float[torch.Tensor, "n_nodes dim"],
         mask: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
     ) -> Float[torch.Tensor, "n_nodes dim"]:
+        """Forward pass for the stereographic attention layer."""
         raise NotImplementedError
 
 
 class StereographicTransformer(nn.Module):
+    """Stereographic Transformer Block."""
+
     def __init__(self, manifold: Manifold | ProductManifold, num_blocks: int, num_heads: int):
         raise NotImplementedError
 
@@ -373,4 +381,5 @@ class StereographicTransformer(nn.Module):
         X: Float[torch.Tensor, "n_nodes dim"],
         mask: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
     ) -> Float[torch.Tensor, "n_nodes dim"]:
+        """Forward pass through the stereographic transformer block."""
         raise NotImplementedError

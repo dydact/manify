@@ -14,3 +14,4 @@ data/results_wandb/*incremental*
 site/
 coverage.xml
 .coverage*
+settings.json

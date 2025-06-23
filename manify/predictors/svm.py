@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import cvxpy
+import cvxpy as cp
 import numpy as np
 import torch
-from sklearn.base import BaseEstimator
 
 if TYPE_CHECKING:
-    from beartype.typing import Literal
+    from beartype.typing import Literal, Any
     from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
@@ -18,8 +17,12 @@ from ._base import BasePredictor
 from ._kernel import product_kernel
 
 
-class ProductSpaceSVM(BaseEstimator):
-    """Product Space SVM class."""
+class ProductSpaceSVM(BasePredictor):
+    """Product Space SVM class in a product manifold setting.
+
+    Trains one-vs-rest SVMs with Euclidean, spherical, and hyperbolic constraints
+    enforced via second-order-cone (SOC) formulations for convexity.
+    """
 
     def __init__(
         self,
@@ -33,138 +36,158 @@ class ProductSpaceSVM(BaseEstimator):
         random_state: int | None = None,
         device: str | None = None,
     ):
-        # Initialize base class
-        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
+        """Initialize the ProductSpaceSVM.
 
+        Args:
+            pm: A ProductManifold instance specifying component manifolds.
+            weights: Optional per-manifold weights tensor.
+            h_constraints: Whether to enforce hyperbolic constraints.
+            e_constraints: Whether to enforce Euclidean constraints.
+            s_constraints: Whether to enforce spherical constraints.
+            task: "classification" or "regression".
+            epsilon: Slack parameter for SOC constraints.
+            random_state: Random seed.
+            device: Compute device.
+        """
+        super().__init__(pm=pm, task=task, random_state=random_state, device=device)
         self.pm = pm
         self.h_constraints = h_constraints
         self.s_constraints = s_constraints
         self.e_constraints = e_constraints
         self.eps = epsilon
         self.task = task
-        if weights is None:
-            self.weights = torch.ones(len(pm.P), dtype=torch.float32)
-        else:
-            assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
-            self.weights = weights
+        self.weights = torch.ones(len(pm.P), dtype=torch.float32) if weights is None else weights
+        assert len(self.weights) == len(pm.P), "Number of weights must match manifolds."
 
     def fit(
-        self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]
+        self,
+        X: Float[torch.Tensor, "n_samples n_manifolds"],
+        y: Int[torch.Tensor, "n_samples"],
     ) -> ProductSpaceSVM:
-        """Trains the SVM model using the provided data and labels.
+        """Fit one-vs-rest SVMs on the product manifold data.
 
         Args:
-            X: The training data of shape (n_samples, n_features).
-            y: The class labels for the training data of shape (n_samples,).
+            X: Training points tensor of shape (n_samples, total_dim).
+            y: Integer class labels tensor of shape (n_samples,).
+
+        Returns:
+            The fitted ProductSpaceSVM instance.
         """
-        # Identify unique classes for multiclass classification
-        self.classes_ = torch.unique(y).tolist()
-        n_samples = X.shape[0]
+        # unique classes
+        # self.classes_ = torch.unique(y).tolist()
+        self._store_classes(y)
+        n = X.shape[0]
 
-        # Precompute kernel matrix
-        Ks, norms = product_kernel(self.pm, X, None)
-        K = torch.ones((n_samples, n_samples), dtype=X.dtype, device=X.device)
+        # aggregated kernel
+        Ks, _ = product_kernel(self.pm, X, None)
+        K_sum = torch.ones((n, n), dtype=X.dtype, device=X.device)
         for K_m, w in zip(Ks, self.weights):
-            K += w * K_m
+            K_sum += w * K_m
 
-        # Make numpy arrays
-        X = X.detach().cpu().numpy()
-        # Y = torch.diagflat(y).detach().cpu().numpy()
-        K = K.detach().cpu().numpy()
+        X_np = X.detach().cpu().numpy()
+        K_np = K_sum.detach().cpu().numpy()
 
-        # Initialize dicts for SVM parameters
+        def sqrtm_psd(P: np.ndarray) -> Any:
+            w, V = np.linalg.eigh(P)
+            w_s = np.sqrt(np.clip(w, 0, None))
+            B = V @ np.diag(w_s) @ V.T
+            return (B + B.T) * 0.5
+
+        # containers
         self.beta = {}
         self.zeta = {}
         self.epsilon = {}
+        self.b = {}
 
-        for class_label in self.classes_:
-            # Get labels
-            # y_binary = torch.where(y == class_label, 1, -1)  # Shape: (n_samples,)
-            y_binary = torch.where(y == class_label, 1, 0)  # Shape: (n_samples,)
-            Y = torch.diagflat(y_binary).detach().cpu().numpy()
+        for cls in self.classes_:
+            if isinstance(cls, torch.Tensor):
+                cls = cls.item()
+            # one-vs-rest labels: +1 for cls, -1 for others
+            y_bin = torch.where(y == cls, 1, -1)
+            Y = torch.diagflat(y_bin).detach().cpu().numpy()
 
-            # Make variables
-            zeta = cvxpy.Variable(X.shape[0])
-            beta = cvxpy.Variable(X.shape[0])
-            epsilon = cvxpy.Variable(1)
+            # variables
+            beta_var = cp.Variable(n)
+            zeta = cp.Variable(n, nonneg=True)
+            eps_var = cp.Variable(1)
+            b_var = cp.Variable(1)
 
-            # Get constraints
-            # TODO: try putting this outside of this loop?
-            constraints = [
-                epsilon >= 0,
-                zeta >= 0,
-                Y @ (K @ beta + cvxpy.sum(beta)) >= epsilon - zeta,
-                # Y @ (K @ beta) >= epsilon - zeta,  # Replaced with sum-less form
-            ]
-            for M, K_component, norm in zip(self.pm.P, Ks, norms):
-                K_component = K_component.detach().cpu().numpy()
-                norm = norm.item()
+            # base constraints
+            constraints = [eps_var >= 0]
+            constraints.append(Y @ (K_np @ beta_var + b_var) >= eps_var - zeta)
+
+            # per-manifold SOC
+            for M, K_comp in zip(self.pm.P, Ks):
+                P_np = K_comp.detach().cpu().numpy()
                 if M.type == "E" and self.e_constraints:
-                    alpha_E = 1.0  # TODO: make this flexible
-                    constraints.append(cvxpy.quad_form(beta, K_component) <= alpha_E**2)
+                    B = sqrtm_psd(P_np)
+                    constraints.append(cp.norm(B @ beta_var, 2) <= 1.0)
                 elif M.type == "S" and self.s_constraints:
-                    constraints.append(cvxpy.quad_form(beta, K_component) <= np.pi / 2)
+                    B = sqrtm_psd(P_np)
+                    constraints.append(cp.norm(B @ beta_var, 2) <= np.sqrt(np.pi / 2))
                 elif M.type == "H" and self.h_constraints:
-                    K_component_pos = K_component.clip(0, None)
-                    K_component_neg = K_component.clip(None, 0)
-                    constraints.append(cvxpy.quad_form(beta, K_component_neg) <= self.eps)
-                    constraints.append(cvxpy.quad_form(beta, K_component_pos) <= self.eps + norm)
+                    # PSD split
+                    eigvals, eigvecs = np.linalg.eigh(P_np)
+                    plus = np.clip(eigvals, 0, None)
+                    minus = np.clip(-eigvals, 0, None)
+                    Kp = (eigvecs @ np.diag(plus) @ eigvecs.T + (eigvecs @ np.diag(plus) @ eigvecs.T).T) * 0.5
+                    Km = (eigvecs @ np.diag(minus) @ eigvecs.T + (eigvecs @ np.diag(minus) @ eigvecs.T).T) * 0.5
+                    Bp = sqrtm_psd(Kp)
+                    Bm = sqrtm_psd(Km)
 
-            # CVXPY solver
-            cvxpy.Problem(
-                objective=cvxpy.Minimize(-epsilon + cvxpy.sum(zeta)),
-                constraints=constraints,
-            ).solve()
+                    C_H = abs(M.curvature)
+                    R = -M.scale
+                    r_h = abs(np.arcsinh(-(R**2) * C_H))
+                    r = self.eps
 
-            self.zeta[class_label] = zeta.value
-            self.beta[class_label] = beta.value
-            self.epsilon[class_label] = epsilon.value
+                    constraints.append(cp.norm(Bm @ beta_var, 2) <= np.sqrt(max(r, 0.0)))
+                    constraints.append(cp.norm(Bp @ beta_var, 2) <= np.sqrt(max(r + r_h, 0.0)))
 
-            # Need to store X for prediction
-            self.X_train_ = torch.tensor(X, dtype=torch.float32)
+            # solve
+            prob = cp.Problem(cp.Minimize(-eps_var + cp.sum(zeta)), constraints)
+            prob.solve(solver="SCS")
 
+            # save results
+            self.beta[cls] = np.ravel(beta_var.value)
+            self.zeta[cls] = zeta.value
+            self.epsilon[cls] = float(eps_var.value)
+            self.b[cls] = float(b_var.value)
+
+        # store training data
+        self.X_train_ = torch.tensor(X_np, dtype=torch.float32)
         self.is_fitted_ = True
         return self
 
     def predict_proba(
-        self, X: Float[torch.Tensor, "n_samples n_manifolds"]
+        self,
+        X: Float[torch.Tensor, "n_samples n_manifolds"],
     ) -> Float[torch.Tensor, "n_samples n_classes"]:
-        """Predicts the probability of each class for the given test data.
+        """Predict class probabilities using the fitted SVMs.
 
         Args:
-            X: The test data of shape (n_samples, n_features).
+            X: Test points tensor of shape (n_samples, total_dim).
 
         Returns:
-            probs: The probability of each class for the given test data of shape (n_samples, n_classes).
+            A tensor of shape (n_samples, n_classes) with class probabilities.
         """
-        # Ensure X is a torch tensor
-        if not isinstance(X, torch.Tensor):
-            X = torch.tensor(X, dtype=torch.float32)
+        X_tensor = torch.tensor(X, dtype=torch.float32) if not isinstance(X, torch.Tensor) else X
+        X_tensor = X_tensor.to(self.X_train_.device)
 
-        # Ensure X is on the same device as the training data
-        device = self.X_train_.device
-        X = X.to(device)
-        n_samples = X.shape[0]
-        n_classes = len(self.classes_)
-
-        # Compute the kernel between training data and test data
-        Ks_test, _ = product_kernel(self.pm, self.X_train_, X)
-        K_test = torch.ones((self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device)
+        Ks_test, _ = product_kernel(self.pm, self.X_train_, X_tensor)
+        Kt = torch.ones((self.X_train_.shape[0], X_tensor.shape[0]), device=X_tensor.device)
         for K_m, w in zip(Ks_test, self.weights):
-            K_test += w * K_m
+            Kt += w * K_m
+        Kt_np = Kt.detach().cpu().numpy()
 
-        # Convert to NumPy array
-        K_test = K_test.detach().cpu().numpy()
+        n_test = X_tensor.shape[0]
+        n_cls = len(self.classes_)
+        dec = np.zeros((n_test, n_cls))
+        for idx, cls in enumerate(self.classes_):
+            if isinstance(cls, torch.Tensor):
+                cls = cls.item()
+            beta_vec: np.ndarray = np.ravel(self.beta[cls])
+            dec[:, idx] = Kt_np.T @ beta_vec + self.b[cls]
 
-        # Initialize array to store decision function values
-        decision_function = np.zeros((n_samples, n_classes))
-        for idx, class_label in enumerate(self.classes_):
-            beta = self.beta[class_label]  # Shape: (n_train_samples,)
-            # Compute decision function: f(x) = K_test^T @ beta + sum(beta)
-            f = K_test.T @ beta + np.sum(beta)
-            decision_function[:, idx] = f
-
-        # Convert decision function values to probabilities using softmax
-        exp_scores = np.exp(decision_function - np.max(decision_function, axis=1, keepdims=True))
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-        return probs
+        exp_scores = np.exp(dec - dec.max(axis=1, keepdims=True))
+        probs = exp_scores / exp_scores.sum(axis=1, keepdims=True)
+        return torch.tensor(probs, dtype=torch.float32)

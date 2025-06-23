@@ -183,7 +183,7 @@ def benchmark(
             "knn",
             "ps_perceptron",
             # "svm",
-            # "ps_svm",
+            "ps_svm",
             # "tangent_mlp",
             "ambient_mlp",
             "tangent_gcn",
@@ -453,16 +453,12 @@ def benchmark(
         accs["svm"]["time"] = t3 - t1
 
     if "ps_svm" in models:
-        try:
-            ps_svm = ProductSpaceSVM(pm=pm, task=task, h_constraints=False, e_constraints=False)  # type: ignore
-            t1 = time.time()
-            ps_svm.fit(X_train, y_train)
-            t2 = time.time()
-            accs["ps_svm"] = _score(X_test, y_test_np, ps_svm, use_torch=False, score=score)
-            accs["ps_svm"]["time"] = t2 - t1
-        except Exception:
-            pass
-            #     accs["ps_svm"] = {"accuracy": 0.0, "f1-micro": 0.0, "time": 0.0}
+        ps_svm = ProductSpaceSVM(pm=pm, task=task, h_constraints=False, e_constraints=False)  # type: ignore
+        t1 = time.time()
+        ps_svm.fit(X_train, y_train)
+        t2 = time.time()
+        accs["ps_svm"] = _score(X_test, y_test_np, ps_svm, use_torch=False, score=score)
+        accs["ps_svm"]["time"] = t2 - t1
 
     if "kappa_mlp" in models:
         assert isinstance(X_test_stereo, torch.Tensor)

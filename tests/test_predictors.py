@@ -70,7 +70,7 @@ def test_all_classifiers():
         ProductSpaceDT,
         ProductSpaceRF,
         ProductSpacePerceptron,
-        # ProductSpaceSVM,
+        ProductSpaceSVM,
     ]:
         print(f"Testing model: {model_class.__name__}")
         model = model_class(pm=pm)
