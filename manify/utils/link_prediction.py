@@ -55,7 +55,7 @@ def make_link_prediction_dataset(
     # Make a new signature
     new_sig = pm.signature + pm.signature
     if add_dists:
-        new_sig.append((0, 1))
+        new_sig.append((0.0, 1))
     new_pm = ProductManifold(signature=new_sig)
 
     return X, y, new_pm

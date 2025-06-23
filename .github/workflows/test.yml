@@ -63,7 +63,7 @@ jobs:
 
       # Unit testing
       - name: Run unit tests & collect coverage
-        run: BEARTYPE_ENABLE=true pytest tests --cov --cov-report=xml
+        run: pytest tests --cov --cov-report=xml
 
       # Check docstrings are in Google style      
       - name: Check docstrings are in Google style

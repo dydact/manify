@@ -6,6 +6,7 @@ if os.getenv("BEARTYPE_ENABLE", "false").lower() == "true":
     from jaxtyping import install_import_hook
 
     install_import_hook("manify", "beartype.beartype")
+    print("Beartype import hook installed for Manify. Will use beartype for type checking.")
 
 from manify.curvature_estimation import greedy_signature_selection, sampled_delta_hyperbolicity, sectional_curvature
 from manify.embedders import CoordinateLearning, ProductSpaceVAE, SiameseNetwork

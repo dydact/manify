@@ -26,11 +26,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mypy",
     "jaxtyping",
     "beartype",
     "pytest",
-    "mypy",
     "pytest-cov",
+    "pytest-env",
     "black",
     "isort",
     "pylint",
@@ -114,6 +115,7 @@ disable_error_code = ["name-defined"]  # Needed for jaxtyping compatibility - el
 testpaths = ["tests"]
 addopts = "--jaxtyping-packages=beartype.beartype"
 python_files = "test_*.py"
+env = ["BEARTYPE_ENABLE=true"]
 
 # Code coverage
 [tool.coverage.run]
