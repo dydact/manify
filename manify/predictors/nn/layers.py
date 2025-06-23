@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import geoopt
 import torch
@@ -71,7 +71,7 @@ class KappaGCNLayer(torch.nn.Module):
         )
 
     def forward(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None
     ) -> Float[torch.Tensor, "n_nodes dim"]:
         """Forward pass for the Kappa GCN layer.
 
@@ -116,7 +116,7 @@ class KappaSequential(nn.Module):
         self.layers = nn.ModuleList(layers)
 
     def forward(
-        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None
+        self, X: Float[torch.Tensor, "n_nodes dim"], A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None
     ) -> Float[torch.Tensor, "n_nodes out_dim"]:
         """Forward pass through all layers.
 
@@ -261,7 +261,7 @@ class StereographicLogits(nn.Module):
     def forward(
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
-        A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
+        A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
         aggregate_logits: bool = False,
     ) -> Float[torch.Tensor, "n_nodes n_classes"]:
         """Forward pass through stereographic logits.
@@ -318,7 +318,7 @@ class FermiDiracDecoder(nn.Module):
     def forward(
         self,
         X: Float[torch.Tensor, "n_nodes dim"],
-        A_hat: Optional[Float[torch.Tensor, "n_nodes n_nodes"]] = None,
+        A_hat: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
         return_pairwise: bool = True,
     ) -> Float[torch.Tensor, "n_nodes n_nodes"] | Float[torch.Tensor, "n_edges"]:
         """Forward pass through Fermi-Dirac decoder.
@@ -342,3 +342,35 @@ class FermiDiracDecoder(nn.Module):
         else:
             # Return flattened upper triangle (common for link prediction)
             return logits.flatten()
+
+
+class StereographicLayerNorm(nn.Module):
+    def __init__(self, manifold: Manifold | ProductManifold, num_heads: int):
+        raise NotImplementedError
+
+    def forward(self, X: Float[torch.Tensor, "n_nodes dim"]) -> Float[torch.Tensor, "n_nodes dim"]:
+        raise NotImplementedError
+
+
+class StereographicAttention(nn.Module):
+    def __init__(self, manifold: Manifold | ProductManifold, num_heads: int):
+        raise NotImplementedError
+
+    def forward(
+        self,
+        X: Float[torch.Tensor, "n_nodes dim"],
+        mask: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
+    ) -> Float[torch.Tensor, "n_nodes dim"]:
+        raise NotImplementedError
+
+
+class StereographicTransformer(nn.Module):
+    def __init__(self, manifold: Manifold | ProductManifold, num_blocks: int, num_heads: int):
+        raise NotImplementedError
+
+    def forward(
+        self,
+        X: Float[torch.Tensor, "n_nodes dim"],
+        mask: Float[torch.Tensor, "n_nodes n_nodes"] | None = None,
+    ) -> Float[torch.Tensor, "n_nodes dim"]:
+        raise NotImplementedError

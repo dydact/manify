@@ -466,9 +466,8 @@ def benchmark(
 
     if "kappa_mlp" in models:
         assert isinstance(X_test_stereo, torch.Tensor)
-        d = X_test_stereo.shape[1]  # Shape can't change between layers
         kappa_mlp = KappaGCN(
-            pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim  # type: ignore
+            pm=pm_stereo, num_hidden=kappa_gcn_layers, task=task, output_dim=nn_outdim  # type: ignore
         ).to(device)
         t1 = time.time()
         if task == "link_prediction":
@@ -483,8 +482,7 @@ def benchmark(
         accs["kappa_mlp"]["time"] = t2 - t1
 
     if "ambient_mlp" in models:
-        d = X_test.shape[1]  # Shape can't change between layers
-        ambient_mlp = KappaGCN(pm=pm_euc, hidden_dims=[d] * kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
+        ambient_mlp = KappaGCN(pm=pm_euc, num_hidden=kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
         t1 = time.time()
         ambient_mlp.fit(X_train, y_train, A=None, tqdm_prefix="ambient_mlp", **nn_train_kwargs)
         t2 = time.time()
@@ -495,8 +493,7 @@ def benchmark(
         accs["ambient_mlp"]["time"] = t2 - t1
 
     if "tangent_mlp" in models:
-        d = X_test_tangent.shape[1]  # Shape can't change between layers
-        tangent_mlp = KappaGCN(pm=pm_euc, hidden_dims=[d] * kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
+        tangent_mlp = KappaGCN(pm=pm_euc, num_hidden=kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
         t1 = time.time()
         tangent_mlp.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlp", **nn_train_kwargs)
         t2 = time.time()
@@ -507,8 +504,7 @@ def benchmark(
         accs["tangent_mlp"]["time"] = t2 - t1
 
     if "ambient_gcn" in models:
-        d = X_test.shape[1]  # Shape can't change between layers
-        ambient_gcn = KappaGCN(pm=pm_euc, hidden_dims=[d] * kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
+        ambient_gcn = KappaGCN(pm=pm_euc, num_hidden=kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
         t1 = time.time()
         ambient_gcn.fit(X_train, y_train, A=A_train, **nn_train_kwargs)
         t2 = time.time()
@@ -519,8 +515,7 @@ def benchmark(
         accs["ambient_gcn"]["time"] = t2 - t1
 
     if "tangent_gcn" in models:
-        d = X_test_tangent.shape[1]  # Shape can't change between layers
-        tangent_gcn = KappaGCN(pm=pm_euc, hidden_dims=[d] * kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
+        tangent_gcn = KappaGCN(pm=pm_euc, num_hidden=kappa_gcn_layers, **nn_kwargs).to(device)  # type: ignore
         t1 = time.time()
         tangent_gcn.fit(X_train_tangent, y_train, A=A_train, tqdm_prefix="tangent_gcn", **nn_train_kwargs)
         t2 = time.time()
@@ -532,8 +527,7 @@ def benchmark(
 
     if "kappa_gcn" in models:
         assert isinstance(X_test_stereo, torch.Tensor)
-        d = X_test_stereo.shape[1]  # Shape can't change between layers
-        kappa_gcn = KappaGCN(pm=pm_stereo, hidden_dims=[d] * kappa_gcn_layers, task=task, output_dim=nn_outdim).to(
+        kappa_gcn = KappaGCN(pm=pm_stereo, num_hidden=kappa_gcn_layers, task=task, output_dim=nn_outdim).to(
             device
         )  # type: ignore
         t1 = time.time()
@@ -546,7 +540,7 @@ def benchmark(
         accs["kappa_gcn"]["time"] = t2 - t1
 
     if "kappa_mlr" in models:
-        kappa_mlr = KappaGCN(pm=pm_stereo, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)  # type: ignore
+        kappa_mlr = KappaGCN(pm=pm_stereo, num_hidden=0, task=task, output_dim=nn_outdim).to(device)  # type: ignore
         t1 = time.time()
         kappa_mlr.fit(X_train_stereo, y_train, A=None, tqdm_prefix="kappa_mlr", **nn_train_kwargs)
         t2 = time.time()
@@ -557,7 +551,7 @@ def benchmark(
         accs["kappa_mlr"]["time"] = t2 - t1
 
     if "tangent_mlr" in models:
-        tangent_mlr = KappaGCN(pm=pm_euc, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)  # type: ignore
+        tangent_mlr = KappaGCN(pm=pm_euc, num_hidden=0, task=task, output_dim=nn_outdim).to(device)  # type: ignore
         t1 = time.time()
         tangent_mlr.fit(X_train_tangent, y_train, A=None, tqdm_prefix="tangent_mlr", **nn_train_kwargs)
         t2 = time.time()
@@ -568,7 +562,7 @@ def benchmark(
         accs["tangent_mlr"]["time"] = t2 - t1
 
     if "ambient_mlr" in models:
-        ambient_mlr = KappaGCN(pm=pm_euc, hidden_dims=[], task=task, output_dim=nn_outdim).to(device)  # type: ignore
+        ambient_mlr = KappaGCN(pm=pm_euc, num_hidden=0, task=task, output_dim=nn_outdim).to(device)  # type: ignore
         t1 = time.time()
         ambient_mlr.fit(X_train, y_train, A=None, tqdm_prefix="ambient_mlr", **nn_train_kwargs)
         t2 = time.time()

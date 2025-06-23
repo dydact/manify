@@ -63,7 +63,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
     Attributes:
         pm: ProductManifold object for the Kappa GCN.
         output_dim: Number of output features.
-        hidden_dims: List of hidden layer dimensions.
+        num_hidden: Number of hidden layers.
         nonlinearity: Function for nonlinear activation.
         task: Task type, one of ["classification", "regression", "link_prediction"]
         random_state: Random seed for reproducibility.
@@ -74,23 +74,21 @@ class KappaGCN(BasePredictor, torch.nn.Module):
     Args:
         pm: ProductManifold object for the Kappa GCN
         output_dim: Number of output features
-        hidden_dims: List of hidden layer dimensions (default: [pm.dim, pm.dim, pm.dim])
+        num_hidden: Number of hidden layers.
         nonlinearity: Function for nonlinear activation.
         task: Task type, one of ["classification", "regression", "link_prediction"].
         random_state: Random seed for reproducibility.
         device: Device to run the model on (default: None, uses current device).
 
     Raises:
-        ValueError: If the ProductManifold is not stereographic or if hidden dimensions are not
-            compatible with the manifold's curvature.
-        ValueError: If hidden dimensions are specified for a non-Euclidean manifold.
+        ValueError: If the ProductManifold is not stereographic.
     """
 
     def __init__(
         self,
         pm: ProductManifold,
         output_dim: int,
-        hidden_dims: list[int] | None = None,
+        num_hidden: int = 2,
         nonlinearity: Callable = torch.relu,
         task: Literal["classification", "regression", "link_prediction"] = "classification",
         random_state: int | None = None,
@@ -102,6 +100,8 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         self.pm = pm
         self.task = task
         self.output_dim = output_dim
+        self.num_hidden = num_hidden
+        self.nonlinearity = nonlinearity
 
         # Ensure pm is stereographic
         if not pm.is_stereographic:
@@ -111,12 +111,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             )
 
         # Build layer dimensions
-        if hidden_dims is None:
-            dims = [pm.dim, pm.dim, pm.dim]  # 2 hidden layers
-        elif not (all([M.curvature == 0] for M in pm.P) or all([d == pm.dim for d in hidden_dims])):
-            raise ValueError("Only fully Euclidean manifolds can change hidden dimension size")
-        else:
-            dims = [pm.dim] + hidden_dims
+        dims = [pm.dim] + [pm.dim] * num_hidden
 
         # Build the main GCN layers using Sequential
         gcn_layers = []
@@ -271,3 +266,20 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         self.eval()
         y_pred = self(X, A_hat)
         return y_pred
+
+    def __repr__(self) -> str:
+        """String representation of the `KappaGCN`.
+
+        The purpose of this method is to make `KappaGCN` instances more closely resemble `nn.Sequential`,
+        making for more readable output and informative debugging.
+
+        Returns:
+            str: String representation of the KappaGCN instance.
+        """
+        return (
+            f"{self.__class__.__name__}(\n"
+            + f"  gcn_layers={repr(self.gcn_layers)},\n"
+            + f"  output_layer={repr(self.output_layer)},\n"
+            + f"  task='{self.task}',\n"
+            + f"  output_dim={self.output_dim}\n)"
+        )

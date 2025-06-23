@@ -78,7 +78,7 @@ def test_all_classifiers():
 
     # Kappa-GCN needs its own thing
     pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
-    kappa_gcn = KappaGCN(pm=pm_stereo, output_dim=2, hidden_dims=[pm.dim, pm.dim])
+    kappa_gcn = KappaGCN(pm=pm_stereo, output_dim=2, num_hidden=2)
     _test_kappa_gcn_model(kappa_gcn, X_train_stereo, X_test_stereo, y_train, y_test, pm=pm_stereo)
 
     print("All classifiers tested successfully.")
@@ -102,7 +102,7 @@ def test_all_regressors():
 
     # Kappa-GCN needs its own thing
     pm_stereo, X_train_stereo, X_test_stereo = pm.stereographic(X_train, X_test)
-    kappa_gcn = KappaGCN(pm=pm_stereo, output_dim=1, hidden_dims=[pm.dim, pm.dim], task="regression")
+    kappa_gcn = KappaGCN(pm=pm_stereo, output_dim=1, num_hidden=2, task="regression")
     _test_kappa_gcn_model(kappa_gcn, X_train_stereo, X_test_stereo, y_train, y_test, pm=pm_stereo, task="regression")
 
     print("All regressors tested successfully.")
