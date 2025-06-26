@@ -33,7 +33,7 @@ dev = [
     "pytest-cov",
     "pytest-env",
     "ruff",
-    "pre-commit"
+    "pre-commit",
     "typing_extensions",
     "pygments",
 ]
