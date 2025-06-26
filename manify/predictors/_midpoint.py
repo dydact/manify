@@ -45,9 +45,16 @@ def is_hyperbolic_midpoint(u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""
     Returns:
         is_midpoint: True if m is the true hyperbolic midpoint between u and v, otherwise False.
     """
-    a = lambda x: torch.sqrt(-1.0 / torch.cos(2.0 * x))  # Alpha coefficient to reach manifold
-    d = lambda x, y: a(x) * a(y) * torch.cos(x - y)  # Hyperbolic distance function (angular)
-    return torch.isclose(d(u, m), d(m, v))  # type: ignore
+
+    def _a(x: Float[torch.Tensor, ""]) -> Float[torch.Tensor, ""]:
+        """Compute the alpha coefficient to reach the hyperbolic manifold."""
+        return torch.sqrt(-1.0 / torch.cos(x))
+
+    def _d(x: Float[torch.Tensor, ""], y: Float[torch.Tensor, ""]) -> Float[torch.Tensor, ""]:
+        """Compute the hyperbolic distance function (angular)."""
+        return _a(x) * _a(y) * torch.cos(x - y)
+
+    return torch.isclose(_d(u, m), _d(m, v))  # type: ignore
 
 
 def spherical_midpoint(u: Float[torch.Tensor, ""], v: Float[torch.Tensor, ""]) -> Float[torch.Tensor, ""]:

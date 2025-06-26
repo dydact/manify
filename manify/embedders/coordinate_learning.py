@@ -73,7 +73,7 @@ class CoordinateLearning(BaseEmbedder):
         self,
         X: None,
         D: Float[torch.Tensor, "n_points n_points"],
-        test_indices: Int[torch.Tensor, "n_test"] = torch.tensor([]),
+        test_indices: Int[torch.Tensor, "n_test"] | None = None,
         lr: float = 1e-2,
         burn_in_lr: float = 1e-3,
         curvature_lr: float = 0.0,  # Off by default
@@ -109,8 +109,8 @@ class CoordinateLearning(BaseEmbedder):
             raise ValueError("Distance matrix D is needed for coordinate learning")
         if X is not None:
             warnings.warn(
-                "Input X has been given. This will be ignored during fitting. If you have provided a distance matrix,"
-                "please run embedder.fit(None, D) instead."
+                "Input X has been given. This will be ignored during fitting. If you have provided a distance matrix,please run embedder.fit(None, D) instead.",
+                stacklevel=2,
             )
 
         # Set random seed if provided
@@ -125,6 +125,7 @@ class CoordinateLearning(BaseEmbedder):
         D = D.to(self.device)
 
         # Get train and test indices set up
+        test_indices = test_indices if test_indices is not None else torch.tensor([])
         use_test = len(test_indices) > 0
         test = torch.tensor([i in test_indices for i in range(len(D))]).to(self.device)
         train = ~test
@@ -220,7 +221,7 @@ class CoordinateLearning(BaseEmbedder):
             raise ValueError("The embedder has not been fitted yet.")
 
         if X is not None:
-            warnings.warn("Coordinate learning can only return trained embeddings. X will be ignored.")
+            warnings.warn("Coordinate learning can only return trained embeddings. X will be ignored.", stacklevel=2)
 
         return self.embeddings_
 
@@ -234,6 +235,7 @@ class CoordinateLearning(BaseEmbedder):
         Args:
             X: Ignored.
             D: Distance matrix for the points.
+            fit_kwargs: Additional keyword arguments passed to the `model.fit()` method.
 
         Returns:
             embeddings: Learned embeddings.

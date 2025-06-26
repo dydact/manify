@@ -2,8 +2,8 @@ r"""Initialize predictors in the product space.
 
 Implemented predictors include:
 ## Decision Trees and Random Forests: Use geodesic splits in product manifolds via projection angles and manifold-specific geodesic midpoints.
-For points in a product manifold $\mathcal{P} = \mathcal{M}_1 \times \mathcal{M}_2 \times \cdots \times \mathcal{M}_k$, 
-we define splits along two-dimensional subspaces for each component manifold. 
+For points in a product manifold $\mathcal{P} = \mathcal{M}_1 \times \mathcal{M}_2 \times \cdots \times \mathcal{M}_k$,
+we define splits along two-dimensional subspaces for each component manifold.
 
 
 ### Angular representation of splits
@@ -70,10 +70,10 @@ $$
 Note that this paper does not include a bias term, although it is reasonable to extend the definition of a GCN layer to include one:
 
 $$
-\mathbf{H}^{(l+1)} = 
-\sigma^{\otimes_\kappa} \left( 
+\mathbf{H}^{(l+1)} =
+\sigma^{\otimes_\kappa} \left(
     \hat{\mathbf{A}} \boxtimes_\kappa \left(
-        \mathbf{H}^{(l)} \otimes_\kappa \mathbf{W}^{(l)} 
+        \mathbf{H}^{(l)} \otimes_\kappa \mathbf{W}^{(l)}
     \right) \oplus \mathbf{b}
 \right)
 $$

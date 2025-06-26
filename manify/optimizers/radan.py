@@ -92,7 +92,7 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
                     grad = point.grad
                     if grad is None:
                         continue
-                    if isinstance(point, (ManifoldParameter, ManifoldTensor)):
+                    if isinstance(point, ManifoldParameter | ManifoldTensor):
                         manifold = point.manifold
                     else:
                         manifold = self._default_manifold
@@ -171,7 +171,7 @@ class RiemannianAdan(OptimMixin, _adan.Adan):
             None
         """
         for p in group["params"]:
-            if not isinstance(p, (ManifoldParameter, ManifoldTensor)):
+            if not isinstance(p, ManifoldParameter | ManifoldTensor):
                 continue
             state = self.state[p]
             if not state:  # due to None grads
