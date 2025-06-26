@@ -28,6 +28,12 @@ class Manifold:
     This class provides tools for creating and manipulating Riemannian manifolds with constant curvature (hyperbolic,
     Euclidean, or spherical).
 
+    Args:
+        curvature: The curvature of the manifold.
+        dim: The dimension of the manifold.
+        device: The device on which the manifold is stored.
+        stereographic: Whether to use stereographic coordinates.
+
     Attributes:
         curvature: The curvature of the manifold. Negative for hyperbolic, zero for Euclidean, and positive for
             spherical manifolds.
@@ -41,12 +47,6 @@ class Manifold:
         manifold: The underlying geoopt manifold object.
         mu0: The origin point on the manifold.
         name: A string identifier for the manifold.
-
-    Args:
-        curvature: The curvature of the manifold.
-        dim: The dimension of the manifold.
-        device: The device on which the manifold is stored.
-        stereographic: Whether to use stereographic coordinates.
     """
 
     def __init__(self, curvature: float, dim: int, device: str = "cpu", stereographic: bool = False):
@@ -124,7 +124,7 @@ class Manifold:
             Y: Tensor of points in the manifold.
 
         Returns:
-            inner_product: Tensor of inner products between points.
+            inner_products: Tensor of inner products between points.
         """
         # "Not inherited because of weird broadcasting stuff, plus need for scale.
         # This ensures we compute the right inner product for all manifolds (flip sign of dim 0 for hyperbolic)
@@ -169,7 +169,7 @@ class Manifold:
             X: Tensor of points in the manifold.
 
         Returns:
-            dists: Tensor of pairwise distances.
+            pairwise_distances: Tensor of pairwise distances.
         """
         dists = self.dist(X, X)
 
@@ -185,7 +185,7 @@ class Manifold:
             X: Tensor of points in the manifold.
 
         Returns:
-            dists2: Tensor of pairwise squared distances.
+            pairwise_squared_distances: Tensor of pairwise squared distances.
         """
         dists2 = self.dist2(X, X)
 
@@ -488,6 +488,11 @@ class ProductManifold(Manifold):
 
     A product manifold combines multiple manifolds with different curvatures and dimensions into a single product space.
 
+    Args:
+        signature: List of (curvature, dimension) tuples for each factor manifold.
+        device: The device on which the manifold is stored.
+        stereographic: Whether to use stereographic coordinates.
+
     Attributes:
         signature: List of tuples defining the curvature and dimension of each factor manifold.
         device: The device on which the manifold is stored.
@@ -507,11 +512,6 @@ class ProductManifold(Manifold):
         man2intrinsic: Dictionary mapping manifold indices to their intrinsic dimensions.
         intrinsic2man: Dictionary mapping intrinsic dimensions to manifold indices.
         projection_matrix: Matrix for projecting from intrinsic to ambient dimensions.
-
-    Args:
-        signature: List of (curvature, dimension) tuples for each factor manifold.
-        device: The device on which the manifold is stored.
-        stereographic: Whether to use stereographic coordinates.
     """
 
     def __init__(self, signature: list[tuple[float, int]], device: str = "cpu", stereographic: bool = False):

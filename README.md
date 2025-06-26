@@ -1,4 +1,4 @@
-# Manify: A Python Library for Learning Non-Euclidean Representations
+# Manify 🪐: A Python Library for Learning Non-Euclidean Representations
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/pchlenski/manify)](https://github.com/pchlenski/manify/blob/main/LICENSE)
 [![PyPI version](https://badge.fury.io/py/manify.svg)](https://badge.fury.io/py/manify)
@@ -10,6 +10,8 @@
 Manify is a Python library for generating graph/data embeddings and performing machine learning in product spaces with mixed curvature (hyperbolic, Euclidean, and spherical spaces). It provides tools for manifold creation, curvature estimation, embedding generation, and predictive modeling that respects the underlying geometry of complex data.
 
 You can read our manuscript here: [Manify: A Python Library for Learning Non-Euclidean Representations](https://arxiv.org/abs/2503.09576)
+
+📖 **Documentation**: [manify.readthedocs.io](https://manify.readthedocs.io)
 
 ## Key Features
 - Create and manipulate manifolds with different curvatures (hyperbolic, Euclidean, spherical)
@@ -37,23 +39,25 @@ There are two ways to install `manify`:
 ```python
 import torch
 from manify.manifolds import ProductManifold
-from manify.embedders import coordinate_learning
+from manify.embedders import CoordinateLearning
 from manify.predictors.decision_tree import ProductSpaceDT
-from manify.utils.dataloaders import load
+from manify.utils.dataloaders import load_hf
 from sklearn.model_selection import train_test_split
 
 # Load graph data
-dists, graph_labels, _ = load("polblogs")
+features, dists, adj, labels = load_hf("polblogs")
 
 # Create product manifold
-pm = ProductManifold(signature=[(1, 4)]) # S^4_1
+pm = ProductManifold(signature=[(1, 4)])  # S^4_1
 
 # Learn embeddings (Gu et al (2018) method)
-X, _ = coordinate_learning.train_coords(pm=pm, dists=dists)
+embedder = CoordinateLearning(pm=pm)
+embedder.fit(X=None, D=dists)
+X_embedded = embedder.transform()
 
 # Train and evaluate classifier (Chlenski et al (2025) method)
-X_train, X_test, y_train, y_test = train_test_split(X, graph_labels)
-tree = ProductSpaceDT(pm=pm, max_depth=3)
+X_train, X_test, y_train, y_test = train_test_split(X_embedded, labels)
+tree = ProductSpaceDT(pm=pm, max_depth=3, task="classification")
 tree.fit(X_train, y_train)
 print(tree.score(X_test, y_test))
 ```

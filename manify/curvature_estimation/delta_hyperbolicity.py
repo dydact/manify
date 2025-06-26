@@ -33,12 +33,12 @@ def sampled_delta_hyperbolicity(
 
     Args:
         D: Pairwise distance matrix.
-        n_samples: Number of triplets to sample. Defaults to 1000.
-        reference_idx: Index of the reference point w. Defaults to 0.
-        relative: Whether to normalize by the maximum distance. Defaults to True.
+        n_samples: Number of triplets to sample.
+        reference_idx: Index of the reference point w.
+        relative: Whether to normalize by the maximum distance.
 
     Returns:
-        deltas: $\delta$-hyperbolicity of each sampled triplet.
+        deltas: $\delta$-hyperbolicity values for each sampled triplet.
         indices: Indices of the sampled triplets.
     """
     n = D.shape[0]
@@ -65,12 +65,12 @@ def sampled_delta_hyperbolicity(
 
 def vectorized_delta_hyperbolicity(
     D: Float[torch.Tensor, "n_points n_points"], reference_idx: int = 0, relative: bool = True, full: bool = False
-) -> Float[torch.Tensor, "n_points n_points n_points"]:
+) -> Float[torch.Tensor, "n_points n_points n_points"] | float:
     r"""Computes the exact delta-hyperbolicity of a metric space over all point triplets.
 
     For a metric space with distance matrix $\mathbf{D}$, computes the $\delta$-hyperbolicity by:
 
-    $\delta = \max_{x,y,z} \min((x,y)_w, (y,z)_w) - (x,z)_w$
+    $$\delta = \max_{x,y,z} \min((x,y)_w, (y,z)_w) - (x,z)_w$$
 
     where $(a,b)_w = \frac{1}{2}(d(w,a) + d(w,b) - d(a,b))$ is the Gromov product.
 
@@ -78,12 +78,13 @@ def vectorized_delta_hyperbolicity(
 
     Args:
         D: Pairwise distance matrix.
-        reference_idx: Index of the reference point $w$. Defaults to 0.
-        relative: Whether to normalize by the maximum distance. Defaults to True.
-        full: Whether to return the full $\delta$ tensor or just the maximum value. Defaults to False.
+        reference_idx: Index of the reference point $w$.
+        relative: Whether to normalize by the maximum distance.
+        full: Whether to return the full $\delta$ tensor or just the maximum value.
 
     Returns:
-        delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor.
+        delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor 
+            over all triplets.
     """
     n = D.shape[0]
     w = reference_idx

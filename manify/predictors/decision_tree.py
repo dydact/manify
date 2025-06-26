@@ -27,7 +27,7 @@ def _angular_greater(
         queries: tensor of angles used to define a decision hyperplane
         keys: tensor of angles to be compared to queries
 
-    Outputs:
+    Returns:
         comparisons: Booleans indicating whether each key is in range $[query, query + \pi)$
     """
     diff = keys.unsqueeze(0) - queries.unsqueeze(1)
@@ -44,14 +44,14 @@ def _get_info_gains(
     """Given comparisons matrix and labels, return information gain for each possible split.
 
     Args:
-        comparisons: (query_batch, dims, key_batch) tensor of comparisons
-        labels: (query_batch, n_classes) tensor of one-hot labels
-        criterion: impurity function used for information gain computation
-        eps: small number to prevent division by zero
-        min_values_leaf: minimum number of values in a leaf node
+        comparisons: Tensor of comparisons.
+        labels: Tensor of one-hot labels.
+        criterion: Impurity function used for information gain computation.
+        min_values_leaf: Minimum number of values per leaf.
+        eps: Small number to prevent division by zero.
 
-    Outputs:
-        ig: (query_batch, dims) tensor of information gains
+    Returns:
+        ig: Tensor of information gains for each possible split.
     """
     # Matrix-multiply to get counts of labels in left and right splits
     if criterion == "gini":

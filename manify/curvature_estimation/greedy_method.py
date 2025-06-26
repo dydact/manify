@@ -21,7 +21,7 @@ def greedy_signature_selection(
     dists: Float[torch.Tensor, "n_points n_points"],
     candidate_components: tuple[tuple[float, int], ...] = ((-1.0, 2), (0.0, 2), (1.0, 2)),
     max_components: int = 3,
-) -> None:
+) -> ProductManifold:
     r"""Greedily estimates an optimal product manifold signature.
 
     This implements the greedy signature selection algorithm that incrementally builds a product manifold
@@ -32,8 +32,7 @@ def greedy_signature_selection(
         pm: Initial product manifold to use as starting point.
         dists: Pairwise distance matrix to approximate.
         candidate_components: Candidate (curvature, dimension) pairs to consider.
-            Defaults to ((-1, 2), (0.0, 2), (1, 2)).
-        max_components: Maximum number of components to include. Defaults to 3.
+        max_components: Maximum number of components to include.
 
     Returns:
         optimal_pm: Optimized product manifold with the selected signature.

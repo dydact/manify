@@ -23,6 +23,11 @@ class KappaGCNLayer(torch.nn.Module):
         out_features: Number of output features
         manifold: Manifold object for the Kappa GCN
         nonlinearity: Function for nonlinear activation.
+
+    Attributes:
+        W: Weight matrix parameter.
+        sigma: Nonlinear activation function applied via the manifold.
+        manifold: The manifold object for geometric operations.
     """
 
     def __init__(

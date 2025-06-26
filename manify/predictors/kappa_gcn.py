@@ -29,12 +29,12 @@ def get_A_hat(
     """Normalize adjacency matrix.
 
     Args:
-        A (torch.Tensor): Adjacency matrix.
-        make_symmetric (bool): Whether to make the adjacency matrix symmetric.
-        add_self_loops (bool): Whether to add self-loops to the adjacency matrix.
+        A: Adjacency matrix.
+        make_symmetric: Whether to make the adjacency matrix symmetric.
+        add_self_loops: Whether to add self-loops to the adjacency matrix.
 
     Returns:
-        torch.Tensor: Normalized adjacency matrix.
+        A_hat: Normalized adjacency matrix.
     """
     # Fix nans
     A[torch.isnan(A)] = 0

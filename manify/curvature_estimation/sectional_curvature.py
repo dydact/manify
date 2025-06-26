@@ -26,7 +26,7 @@ def sectional_curvature(G: nx.Graph) -> np.ndarray:
         G: NetworkX graph to analyze.
 
     Returns:
-        curvatures: Array of curvature estimates for each node in the graph.
+        curvature_estimates: Array of curvature estimates for each node in the graph.
 
     Note:
         This function is not yet implemented.

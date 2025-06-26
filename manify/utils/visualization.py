@@ -14,10 +14,10 @@ def hyperboloid_to_poincare(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[t
     """Convert hyperboloid coordinates to Poincaré ball coordinates.
 
     Args:
-        X: (n_points, n_dim) Tensor, input coordinates in the hyperboloid model.
+        X: Input coordinates in the hyperboloid model.
 
     Returns:
-        poincare_coords: (n_points, n_dim_minus_1) Tensor, coordinates in the Poincaré ball model.
+        poincare_coords: Coordinates in the Poincaré ball model.
     """
     # Spatial components: all columns except the first
     x_space = X[:, 1:]
@@ -35,10 +35,10 @@ def spherical_to_polar(X: Float[torch.Tensor, "n_points n_dim"]) -> Float[torch.
     """Convert spherical coordinates to polar coordinates.
 
     Args:
-        X: (n_points, n_dim) Tensor, input coordinates in spherical form.
+        X: Input coordinates in spherical form.
 
     Returns:
-        out[:, 1:]: (n_points, n_dim_minus_1) Tensor, coordinates in polar form.
+        polar_coords: Coordinates in polar form.
     """
     # Radius computation
     r = torch.norm(X, dim=1, keepdim=True)
@@ -68,9 +68,9 @@ def S2_to_polar(X: Float[torch.Tensor, "n_points 3"]) -> Float[torch.Tensor, "n_
     """Convert S^2 (2-sphere) coordinates to polar coordinates.
 
     Args:
-        X: (n_points, 3) Tensor, input coordinates on the 2-sphere.
+        X: Input coordinates on the 2-sphere.
 
     Returns:
-        polar_coords: (n_points, 2) Tensor, coordinates in polar form (elevation, azimuth).
+        polar_coords: Coordinates in polar form (elevation, azimuth).
     """
     return torch.stack([torch.acos(X[:, 2]), torch.atan2(X[:, 1], X[:, 0])], dim=1)

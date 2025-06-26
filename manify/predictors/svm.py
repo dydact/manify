@@ -22,6 +22,31 @@ class ProductSpaceSVM(BasePredictor):
 
     Trains one-vs-rest SVMs with Euclidean, spherical, and hyperbolic constraints
     enforced via second-order-cone (SOC) formulations for convexity.
+
+    Args:
+        pm: A ProductManifold instance specifying component manifolds.
+        weights: Optional per-manifold weights tensor.
+        h_constraints: Whether to enforce hyperbolic constraints.
+        e_constraints: Whether to enforce Euclidean constraints.
+        s_constraints: Whether to enforce spherical constraints.
+        task: Task type, either "classification" or "regression".
+        epsilon: Slack parameter for SOC constraints.
+        random_state: Random seed for reproducibility.
+        device: Device for tensor computations.
+
+    Attributes:
+        pm: ProductManifold object associated with the predictor.
+        weights: Per-manifold weights for kernel combination.
+        h_constraints: Whether to enforce hyperbolic constraints.
+        e_constraints: Whether to enforce Euclidean constraints.
+        s_constraints: Whether to enforce spherical constraints.
+        eps: Slack parameter for SOC constraints.
+        beta: Dictionary storing SVM coefficients for each class.
+        zeta: Dictionary storing slack variables for each class.
+        epsilon: Dictionary storing epsilon values for each class.
+        b: Dictionary storing bias terms for each class.
+        X_train_: Training data points.
+        is_fitted_: Boolean flag indicating if the predictor has been fitted.
     """
 
     def __init__(
@@ -44,10 +69,10 @@ class ProductSpaceSVM(BasePredictor):
             h_constraints: Whether to enforce hyperbolic constraints.
             e_constraints: Whether to enforce Euclidean constraints.
             s_constraints: Whether to enforce spherical constraints.
-            task: "classification" or "regression".
+            task: Task type, either "classification" or "regression".
             epsilon: Slack parameter for SOC constraints.
-            random_state: Random seed.
-            device: Compute device.
+            random_state: Random seed for reproducibility.
+            device: Device for tensor computations.
         """
         super().__init__(pm=pm, task=task, random_state=random_state, device=device)
         self.pm = pm
@@ -67,11 +92,11 @@ class ProductSpaceSVM(BasePredictor):
         """Fit one-vs-rest SVMs on the product manifold data.
 
         Args:
-            X: Training points tensor of shape (n_samples, total_dim).
-            y: Integer class labels tensor of shape (n_samples,).
+            X: Training points tensor.
+            y: Integer class labels tensor.
 
         Returns:
-            The fitted ProductSpaceSVM instance.
+            self: Fitted ProductSpaceSVM instance.
         """
         # unique classes
         # self.classes_ = torch.unique(y).tolist()
@@ -165,10 +190,10 @@ class ProductSpaceSVM(BasePredictor):
         """Predict class probabilities using the fitted SVMs.
 
         Args:
-            X: Test points tensor of shape (n_samples, total_dim).
+            X: Test points tensor.
 
         Returns:
-            A tensor of shape (n_samples, n_classes) with class probabilities.
+            class_probabilities: Class probabilities for each test sample.
         """
         X_tensor = torch.tensor(X, dtype=torch.float32) if not isinstance(X, torch.Tensor) else X
         X_tensor = X_tensor.to(self.X_train_.device)

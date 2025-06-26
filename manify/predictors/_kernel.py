@@ -1,4 +1,4 @@
-"""Implementation for kernel matrix calculation."""
+"""Kernel matrix calculation for product manifolds."""
 
 from __future__ import annotations
 
@@ -17,17 +17,16 @@ def compute_kernel_and_norm_manifold(
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Float[torch.Tensor, "n_points_target n_dim"] | None,
 ) -> tuple[Float[torch.Tensor, "n_points_source n_points_target"], Float[torch.Tensor, ""]]:
-    """Compute the kernel matrix between two sets of points in a given manifold.
+    """Computes the kernel matrix for a single manifold.
 
     Args:
-        manifold: The manifold in which the computation occurs.
-        X_source: A tensor of the source points
-        X_target: A tensor of target points
+        manifold: The manifold for the computation.
+        X_source: Tensor of source points.
+        X_target: Tensor of target points.
 
-    Return:
-        A tuple of two tensors. The first tensor is the kernel matrix of shape computed based on the manifold type.
-        And the second tensor is a scalar normalization constant for the kernel, determined by the manifold's curvature
-        or scale.
+    Returns:
+        kernel_matrix: The kernel matrix between source and target points.
+        norm_constant: Scalar normalization constant for the kernel.
     """
     if X_target is None:
         X_target = X_source
@@ -67,17 +66,16 @@ def product_kernel(
     X_source: Float[torch.Tensor, "n_points_source n_dim"],
     X_target: Float[torch.Tensor, "n_points_target n_dim"] | None,
 ) -> tuple[list[Float[torch.Tensor, "n_points_source n_points_target"]], list[Float[torch.Tensor, ""]]]:
-    """Compute the kernel matrix between two sets of points in a product manifold.
+    """Computes the kernel matrix for a product manifold.
 
     Args:
-        pm: The product manifold in which the computation occurs.
-        X_source: A tensor of the source points
-        X_target: A tensor of target points
+        pm: The product manifold for the computation.
+        X_source: Tensor of source points.
+        X_target: Tensor of target points.
 
     Returns:
-        A tuple of two tensors. The first tensor is the kernel matrix of shape computed based on the product manifold
-        type. And the second tensor is a scalar normalization constant for the kernel, determined by the product
-        manifold's curvature or scale.
+        kernel_matrices: List of kernel matrices for each component manifold.
+        norm_constants: List of normalization constants for each kernel.
     """
     # If X_target is None, set it to X_source
     if X_target is None:

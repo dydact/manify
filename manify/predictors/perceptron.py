@@ -15,7 +15,27 @@ from ._kernel import product_kernel
 
 
 class ProductSpacePerceptron(BasePredictor):
-    """A product-space perceptron model for multiclass classification in the product manifold space."""
+    """A product-space perceptron model for multiclass classification in the product manifold space.
+
+    Args:
+        pm: ProductManifold object for the product space.
+        max_epochs: Maximum number of training epochs.
+        patience: Number of consecutive epochs without improvement to consider convergence.
+        weights: Per-manifold weights for kernel combination.
+        task: Task type (defaults to "classification").
+        random_state: Random seed for reproducibility.
+        device: Device for tensor computations.
+
+    Attributes:
+        pm: ProductManifold object associated with the predictor.
+        max_epochs: Maximum number of training epochs.
+        patience: Number of consecutive epochs without improvement to consider convergence.
+        weights: Per-manifold weights for kernel combination.
+        alpha: Dictionary storing perceptron coefficients for each class.
+        X_train_: Training data points.
+        y_train_: Training labels.
+        is_fitted_: Boolean flag indicating if the predictor has been fitted.
+    """
 
     def __init__(
         self,
@@ -44,11 +64,11 @@ class ProductSpacePerceptron(BasePredictor):
         """Trains the perceptron model using the provided data and labels.
 
         Args:
-            X: The training data of shape.
-            y: The class labels for the training data.
+            X: Training data tensor.
+            y: Class labels for the training data.
 
         Returns:
-            self: The fitted model.
+            self: Fitted perceptron model.
         """
         # Identify unique classes for multiclass classification
         self._store_classes(y)
@@ -115,11 +135,10 @@ class ProductSpacePerceptron(BasePredictor):
         """Predicts the decision values for each class.
 
         Args:
-            X: The test data.
+            X: Test data tensor.
 
         Returns:
-            torch.Tensor: The decision values for each test sample and each class,
-            of shape (n_samples_test, n_classes).
+            decision_values: Decision values for each test sample and each class.
         """
         n_samples = X.shape[0]
         n_classes = len(self.classes_)

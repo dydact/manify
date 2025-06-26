@@ -22,6 +22,12 @@ class BasePredictor(BaseEstimator, ABC):
     ProductManifold object is given. We try to follow the scikit-learn API's fit/predict_proba/predict paradigm as
     closely as possible, while accommodating the nuances of product manifold geometry and Pytorch/Geoopt.
 
+    Args:
+        pm: ProductManifold object associated with the predictor.
+        task: Task type, either "classification" or "regression".
+        random_state: Random state for reproducibility.
+        device: Device for tensor computations.
+
     Attributes:
         pm: ProductManifold object associated with the predictor.
         task: Task type, either "classification" or "regression".
@@ -124,6 +130,7 @@ class BasePredictor(BaseEstimator, ABC):
         self,
         X: Float[torch.Tensor, "n_points n_features"],
         y: Float[torch.Tensor, "n_points n_classes"] | Float[torch.Tensor, "n_points"],
+        sample_weight: Float[torch.Tensor, "n_points"] | None = None,
         **kwargs: dict,
     ) -> float:
         """Return the mean accuracy/R² score.
@@ -131,12 +138,16 @@ class BasePredictor(BaseEstimator, ABC):
         Args:
             X: Input features.
             y: Target labels.
+            sample_weight: Sample weights for each point. Defaults to None, which means all points are equally weighted.
             **kwargs: Additional keyword arguments that get passed to `self.predict_proba()`.
 
         Returns:
             score: Mean accuracy (classification) or R² score (regression).
         """
         predictions = self.predict(X, **kwargs)
+
+        if sample_weight is None:
+            sample_weight = torch.ones_like(predictions, dtype=torch.float32)
 
         if self.task == "classification":
             out = ((predictions == y).float() * sample_weight).mean().item()
