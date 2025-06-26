@@ -1,15 +1,14 @@
 """Roll back to ICML version of the tree code, which I know works"""
 
-from beartype.typing import Tuple, Optional, Literal
 import torch
+from beartype.typing import Literal, Optional, Tuple
 
 # from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator, ClassifierMixin
-
-from tqdm.notebook import tqdm
 from torchtyping import TensorType as TT
-from .midpoint import midpoint
+
 from ..manifolds import ProductManifold
+from .midpoint import midpoint
 
 
 def _angular_greater(queries: TT["query_batch"], keys: TT["key_batch"]) -> TT["query_batch key_batch"]:
@@ -741,7 +740,7 @@ class ProductSpaceRF(BaseEstimator, ClassifierMixin):
         idx_sample_all, idx_dim_all = self._generate_subsample(n_rows=n, n_cols=d, n_trees=self.n_estimators)
 
         # Fit trees
-        for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all):
+        for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all, strict=False):
             tree.permutations = idx_dim
             tree.classes_ = classes
             if self.batched:
@@ -799,14 +798,17 @@ class SingleManifoldEnsembleRF:
     @torch.no_grad()
     def fit(self, X, y):
         X_factorized = self.pm.factorize(X)
-        for idx, tree in zip(self.submanifold_indices, self.trees):
+        for idx, tree in zip(self.submanifold_indices, self.trees, strict=False):
             tree.fit(X_factorized[idx], y)
 
     @torch.no_grad()
     def predict_proba(self, X):
         X_factorized = self.pm.factorize(X)
         return torch.stack(
-            [tree.predict_proba(X_factorized[idx]) for idx, tree in zip(self.submanifold_indices, self.trees)]
+            [
+                tree.predict_proba(X_factorized[idx])
+                for idx, tree in zip(self.submanifold_indices, self.trees, strict=False)
+            ]
         ).mean(dim=0)
 
     @torch.no_grad()

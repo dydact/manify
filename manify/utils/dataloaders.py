@@ -33,7 +33,7 @@ Earlier versions of Manify included scripts to process raw data, which we have r
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import torch
 from datasets import load_dataset
@@ -42,7 +42,9 @@ if TYPE_CHECKING:
     from jaxtyping import Float, Real
 
 
-def load_hf(name: str, namespace: str = "manify") -> tuple[
+def load_hf(
+    name: str, namespace: str = "manify"
+) -> tuple[
     Float[torch.Tensor, "n_points ..."] | None,  # features
     Float[torch.Tensor, "n_points n_points"] | None,  # pairwise dists
     Float[torch.Tensor, "n_points n_points"] | None,  # adjacency labels
@@ -58,11 +60,11 @@ def load_hf(name: str, namespace: str = "manify") -> tuple[
     """
     # 1) fetch the single‑row dataset
     ds = load_dataset(f"{namespace}/{name}")
-    data = ds["train"] if "train" in ds else ds
+    data = ds.get("train", ds)  # use "train" split if available, else the only split
     row = data[0]
 
     # 2) helper to turn lists → torch (or None)
-    def to_tensor(key: str, dtype: torch.dtype) -> Optional[torch.Tensor]:
+    def to_tensor(key: str, dtype: torch.dtype) -> torch.Tensor | None:
         vals = row.get(key, [])
         if not vals:
             return None

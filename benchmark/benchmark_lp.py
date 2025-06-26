@@ -1,10 +1,10 @@
-from sklearn.metrics import f1_score
-from tqdm.notebook import tqdm
 import time
-from sklearn.metrics import f1_score
-from sklearn.model_selection import train_test_split
 
 import torch
+from sklearn.metrics import f1_score
+from sklearn.model_selection import train_test_split
+from tqdm.notebook import tqdm
+
 import manify
 
 DEVICE = torch.device("cuda", 1)  # Use the 2nd GPU

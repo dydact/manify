@@ -106,8 +106,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         # Ensure pm is stereographic
         if not pm.is_stereographic:
             raise ValueError(
-                "ProductManifold must be stereographic for KappaGCN to work."
-                "Please use pm.stereographic() to convert."
+                "ProductManifold must be stereographic for KappaGCN to work.Please use pm.stereographic() to convert."
             )
 
         # Build layer dimensions
@@ -175,7 +174,6 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             use_tqdm: Whether to use tqdm for progress bar.
             tqdm_prefix: Prefix for tqdm progress bar.
         """
-
         # Copy everything
         X = X.clone()
         y = y.clone()
@@ -197,10 +195,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
 
         # Optimizers
         opt = torch.optim.Adam(euclidean_params, lr=lr)
-        if riemannian_params:
-            ropt = geoopt.optim.RiemannianAdam(riemannian_params, lr=lr)
-        else:
-            ropt = None
+        ropt = geoopt.optim.RiemannianAdam(riemannian_params, lr=lr) if riemannian_params else None
 
         if self.task == "classification":
             loss_fn = torch.nn.CrossEntropyLoss()
@@ -233,7 +228,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             # Progress bar
             if use_tqdm:
                 my_tqdm.update(1)
-                my_tqdm.set_description(f"Epoch {i+1}/{epochs}, Loss: {loss.item():.4f}")
+                my_tqdm.set_description(f"Epoch {i + 1}/{epochs}, Loss: {loss.item():.4f}")
 
             # Early termination for nan loss
             if torch.isnan(loss):

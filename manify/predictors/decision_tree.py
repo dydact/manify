@@ -5,7 +5,7 @@ For more information, see Chlenski et al. (2024): https://arxiv.org/abs/2410.138
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import torch
 
@@ -245,14 +245,16 @@ class _DecisionNode:
     def __init__(
         self,
         value: float | int = 0.0,
-        probs: Float[torch.Tensor, "batch n_classes"] = torch.tensor([]),
+        probs: Float[torch.Tensor, "batch n_classes"] | None = None,
         feature: int = 0,
         theta: float = 0.0,
         left: _DecisionNode | None = None,
         right: _DecisionNode | None = None,
     ):
         self.value = value
-        self.probs = probs  # predicted class probabilities of all samples in the leaf
+        self.probs = (
+            probs if probs is not None else torch.tensor([])
+        )  # predicted class probabilities of all samples in the leaf
         self.feature = feature  # feature index
         self.theta = theta  # threshold
         self.left = left
@@ -313,15 +315,15 @@ class ProductSpaceDT(BasePredictor):
         self.criterion = "gini" if task == "classification" else "mse"
 
         # These will become important later, when fit is called
-        self.nodes: List[_DecisionNode] = []  # For fitted nodes
-        self.permutations: Optional[Int[torch.Tensor, "n_classes"]] = None  # If used as part of a random forest
-        self.angle2man: List[int] = []  # Maps preprocessed angles to manifold indices
-        self.special_first: List[bool] = []  # Whether the first dimension is special in a projection
-        self.angle_dims: List[Tuple[int, int]] = []  # Maps preprocessed angles to dimension indices
+        self.nodes: list[_DecisionNode] = []  # For fitted nodes
+        self.permutations: Int[torch.Tensor, "n_classes"] | None = None  # If used as part of a random forest
+        self.angle2man: list[int] = []  # Maps preprocessed angles to manifold indices
+        self.special_first: list[bool] = []  # Whether the first dimension is special in a projection
+        self.angle_dims: list[tuple[int, int]] = []  # Maps preprocessed angles to dimension indices
         self.tree: _DecisionNode = _DecisionNode()  # The root of the tree
         self.classes_: Float[torch.Tensor, "n_classes"] = torch.empty(0)  # Initialize as an empty tensor
         self.labels_: Int[torch.Tensor, "batch n_classes"] = torch.tensor([])  # sklearn-style labels
-        self.signature: List[Tuple[float, int]] = pm.signature  # The signature of the manifold
+        self.signature: list[tuple[float, int]] = pm.signature  # The signature of the manifold
 
     def _preprocess(
         self, X: Float[torch.Tensor, "batch ambient_dim"], y: Real[torch.Tensor, "batch"] | None = None
@@ -468,10 +470,7 @@ class ProductSpaceDT(BasePredictor):
 
         # We have the angle, but ideally we would like the *midpoint* angle.
         # So we need to grab the closest angle from the negative class:
-        if self.batched:
-            angle_comparisons = comparisons[n, d]
-        else:
-            angle_comparisons = _angular_greater(angles[:, d], theta_pos).flatten()
+        angle_comparisons = comparisons[n, d] if self.batched else _angular_greater(angles[:, d], theta_pos).flatten()
         if (angle_comparisons == 1.0).all():
             theta_neg = theta_pos
         else:
@@ -479,10 +478,7 @@ class ProductSpaceDT(BasePredictor):
             theta_neg = angles[angle_comparisons == 0.0, d][n_neg]
 
         # Get manifold
-        if self.permutations is not None:
-            active_dim = self.permutations[d].item()
-        else:
-            active_dim = d.item()
+        active_dim = d.item() if self.permutations is None else self.permutations[d].item()
         manifold = self.pm.P[self.angle2man[active_dim]]
         special_first_bool = self.special_first[active_dim]
 
@@ -508,7 +504,6 @@ class ProductSpaceDT(BasePredictor):
 
         # Preprocess data
         angles, labels, comparisons_reshaped = self._preprocess(X=X, y=y)
-        y_processed = self._store_classes(y)
 
         # Fit node
         self.tree = self._fit_node(angles=angles, labels=labels, comparisons=comparisons_reshaped, depth=self.max_depth)
@@ -571,14 +566,14 @@ class ProductSpaceDT(BasePredictor):
 
         # Get the best split
         n, d, theta = self._get_best_split(ig=ig, angles=angles, comparisons=comparisons)
-        if self.batched:
-            mask = comparisons[n, d].bool()
-        else:
-            mask = _angular_greater(angles[:, d], theta).flatten()
-        (angles_neg, comparisons_neg, labels_neg), (
-            angles_pos,
-            comparisons_pos,
-            labels_pos,
+        mask = comparisons[n, d].bool() if self.batched else _angular_greater(angles[:, d], theta).flatten()
+        (
+            (angles_neg, comparisons_neg, labels_neg),
+            (
+                angles_pos,
+                comparisons_pos,
+                labels_pos,
+            ),
         ) = _get_split(mask=mask, angles=angles, comparisons=comparisons, labels=labels)
         node = _DecisionNode(feature=int(d.item()), theta=float(theta.item()))
         self.nodes.append(node)
@@ -689,8 +684,8 @@ class ProductSpaceRF(BasePredictor):
 
         # These will become important later - just the sklearn-style stuff
         # For other special attributes, we just use ProductSpaceDT's attributes
-        self.classes_: Optional[Float[torch.Tensor, "n_classes"]] = None
-        self.labels_: Optional[Int[torch.Tensor, "batch n_classes"]] = None
+        self.classes_: Float[torch.Tensor, "n_classes"] | None = None
+        self.labels_: Int[torch.Tensor, "batch n_classes"] | None = None
 
     def _generate_subsample(
         self, n_rows: int, n_cols: int, n_trees: int
@@ -741,7 +736,7 @@ class ProductSpaceRF(BasePredictor):
         idx_sample_all, idx_dim_all = self._generate_subsample(n_rows=n, n_cols=d, n_trees=self.n_estimators)
 
         # Fit trees
-        for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all):
+        for tree, idx_sample, idx_dim in zip(self.trees, idx_sample_all, idx_dim_all, strict=False):
             tree.permutations = idx_dim
             if self.batched:
                 comparisons_subsample = comparisons[idx_sample][:, idx_dim][:, :, idx_sample]

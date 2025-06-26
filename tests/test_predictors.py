@@ -1,12 +1,11 @@
 import torch
-
 from sklearn.model_selection import train_test_split
 
+from manify.manifolds import ProductManifold
 from manify.predictors.decision_tree import ProductSpaceDT, ProductSpaceRF
 from manify.predictors.kappa_gcn import KappaGCN, get_A_hat
 from manify.predictors.perceptron import ProductSpacePerceptron
 from manify.predictors.svm import ProductSpaceSVM
-from manify.manifolds import ProductManifold
 from manify.utils.link_prediction import make_link_prediction_dataset, split_link_prediction_dataset
 
 
@@ -21,9 +20,9 @@ def _test_base_classifier(model, X_train, X_test, y_train, y_test, task="classif
         probs = model.predict_proba(X_test)
         assert probs.shape == (X_test.shape[0], 2), "Probabilities should match the number of test samples and classes"
         assert probs.ndim == 2, "Probabilities should be a 2D array"
-        assert (
-            torch.argmax(probs, dim=1) == preds
-        ).all(), "Predictions should match the class with the highest probability"
+        assert (torch.argmax(probs, dim=1) == preds).all(), (
+            "Predictions should match the class with the highest probability"
+        )
 
         # accuracy = model.score(X_test, y_test)
         accuracy = (preds == y_test).float().mean()
@@ -48,12 +47,12 @@ def _test_kappa_gcn_model(model, X_train, X_test, y_train, y_test, pm, task="cla
 
         probs = model.predict_proba(X_test, A=A_test)
         assert probs.shape == (X_test.shape[0], 2), "Probabilities should match the number of test samples and classes"
-        assert (
-            torch.argmax(probs, dim=1) == preds
-        ).all(), "Predictions should match the class with the highest probability"
-        assert (
-            torch.argmax(probs, dim=1).shape[0] == preds.shape[0]
-        ), "The number of predicted classes should match the number of predictions"
+        assert (torch.argmax(probs, dim=1) == preds).all(), (
+            "Predictions should match the class with the highest probability"
+        )
+        assert torch.argmax(probs, dim=1).shape[0] == preds.shape[0], (
+            "The number of predicted classes should match the number of predictions"
+        )
 
         accuracy = (preds == y_test).float().mean()
         assert accuracy >= 0.5, f"Model {model.__class__.__name__} did not achieve sufficient accuracy"

@@ -79,7 +79,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         random_state: int | None = None,
         device: str = "cpu",
         beta: float = 1.0,
-        reconstruction_loss: torch.nn.modules.loss._Loss = torch.nn.MSELoss(reduction="none"),
+        reconstruction_loss: torch.nn.modules.loss._Loss | None = None,
         n_samples: int = 16,
     ):
         # Init both base classes
@@ -91,7 +91,9 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         self.decoder = decoder.to(device)
         self.beta = beta
         self.n_samples = n_samples
-        self.reconstruction_loss = reconstruction_loss
+        self.reconstruction_loss = (
+            reconstruction_loss if reconstruction_loss is not None else torch.nn.MSELoss(reduction="none")
+        )
         self.model_ = None
         self.loss_history_ = {}
         self.is_fitted_ = False
@@ -142,7 +144,9 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         """
         return self.decoder(z)
 
-    def forward(self, x: Float[torch.Tensor, "batch_size n_features"]) -> tuple[
+    def forward(
+        self, x: Float[torch.Tensor, "batch_size n_features"]
+    ) -> tuple[
         Float[torch.Tensor, "batch_size n_features"],
         Float[torch.Tensor, "batch_size n_ambient"],
         list[Float[torch.Tensor, "batch_size n_latent n_latent"]],

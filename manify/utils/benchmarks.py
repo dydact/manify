@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Dict
+import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -39,7 +40,6 @@ if TYPE_CHECKING:
     TASKTYPE: TypeAlias = Literal["classification", "regression", "link_prediction"]
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
@@ -315,7 +315,7 @@ def benchmark(
         svm_class = SVR
 
     # Evaluate sklearn
-    accs: Dict[MODELTYPE, Dict[SCORETYPE, float]] = {}
+    accs: dict[MODELTYPE, dict[SCORETYPE, float]] = {}
     if "sklearn_dt" in models:
         dt = dt_class(**tree_kwargs)
         t1 = time.time()
@@ -418,6 +418,8 @@ def benchmark(
             t2 = time.time()
             accs["ps_perceptron"] = _score(X_test, y_test_np, ps_per, use_torch=True, score=score)
             accs["ps_perceptron"]["time"] = t2 - t1
+        else:
+            warnings.warn("Product Space Perceptron is only implemented for classification tasks.", stacklevel=2)
 
     if "svm" in models:
         # Get inner products for precomputed kernel matrix
@@ -449,7 +451,10 @@ def benchmark(
     if "kappa_mlp" in models:
         assert isinstance(X_test_stereo, torch.Tensor)
         kappa_mlp = KappaGCN(
-            pm=pm_stereo, num_hidden=kappa_gcn_layers, task=task, output_dim=nn_outdim  # type: ignore
+            pm=pm_stereo,
+            num_hidden=kappa_gcn_layers,
+            task=task,
+            output_dim=nn_outdim,  # type: ignore
         ).to(device)
         t1 = time.time()
         if task == "link_prediction":
@@ -499,9 +504,7 @@ def benchmark(
 
     if "kappa_gcn" in models:
         assert isinstance(X_test_stereo, torch.Tensor)
-        kappa_gcn = KappaGCN(pm=pm_stereo, num_hidden=kappa_gcn_layers, task=task, output_dim=nn_outdim).to(
-            device
-        )  # type: ignore
+        kappa_gcn = KappaGCN(pm=pm_stereo, num_hidden=kappa_gcn_layers, task=task, output_dim=nn_outdim).to(device)  # type: ignore
         t1 = time.time()
         kappa_gcn.fit(X_train_stereo, y_train, A=A_train, tqdm_prefix="kappa_gcn", **nn_train_kwargs)
         t2 = time.time()

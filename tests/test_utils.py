@@ -1,7 +1,7 @@
-from manify.utils.dataloaders import load_hf
-from manify.utils.benchmarks import benchmark
-from manify.utils.visualization import hyperboloid_to_poincare, spherical_to_polar, S2_to_polar
 from manify.manifolds import ProductManifold
+from manify.utils.benchmarks import benchmark
+from manify.utils.dataloaders import load_hf
+from manify.utils.visualization import S2_to_polar, hyperboloid_to_poincare, spherical_to_polar
 
 
 def test_benchmark():

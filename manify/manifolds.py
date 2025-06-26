@@ -256,9 +256,9 @@ class Manifold:
 
         # If we're sampling at the origin, z and v should be the same
         mask = torch.all(z == self.mu0, dim=1)
-        assert torch.allclose(
-            v_tangent[mask], z[mask]
-        ), "Tangent vectors at the origin should be equal to the sampled points at the origin"
+        assert torch.allclose(v_tangent[mask], z[mask]), (
+            "Tangent vectors at the origin should be equal to the sampled points at the origin"
+        )
 
         # Exp map onto the manifold
         x = self.manifold.expmap(x=z_mean, u=z)
@@ -392,10 +392,10 @@ class Manifold:
         denom = [1 + abs(self.curvature) ** 0.5 * X[:, 0:1] for X in points]
         for X in denom:
             X[X.abs() < 1e-6] = 1e-6  # Avoid division by zero
-        stereo_points = [n / d for n, d in zip(num, denom)]
-        assert all(
-            stereo_manifold.manifold.check_point(X) for X in stereo_points
-        ), "Generated points do not lie on the target manifold"
+        stereo_points = [n / d for n, d in zip(num, denom, strict=False)]
+        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points), (
+            "Generated points do not lie on the target manifold"
+        )
 
         return stereo_manifold, *stereo_points
 
@@ -411,7 +411,7 @@ class Manifold:
         \end{align}
 
         Args:
-            *points: Variable number of tensors representing points in stereographic coords to convert back to original 
+            *points: Variable number of tensors representing points in stereographic coords to convert back to original
                 coords.
 
         Returns:
@@ -558,7 +558,7 @@ class ProductManifold(Manifold):
         for i in range(len(self.P)):
             intrinsic_dims = self.man2intrinsic[i]
             ambient_dims = self.man2dim[i]
-            for j, k in zip(intrinsic_dims, ambient_dims[-len(intrinsic_dims) :]):
+            for j, k in zip(intrinsic_dims, ambient_dims[-len(intrinsic_dims) :], strict=False):
                 self.projection_matrix[j, k] = 1.0
 
     def parameters(self) -> list[torch.nn.parameter.Parameter]:
@@ -599,7 +599,7 @@ class ProductManifold(Manifold):
         Returns:
             inner_products: Tensor of inner products between points.
         """
-        ips = [M.inner(x, y) for x, y, M in zip(self.factorize(X), self.factorize(Y), self.P)]
+        ips = [M.inner(x, y) for x, y, M in zip(self.factorize(X), self.factorize(Y), self.P, strict=False)]
         return torch.stack(ips, dim=0).sum(dim=0)
 
     def factorize(
@@ -643,18 +643,21 @@ class ProductManifold(Manifold):
         else:
             sigma_factorized = [
                 torch.Tensor(sigma).reshape(-1, M.dim, M.dim).to(self.device)
-                for M, sigma in zip(self.P, sigma_factorized)
+                for M, sigma in zip(self.P, sigma_factorized, strict=False)
             ]
 
-        assert all(
-            sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized)
-        ), "Sigma matrices must match the dimensions of the manifolds."
-        assert (
-            z_mean.shape[-1] == self.ambient_dim
-        ), "z_mean must have the same ambient dimension as the product manifold."
+        assert all(sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized, strict=False)), (
+            "Sigma matrices must match the dimensions of the manifolds."
+        )
+        assert z_mean.shape[-1] == self.ambient_dim, (
+            "z_mean must have the same ambient dimension as the product manifold."
+        )
 
         # Sample initial vector from N(0, sigma)
-        samples = [M.sample(z_M, sigma_M) for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized)]
+        samples = [
+            M.sample(z_M, sigma_M)
+            for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized, strict=False)
+        ]
 
         x = torch.cat([s[0] for s in samples], dim=1)
         v = torch.cat([s[1] for s in samples], dim=1)
@@ -692,7 +695,7 @@ class ProductManifold(Manifold):
         z_factorized = self.factorize(z)
         component_lls = [
             M.log_likelihood(z_M, mu_M, sigma_M).unsqueeze(dim=1)
-            for M, z_M, mu_M, sigma_M in zip(self.P, z_factorized, mu_factorized, sigma_factorized)
+            for M, z_M, mu_M, sigma_M in zip(self.P, z_factorized, mu_factorized, sigma_factorized, strict=False)
         ]
         return torch.cat(component_lls, axis=1).sum(axis=1)
 
@@ -722,11 +725,12 @@ class ProductManifold(Manifold):
 
         # Convert points
         stereo_points = [
-            torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
+            torch.hstack([M.stereographic(x)[1] for x, M in zip(self.factorize(X), self.P, strict=False)])
+            for X in points
         ]
-        assert all(
-            stereo_manifold.manifold.check_point(X) for X in stereo_points
-        ), "Generated points do not lie on the target manifold"
+        assert all(stereo_manifold.manifold.check_point(X) for X in stereo_points), (
+            "Generated points do not lie on the target manifold"
+        )
 
         return stereo_manifold, *stereo_points
 
@@ -744,7 +748,7 @@ class ProductManifold(Manifold):
         \end{align}
 
         Args:
-            *points: Variable number of tensors representing points in stereographic coords to convert back to original 
+            *points: Variable number of tensors representing points in stereographic coords to convert back to original
                 coords.
 
         Returns:
@@ -759,11 +763,12 @@ class ProductManifold(Manifold):
         orig_manifold = ProductManifold(self.signature, device=self.device, stereographic=False)
 
         orig_points = [
-            torch.hstack([M.inverse_stereographic(x)[1] for x, M in zip(self.factorize(X), self.P)]) for X in points
+            torch.hstack([M.inverse_stereographic(x)[1] for x, M in zip(self.factorize(X), self.P, strict=False)])
+            for X in points
         ]
-        assert all(
-            orig_manifold.manifold.check_point(X) for X in orig_points
-        ), "Generated points do not lie on the target manifold"
+        assert all(orig_manifold.manifold.check_point(X) for X in orig_points), (
+            "Generated points do not lie on the target manifold"
+        )
 
         return orig_manifold, *orig_points
 
@@ -852,9 +857,9 @@ class ProductManifold(Manifold):
             ]
         )
         assert cluster_to_class.shape == (num_clusters,), "Cluster to class mapping shape mismatch."
-        assert torch.unique(cluster_to_class).shape == (
-            num_classes,
-        ), "Cluster to class mapping must cover all classes."
+        assert torch.unique(cluster_to_class).shape == (num_classes,), (
+            "Cluster to class mapping must cover all classes."
+        )
 
         # Generate outputs
         if task == "classification":

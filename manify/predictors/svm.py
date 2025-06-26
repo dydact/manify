@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 if TYPE_CHECKING:
-    from beartype.typing import Literal, Any
+    from beartype.typing import Any, Literal
     from jaxtyping import Float, Int
 
 from ..manifolds import ProductManifold
@@ -106,7 +106,7 @@ class ProductSpaceSVM(BasePredictor):
         # aggregated kernel
         Ks, _ = product_kernel(self.pm, X, None)
         K_sum = torch.ones((n, n), dtype=X.dtype, device=X.device)
-        for K_m, w in zip(Ks, self.weights):
+        for K_m, w in zip(Ks, self.weights, strict=False):
             K_sum += w * K_m
 
         X_np = X.detach().cpu().numpy()
@@ -125,10 +125,9 @@ class ProductSpaceSVM(BasePredictor):
         self.b = {}
 
         for cls in self.classes_:
-            if isinstance(cls, torch.Tensor):
-                cls = cls.item()
+            cls_item = cls.item() if isinstance(cls, torch.Tensor) else cls
             # one-vs-rest labels: +1 for cls, -1 for others
-            y_bin = torch.where(y == cls, 1, -1)
+            y_bin = torch.where(y == cls_item, 1, -1)
             Y = torch.diagflat(y_bin).detach().cpu().numpy()
 
             # variables
@@ -142,7 +141,7 @@ class ProductSpaceSVM(BasePredictor):
             constraints.append(Y @ (K_np @ beta_var + b_var) >= eps_var - zeta)
 
             # per-manifold SOC
-            for M, K_comp in zip(self.pm.P, Ks):
+            for M, K_comp in zip(self.pm.P, Ks, strict=False):
                 P_np = K_comp.detach().cpu().numpy()
                 if M.type == "E" and self.e_constraints:
                     B = sqrtm_psd(P_np)
@@ -200,7 +199,7 @@ class ProductSpaceSVM(BasePredictor):
 
         Ks_test, _ = product_kernel(self.pm, self.X_train_, X_tensor)
         Kt = torch.ones((self.X_train_.shape[0], X_tensor.shape[0]), device=X_tensor.device)
-        for K_m, w in zip(Ks_test, self.weights):
+        for K_m, w in zip(Ks_test, self.weights, strict=False):
             Kt += w * K_m
         Kt_np = Kt.detach().cpu().numpy()
 
@@ -208,10 +207,9 @@ class ProductSpaceSVM(BasePredictor):
         n_cls = len(self.classes_)
         dec = np.zeros((n_test, n_cls))
         for idx, cls in enumerate(self.classes_):
-            if isinstance(cls, torch.Tensor):
-                cls = cls.item()
-            beta_vec: np.ndarray = np.ravel(self.beta[cls])
-            dec[:, idx] = Kt_np.T @ beta_vec + self.b[cls]
+            cls_item = cls.item() if isinstance(cls, torch.Tensor) else cls
+            beta_vec: np.ndarray = np.ravel(self.beta[cls_item])
+            dec[:, idx] = Kt_np.T @ beta_vec + self.b[cls_item]
 
         exp_scores = np.exp(dec - dec.max(axis=1, keepdims=True))
         probs = exp_scores / exp_scores.sum(axis=1, keepdims=True)

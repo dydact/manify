@@ -47,15 +47,16 @@ jobs:
           print("manify version:", getattr(manify, "__version__", "unknown"))
           EOF
 
-      # Code quality checks
-      - name: Check code formatting with Black
-        run: black --check manify/
+      # Code quality checks with Ruff
+      - name: Check code formatting and linting with Ruff
+        run: |
+          ruff check manify/
+          ruff format --check manify/
 
-      - name: Check import ordering with isort
-        run: isort --check-only manify/
-
-      - name: Run pylint
-        run: pylint manify/
+      # Pre-commit hooks validation
+      - name: Run pre-commit hooks
+        run: |
+          pre-commit run --files manify/**/*.py || true
 
       # Type checking
       - name: Check type annotations with MyPy
@@ -65,10 +66,6 @@ jobs:
       - name: Run unit tests & collect coverage
         run: pytest tests --cov --cov-report=xml
 
-      # Check docstrings are in Google style      
-      - name: Check docstrings are in Google style
-        run: pydocstyle manify/
-        continue-on-error: true
 
       # Code coverage
       - name: Upload coverage to Codecov

@@ -1,5 +1,5 @@
-from manify.manifolds import ProductManifold
 from manify.clustering import RiemannianFuzzyKMeans
+from manify.manifolds import ProductManifold
 
 
 def test_riemannian_fuzzy_k_means():

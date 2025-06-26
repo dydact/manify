@@ -1,7 +1,9 @@
-import torch
-from manify.manifolds import Manifold, ProductManifold
-import geoopt
 import math
+
+import geoopt
+import torch
+
+from manify.manifolds import Manifold, ProductManifold
 
 
 def _shared_tests(M, X1, X2, is_euclidean):
@@ -27,12 +29,12 @@ def _shared_tests(M, X1, X2, is_euclidean):
     dists_12 = M.dist(X1, X2)
     assert dists_12.shape == (10, 5), "Distance shape mismatch for X1 and X2"
     if is_euclidean:
-        assert torch.allclose(
-            dists_12, torch.linalg.norm(X1[:, None] - X2[None, :], dim=-1), atol=1e-5
-        ), "Euclidean distances do not match for X1 and X2"
-        assert torch.allclose(
-            dists_11, torch.linalg.norm(X1[:, None] - X1[None, :], dim=-1), atol=1e-5
-        ), f"Euclidean distances do not match for X1 {M.signature}"
+        assert torch.allclose(dists_12, torch.linalg.norm(X1[:, None] - X2[None, :], dim=-1), atol=1e-5), (
+            "Euclidean distances do not match for X1 and X2"
+        )
+        assert torch.allclose(dists_11, torch.linalg.norm(X1[:, None] - X1[None, :], dim=-1), atol=1e-5), (
+            f"Euclidean distances do not match for X1 {M.signature}"
+        )
     assert (dists_11.triu(1) >= 0).all(), "Distances for X1 should be non-negative"
     assert (dists_12.triu(1) >= 0).all(), "Distances for X2 should be non-negative"
     assert torch.allclose(dists_11.triu(1), M.pdist(X1).triu(1), atol=1e-5), "dist and pdist diverge for X1"
@@ -43,12 +45,12 @@ def _shared_tests(M, X1, X2, is_euclidean):
     sqdists_12 = M.dist2(X1, X2)
     assert sqdists_12.shape == (10, 5), "Squared distance shape mismatch for X1 and X2"
     if is_euclidean:
-        assert torch.allclose(
-            sqdists_12, torch.linalg.norm(X1[:, None] - X2[None, :], dim=-1) ** 2, atol=1e-5
-        ), "Euclidean squared distances do not match for X1 and X2"
-        assert torch.allclose(
-            sqdists_11, torch.linalg.norm(X1[:, None] - X1[None, :], dim=-1) ** 2, atol=1e-5
-        ), "Euclidean squared distances do not match for X1"
+        assert torch.allclose(sqdists_12, torch.linalg.norm(X1[:, None] - X2[None, :], dim=-1) ** 2, atol=1e-5), (
+            "Euclidean squared distances do not match for X1 and X2"
+        )
+        assert torch.allclose(sqdists_11, torch.linalg.norm(X1[:, None] - X1[None, :], dim=-1) ** 2, atol=1e-5), (
+            "Euclidean squared distances do not match for X1"
+        )
     assert (sqdists_11.triu(1) >= 0).all(), "Squared distances for X1 should be non-negative"
     assert (sqdists_12.triu(1) >= 0).all(), "Squared distances for X1 and X2 should be non-negative"
     assert torch.allclose(sqdists_11.triu(1), M.pdist2(X1).triu(1), atol=1e-5), "sqdists_11 and pdist2 diverge for X1"

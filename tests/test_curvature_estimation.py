@@ -1,6 +1,7 @@
+import torch
+
 from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
 from manify.manifolds import ProductManifold
-import torch
 
 
 def iterative_delta_hyperbolicity(D, reference_idx=0, relative=True):
@@ -54,15 +55,15 @@ def test_delta_hyperbolicity():
     assert (vectorized_deltas <= 1).all(), "Deltas should be in the range [-2, 1]"
     assert (vectorized_deltas >= -2).all(), "Deltas should be in the range [-2, 1]"
     assert vectorized_deltas.shape == (10, 10, 10)
-    assert torch.allclose(
-        vectorized_deltas, iterative_deltas, atol=1e-5
-    ), "Vectorized deltas should be close to iterative deltas."
+    assert torch.allclose(vectorized_deltas, iterative_deltas, atol=1e-5), (
+        "Vectorized deltas should be close to iterative deltas."
+    )
 
     # Sampled deltas
     sampled_deltas, indices = sampled_delta_hyperbolicity(dists, n_samples=10, relative=True)
     assert (sampled_deltas <= 1).all(), "Sampled deltas should be in the range [-2, 1]"
     assert (sampled_deltas >= -2).all(), "Sampled deltas should be in the range [-2, 1]"
     assert sampled_deltas.shape == (10,), "There should be 10 sampled deltas"
-    assert torch.allclose(
-        sampled_deltas, vectorized_deltas[indices[:, 0], indices[:, 1], indices[:, 2]], atol=1e-5
-    ), "Sampled deltas should be close to vectorized deltas."
+    assert torch.allclose(sampled_deltas, vectorized_deltas[indices[:, 0], indices[:, 1], indices[:, 2]], atol=1e-5), (
+        "Sampled deltas should be close to vectorized deltas."
+    )

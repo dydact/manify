@@ -83,7 +83,7 @@ def vectorized_delta_hyperbolicity(
         full: Whether to return the full $\delta$ tensor or just the maximum value.
 
     Returns:
-        delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor 
+        delta: Either the maximum $\delta$ value (if full=False) or the full $\delta$ tensor
             over all triplets.
     """
     n = D.shape[0]
@@ -99,10 +99,7 @@ def vectorized_delta_hyperbolicity(
 
     out = torch.minimum(XY_w_xy, XY_w_yz)
 
-    if not full:
-        delta = (out - XY_w_xz).max().item()
-    else:
-        delta = out - XY_w_xz
+    delta = out - XY_w_xz if full else (out - XY_w_xz).max().item()
 
     delta = 2 * delta / torch.max(D) if relative else delta
 

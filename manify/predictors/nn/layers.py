@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import geoopt
 import torch
-import torch.nn as nn
+from torch import nn
 
 if TYPE_CHECKING:
     from beartype.typing import Callable
@@ -95,7 +95,7 @@ class KappaGCNLayer(torch.nn.Module):
             AXW = XW
         elif isinstance(self.manifold, ProductManifold):
             XWs = self.manifold.factorize(XW)
-            AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P)])
+            AXW = torch.hstack([self._left_multiply(A_hat, XW, M) for XW, M in zip(XWs, self.manifold.P, strict=False)])
         else:
             AXW = self._left_multiply(A_hat, XW, self.manifold)
 
@@ -247,11 +247,11 @@ class StereographicLogits(nn.Module):
         Ws = [w.T for w in M.factorize(W.T)]
         res = [
             self._get_logits_single_manifold(X_man, W_man, b_man, man, return_inner_products=True)
-            for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P)
+            for X_man, W_man, b_man, man in zip(Xs, Ws, bs, M.P, strict=False)
         ]
 
         # Each result is (n, k) logits and (n, k) inner products
-        logits, inner_products = zip(*res)
+        logits, inner_products = zip(*res, strict=False)
 
         # Final logits: l2 norm of logits * sign of inner product
         stacked_logits = torch.stack(logits, dim=2)  # (n, k, m)

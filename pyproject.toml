@@ -32,10 +32,8 @@ dev = [
     "pytest",
     "pytest-cov",
     "pytest-env",
-    "black",
-    "isort",
-    "pylint",
-    "pydocstyle"
+    "ruff",
+    "pre-commit"
 ]
 docs = [
   "mkdocs",
@@ -56,42 +54,54 @@ packages = ["manify"]
 # CI/CD Tool Configuration
 # =============================================================================
 
-# Code formatting with Black
-[tool.black]
+# Linting and formatting with Ruff
+[tool.ruff]
 line-length = 120
-target-version = ["py310"]
+target-version = "py310"
+exclude = ["manify/optimizers/_adan.py"]  # Use unmodified adan.py code from original repo
 
-# Import sorting with isort
-[tool.isort]
-profile = "black"
-line_length = 120
-skip = ["manify/optimizers/_adan.py"]  # Use unmodified adan.py code from original repo
+[tool.ruff.lint]
+# Enable pycodestyle (E/W), Pyflakes (F), isort (I), pydocstyle (D), pylint (PL), and more
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "D",     # pydocstyle
+    "PL",    # pylint
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+]
 
-# Static analysis with Pylint
-[tool.pylint.master]
-init-hook = "import sys; sys.path.append('.')"
-fail-under = 8.0
-ignore = "__pycache__,.git,venv"
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "D107",   # Missing docstring in __init__ (pydocstyle equivalent)
+    "PLR0913", # Too many arguments to function call
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value used in comparison
+    "D100",   # Missing docstring in public module (too strict for __init__.py files)
+    "D104",   # Missing docstring in public package
+    "F722",   # Syntax error in forward annotation (jaxtyping compatibility)
+    "F821",   # Undefined name (jaxtyping string literals)
+    "UP037",  # Remove quotes from type annotation (breaks jaxtyping)
+    "T201",   # Print found (some prints are intentional)
+]
 
-[tool.pylint.reports]
-output-format = "colorized"
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
-[tool.pylint.format]
-max-line-length = 120
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D"]  # Disable docstring checks in tests
+"**/conftest.py" = ["D"]
+"**/__init__.py" = ["D104", "F401"]  # Allow unused imports in __init__.py
 
-[tool.pylint."MESSAGES CONTROL"]
-disable = ["invalid-name"]
-
-[tool.pylint.basic]
-good-names = "i,j,k,ex,Run,_,fp"
-argument-rgx = "[a-z_][a-z0-9_]{2,30}$"
-variable-rgx = "[a-z_][a-z0-9_]{2,30}$"
-class-rgx = "[A-Z][a-zA-Z0-9]+$"
-const-rgx = "(([A-Z_][A-Z0-9_]*)|(__.*__))"
-module-rgx = "([a-z_][a-z0-9_]*)"
-
-[tool.pylint.typecheck]
-generated-members = "torch.*,nn.*"
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
 
 # Type checking with MyPy
 [tool.mypy]
@@ -134,8 +144,3 @@ exclude_lines = [
 [tool.coverage.xml]
 output = "coverage.xml"
 
-# Docstring style checking with pydocstyle
-[tool.pydocstyle]
-convention = "google"
-add_ignore = ["D107"]
-match = "(?!_adan).*\\.py$"  # Exclude _adan.py from docstring checks

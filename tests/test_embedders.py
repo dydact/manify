@@ -1,10 +1,11 @@
 import torch
 from sklearn.model_selection import train_test_split
+
 from manify.embedders.coordinate_learning import CoordinateLearning
 from manify.embedders.siamese import SiameseNetwork
 from manify.embedders.vae import ProductSpaceVAE
-from manify.utils.dataloaders import load_hf
 from manify.manifolds import ProductManifold
+from manify.utils.dataloaders import load_hf
 
 
 def test_train_coords():
@@ -60,7 +61,9 @@ def test_vae():
     assert X_embedded.shape == (
         128,
         pm.ambient_dim,
-    ), f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"
+    ), (
+        f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"
+    )
 
 
 def test_siamese():
@@ -81,4 +84,6 @@ def test_siamese():
     assert X_embedded.shape == (
         128,
         pm.ambient_dim,
-    ), f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"
+    ), (
+        f"Embedded output shape should match expected dimensions: Got {X_embedded.shape}, expected {(128, pm.ambient_dim)}"
+    )

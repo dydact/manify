@@ -77,7 +77,7 @@ class ProductSpacePerceptron(BasePredictor):
         # Precompute kernel matrix
         Ks, _ = product_kernel(self.pm, X, None)
         K = torch.ones((n_samples, n_samples), dtype=X.dtype, device=X.device)
-        for K_m, w in zip(Ks, self.weights):
+        for K_m, w in zip(Ks, self.weights, strict=False):
             K += w * K_m
 
         # Store training data and labels for prediction
@@ -130,7 +130,8 @@ class ProductSpacePerceptron(BasePredictor):
         return self
 
     def predict_proba(
-        self, X: Float[torch.Tensor, "n_points n_features"]  # type: ignore[override]
+        self,
+        X: Float[torch.Tensor, "n_points n_features"],  # type: ignore[override]
     ) -> Float[torch.Tensor, "n_points n_classes"]:
         """Predicts the decision values for each class.
 
@@ -147,7 +148,7 @@ class ProductSpacePerceptron(BasePredictor):
         # Compute kernel matrix between training data and test data
         Ks, _ = product_kernel(self.pm, self.X_train_, X)
         K_test = torch.ones((self.X_train_.shape[0], n_samples), dtype=X.dtype, device=X.device)
-        for K_m, w in zip(Ks, self.weights):
+        for K_m, w in zip(Ks, self.weights, strict=False):
             K_test += w * K_m
         # K_test = self.X_train_ @ X.T
 

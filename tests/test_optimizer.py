@@ -1,11 +1,9 @@
 import torch
-import geoopt
 from geoopt import ManifoldParameter
 from geoopt.optim import RiemannianAdam
 
-
-from manify.optimizers.radan import RiemannianAdan
 from manify.manifolds import ProductManifold
+from manify.optimizers.radan import RiemannianAdan
 
 
 def get_product_manifold_and_target(device_str: str):

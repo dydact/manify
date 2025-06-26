@@ -1,19 +1,21 @@
-import torch
+import sys
+import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import yaml
+import torch
 import wandb
-import sys
-from tqdm.notebook import tqdm
-from pathlib import Path
-from manify.utils.dataloaders_old import load
-from manify.utils.benchmarks import benchmark
-from manify.manifolds import ProductManifold
-from manify.embedders.coordinate_learning import train_coords
-from manify.utils.link_prediction import make_link_prediction_dataset, split_dataset
-from manify.predictors.kappa_gcn import get_A_hat
+import yaml
 from sklearn.model_selection import train_test_split
-import warnings
+from tqdm.notebook import tqdm
+
+from manify.embedders.coordinate_learning import train_coords
+from manify.manifolds import ProductManifold
+from manify.predictors.kappa_gcn import get_A_hat
+from manify.utils.benchmarks import benchmark
+from manify.utils.dataloaders_old import load
+from manify.utils.link_prediction import make_link_prediction_dataset, split_dataset
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -109,7 +111,7 @@ for bench in cfg["BENCHMARKS"]:
         n_trials = cfg["N_TRIALS"]["default"]
 
     with tqdm(total=len(datasets) * n_trials, desc=tqdm_desc) as pbar:
-        for dataset, sig, sigstr, task in zip(datasets, signatures, sig_strs, tasks):
+        for dataset, sig, sigstr, task in zip(datasets, signatures, sig_strs, tasks, strict=False):
             for trial in range(n_trials):
                 seed += 1
                 pm = ProductManifold(signature=sig, device=device)
