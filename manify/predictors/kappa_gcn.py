@@ -217,13 +217,13 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         for i in range(epochs):
             opt.zero_grad()
             if riemannian_params:
-                ropt.zero_grad()
+                ropt.zero_grad()  # type: ignore
             y_pred = self(X, A_hat)
             loss = loss_fn(y_pred, y)
             loss.backward()
             opt.step()
             if riemannian_params:
-                ropt.step()
+                ropt.step()  # type: ignore
 
             # Progress bar
             if use_tqdm:

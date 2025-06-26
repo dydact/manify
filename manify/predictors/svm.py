@@ -172,10 +172,10 @@ class ProductSpaceSVM(BasePredictor):
             prob.solve(solver="SCS")
 
             # save results
-            self.beta[cls] = np.ravel(beta_var.value)
-            self.zeta[cls] = zeta.value
-            self.epsilon[cls] = float(eps_var.value)
-            self.b[cls] = float(b_var.value)
+            self.beta[cls_item] = np.ravel(beta_var.value)
+            self.zeta[cls_item] = zeta.value
+            self.epsilon[cls_item] = float(eps_var.value)
+            self.b[cls_item] = float(b_var.value)
 
         # store training data
         self.X_train_ = torch.tensor(X_np, dtype=torch.float32)
