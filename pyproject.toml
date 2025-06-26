@@ -34,6 +34,8 @@ dev = [
     "pytest-env",
     "ruff",
     "pre-commit"
+    "typing_extensions",
+    "pygments",
 ]
 docs = [
   "mkdocs",
