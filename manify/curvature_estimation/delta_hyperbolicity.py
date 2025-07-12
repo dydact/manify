@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import networkx as nx
 import torch
 
 if TYPE_CHECKING:
@@ -113,11 +112,11 @@ def vectorized_delta_hyperbolicity(
 
 
 def delta_hyperbolicity(
-    input_data: nx.Graph | Float[torch.Tensor, "n_points n_points"],
+    distance_matrix: Float[torch.Tensor, "n_points n_points"],
     method: str = "global",
     **kwargs: Any
 ) -> Float[torch.Tensor, "n_points"] | float:
-    r"""Computes the δ-hyperbolicity of a graph or from a distance matrix.
+    r"""Computes the δ-hyperbolicity from a distance matrix.
 
     This function implements δ-hyperbolicity computation, which measures how close a metric 
     space is to a tree. The value δ ≥ 0 is a global property; smaller values indicate 
@@ -129,7 +128,7 @@ def delta_hyperbolicity(
     where (a,b)_w = ½(d(w,a) + d(w,b) - d(a,b)) is the Gromov product.
 
     Args:
-        input_data: Either a NetworkX graph or a pairwise distance matrix as a torch.Tensor.
+        distance_matrix: Pairwise distance matrix as a torch.Tensor.
         method: Computation method. Options:
             - "sampled": Random sampling approach, returns array of δ values for sampled triplets
             - "global": Global maximum δ value over all triplets, returns single scalar
@@ -144,15 +143,11 @@ def delta_hyperbolicity(
             - "global": float scalar (maximum δ value)
             - "full": torch.Tensor of shape (n_points, n_points, n_points)
     """
-    # Handle different input types
-    if isinstance(input_data, nx.Graph):
-        # Compute shortest path distance matrix from graph
-        D = torch.tensor(nx.floyd_warshall_numpy(input_data), dtype=torch.float32)
-    elif isinstance(input_data, torch.Tensor):
-        # Use distance matrix directly
-        D = input_data.float()
-    else:
-        raise TypeError(f"input_data must be a NetworkX graph or torch.Tensor, got {type(input_data)}")
+    # Validate input
+    if not isinstance(distance_matrix, torch.Tensor):
+        raise TypeError(f"distance_matrix must be a torch.Tensor, got {type(distance_matrix)}")
+    
+    D = distance_matrix.float()
 
     if method == "sampled":
         deltas, _ = sampled_delta_hyperbolicity(D, **kwargs)

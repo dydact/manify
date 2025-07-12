@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import networkx as nx
 import torch
 
 if TYPE_CHECKING:
@@ -29,9 +28,9 @@ def _discrete_curvature_estimator(D: Float[torch.Tensor, "n_points n_points"], a
 
     Based on the triangle comparison theorem from Toponogov's theorem, this function computes:
 
-    $$\xi_G(a,b,c) = d_G(a,m)^2 + \frac{d_G(b,c)^2}{4} - \frac{d_G(a,b)^2 + d_G(a,c)^2}{2}$$
+    $$\xi_G(a,b,c;m) = \frac{1}{2d_G(a,m)} \left( d_G(a,m)^2 + \frac{d_G(b,c)^2}{4} - \frac{d_G(a,b)^2 + d_G(a,c)^2}{2} \right)$$
 
-    where $m$ is the midpoint of edge $bc$. This quantity is:
+    where $m$ is a reference node for the triangle formed by nodes $b$ and $c$. This quantity is:
     - Positive for positively curved (spherical-like) regions
     - Zero for flat (Euclidean) regions
     - Negative for negatively curved (hyperbolic-like) regions
@@ -41,7 +40,7 @@ def _discrete_curvature_estimator(D: Float[torch.Tensor, "n_points n_points"], a
         a: Reference point index.
         b: First triangle vertex index.
         c: Second triangle vertex index.
-        m: Midpoint reference index.
+        m: Reference node index.
 
     Returns:
         Discrete curvature estimate for the triangle.
@@ -111,9 +110,9 @@ def sampled_sectional_curvature(
 
 
 def vectorized_sectional_curvature(
-    D: Float[torch.Tensor, "n_points n_points"], relative: bool = True, full: bool = False, k_neighbors: int = 5
+    A: Float[torch.Tensor, "n_points n_points"], D: Float[torch.Tensor, "n_points n_points"], relative: bool = True, full: bool = False
 ) -> Float[torch.Tensor, "n_points"] | float:
-    r"""Computes sectional curvature estimates for all nodes in a graph or manifold.
+    r"""Computes sectional curvature estimates for all nodes in a graph.
 
     For each node $m$, computes the sectional curvature by averaging over all
     valid triangles involving pairs of neighbors. The curvature at node $m$ is:
@@ -123,32 +122,21 @@ def vectorized_sectional_curvature(
     where $\mathcal{T}_m$ is the set of neighbor pairs of node $m$.
 
     Args:
-        D: Pairwise distance matrix.
+        A: Adjacency matrix indicating graph connections.
+        D: Pairwise shortest path distance matrix.
         relative: Whether to normalize by the maximum distance.
         full: Whether to return per-node curvatures or the global average.
-        k_neighbors: Number of nearest neighbors to use for continuous distance matrices.
-                    If distances contain exact 1.0 values (graph case), uses those instead.
 
     Returns:
         curvatures: Either per-node curvature estimates (if full=True) or global average (if full=False).
     """
-    n = D.shape[0]
+    n = A.shape[0]
     node_curvatures = torch.zeros(n, dtype=torch.float32)
-
-    # Check if this is a graph distance matrix (contains exact 1.0 distances)
-    has_unit_distances = torch.any(D == 1.0)
 
     # For each node, compute curvature based on neighbor triangles
     for m in range(n):
-        if has_unit_distances:
-            # Graph case: find neighbors at distance 1
-            neighbors = torch.where(D[m] == 1)[0]
-        else:
-            # Continuous distance case: use k-nearest neighbors (excluding self)
-            distances_from_m = D[m].clone()
-            distances_from_m[m] = float('inf')  # Exclude self
-            _, neighbor_indices = torch.topk(distances_from_m, k=min(k_neighbors, n-1), largest=False)
-            neighbors = neighbor_indices
+        # Find neighbors using adjacency matrix
+        neighbors = torch.where(A[m] == 1)[0]
 
         if len(neighbors) < 2:
             continue  # Need at least 2 neighbors to form triangles
@@ -181,11 +169,12 @@ def vectorized_sectional_curvature(
 
 
 def sectional_curvature(
-    input_data: nx.Graph | Float[torch.Tensor, "n_points n_points"],
+    adjacency_matrix: Float[torch.Tensor, "n_points n_points"],
+    distance_matrix: Float[torch.Tensor, "n_points n_points"],
     method: str = "sampled",
     **kwargs: Any
 ) -> Float[torch.Tensor, "n_points"] | float:
-    r"""Estimates the sectional curvature of a graph or from a distance matrix.
+    r"""Estimates the sectional curvature of a graph from adjacency and distance matrices.
 
     This function implements the graph sectional curvature estimation described in Gu et al. 2019.
     Uses a discrete triangle comparison theorem to estimate local curvature at each node.
@@ -196,12 +185,12 @@ def sectional_curvature(
     - Negative values indicate hyperbolic-like (negatively curved) regions
 
     Args:
-        input_data: Either a NetworkX graph or a pairwise distance matrix as a torch.Tensor.
+        adjacency_matrix: Binary adjacency matrix indicating graph connections.
+        distance_matrix: Pairwise shortest path distance matrix.
         method: Estimation method. Options:
             - "sampled": Random sampling approach, returns array of curvature samples
             - "per_node": Per-node curvature computation, returns curvature for each node
             - "global": Global average curvature, returns single scalar value
-            - "full": DEPRECATED - use "per_node" instead
         **kwargs: Additional arguments passed to the estimation function.
             For "sampled": n_samples, relative
             For "per_node"/"global": relative
@@ -212,22 +201,22 @@ def sectional_curvature(
             - "per_node": torch.Tensor of shape (n_points,)
             - "global": float scalar
     """
-    # Handle different input types
-    if isinstance(input_data, nx.Graph):
-        # Compute shortest path distance matrix from graph
-        D = torch.tensor(nx.floyd_warshall_numpy(input_data), dtype=torch.float32)
-    elif isinstance(input_data, torch.Tensor):
-        # Use distance matrix directly
-        D = input_data.float()
-    else:
-        raise TypeError(f"input_data must be a NetworkX graph or torch.Tensor, got {type(input_data)}")
+    # Validate input matrices
+    if not isinstance(adjacency_matrix, torch.Tensor) or not isinstance(distance_matrix, torch.Tensor):
+        raise TypeError("Both adjacency_matrix and distance_matrix must be torch.Tensors")
+    
+    if adjacency_matrix.shape != distance_matrix.shape:
+        raise ValueError("Adjacency matrix and distance matrix must have the same shape")
+    
+    A = adjacency_matrix.float()
+    D = distance_matrix.float()
 
     if method == "sampled":
         curvatures, _ = sampled_sectional_curvature(D, **kwargs)
         return curvatures
     elif method == "per_node":
-        return vectorized_sectional_curvature(D, full=True, **kwargs)
+        return vectorized_sectional_curvature(A, D, full=True, **kwargs)
     elif method == "global":
-        return vectorized_sectional_curvature(D, full=False, **kwargs)
+        return vectorized_sectional_curvature(A, D, full=False, **kwargs)
     else:
         raise ValueError(f"Unknown method: {method}. Choose 'sampled', 'per_node', 'global'")

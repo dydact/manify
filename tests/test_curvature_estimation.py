@@ -1,6 +1,6 @@
 import torch
 
-from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
+from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity, delta_hyperbolicity
 from manify.manifolds import ProductManifold
 
 
@@ -67,3 +67,17 @@ def test_delta_hyperbolicity():
     assert torch.allclose(sampled_deltas, vectorized_deltas[indices[:, 0], indices[:, 1], indices[:, 2]], atol=1e-5), (
         "Sampled deltas should be close to vectorized deltas."
     )
+
+    # Test centralized delta_hyperbolicity function
+    # Test global method
+    global_delta = delta_hyperbolicity(dists, method="global", relative=True)
+    assert isinstance(global_delta, float), "Global method should return a float"
+    assert global_delta == vectorized_delta_hyperbolicity(dists, full=False, relative=True), "Global method should match vectorized_delta_hyperbolicity"
+    
+    # Test full method
+    full_delta = delta_hyperbolicity(dists, method="full", relative=True)
+    assert torch.allclose(full_delta, vectorized_deltas, atol=1e-5), "Full method should match vectorized result"
+    
+    # Test sampled method
+    sampled_delta_centralized = delta_hyperbolicity(dists, method="sampled", n_samples=10, relative=True)
+    assert sampled_delta_centralized.shape == (10,), "Sampled method should return correct shape"
