@@ -24,10 +24,12 @@ def _test_base_classifier(model, X_train, X_test, y_train, y_test, task="classif
             "Predictions should match the class with the highest probability"
         )
 
-        # accuracy = model.score(X_test, y_test)
         accuracy = (preds == y_test).float().mean()
-        # assert torch.isclose(accuracy, (preds == y_test).float().mean(), atol=1e-5), "Accuracy calculation mismatch"
         assert accuracy >= 0.5, f"Model {model.__class__.__name__} did not achieve sufficient accuracy"
+
+        score = model.score(X_test, y_test)
+        assert score >= 0.5, f"Model {model.__class__.__name__} did not achieve sufficient score"
+        assert score == accuracy, "Score and accuracy should match for classification tasks"
     elif task == "regression":
         pass  # No further tests are really possible for regression
 
@@ -171,3 +173,71 @@ def test_all_link_predictors():
         task="link_prediction",
     )
     print("All link predictors tested successfully.")
+
+
+def test_decision_tree_batch():
+    # Since the decision trees have a few other arguments, here we can play around with them:
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
+    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # ProductSpaceDT nobatch version
+    dt_batch1 = ProductSpaceDT(pm=pm, batch_size=1)
+    dt_batch1.fit(X_train, y_train)
+    preds_batch1 = dt_batch1.predict(X_test)
+    assert preds_batch1.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds_batch1.ndim == 1, "Predictions should be a 1D array"
+    assert (preds_batch1 == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+    dt_batch10 = ProductSpaceDT(pm=pm, batch_size=10)
+    dt_batch10.fit(X_train, y_train)
+    preds_batch10 = dt_batch10.predict(X_test)
+    assert preds_batch10.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds_batch10.ndim == 1, "Predictions should be a 1D array"
+    assert (preds_batch10 == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+    dt_nobatch = ProductSpaceDT(pm=pm, batch_size=None)
+    dt_nobatch.fit(X_train, y_train)
+    preds_nobatch = dt_nobatch.predict(X_test)
+    assert preds_nobatch.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds_nobatch.ndim == 1, "Predictions should be a 1D array"
+    assert (preds_nobatch == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+    assert torch.allclose(preds_batch1, preds_batch10), "Predictions should be the same for different batch sizes"
+    assert torch.allclose(preds_batch1, preds_nobatch), "Predictions should be the same for different batch sizes"
+
+
+def test_decision_tree_special_dims():
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
+    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Special dims
+    dt = ProductSpaceDT(pm=pm, use_special_dims=True)
+    dt.fit(X_train, y_train)
+    preds = dt.predict(X_test)
+    assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds.ndim == 1, "Predictions should be a 1D array"
+    assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+
+def test_random_forest_max_features():
+    pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
+    X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # max_features = sqrt
+    dt = ProductSpaceRF(pm=pm, max_features="sqrt", n_estimators=2)
+    dt.fit(X_train, y_train)
+    preds = dt.predict(X_test)
+    assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds.ndim == 1, "Predictions should be a 1D array"
+    assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+    # max_features = log2
+    dt = ProductSpaceRF(pm=pm, max_features="log2", n_estimators=2)
+    dt.fit(X_train, y_train)
+    preds = dt.predict(X_test)
+    assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds.ndim == 1, "Predictions should be a 1D array"
+    assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"

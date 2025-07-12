@@ -521,7 +521,7 @@ class ProductSpaceDT(BasePredictor):
                 special_dims.append(X[:, dim : dim + 1])
         if len(special_dims) > 0:
             X = torch.cat([X] + special_dims, dim=1)
-            self.signature = self.pm.signature + [(0, len(special_dims))]
+            self.signature = self.pm.signature + [(0.0, len(special_dims))]
         return X, ProductManifold(self.signature)
 
     def _fit_node(
