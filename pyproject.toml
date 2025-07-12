@@ -134,15 +134,14 @@ env = ["BEARTYPE_ENABLE=true"]
 source = ["manify"]
 branch = true
 omit = ["manify/optimizers/_adan.py"]  # Exclude from coverage reporting
+
+[tool.coverage.report]
+# fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
 ]
 
-[tool.coverage.report]
-# fail_under = 80
-
 [tool.coverage.xml]
 output = "coverage.xml"
-
