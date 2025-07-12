@@ -200,15 +200,23 @@ def test_random_forest_batch():
             )
 
 
-def test_decision_tree_special_dims():
+def test_decision_tree_special_dims_ablate_midpoints():
     pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
     X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Special dims
-    dt = ProductSpaceDT(pm=pm, use_special_dims=True)
-    dt.fit(X_train, y_train)
-    preds = dt.predict(X_test)
+    rf = ProductSpaceRF(pm=pm, use_special_dims=True, n_estimators=2, random_state=42)
+    rf.fit(X_train, y_train)
+    preds = rf.predict(X_test)
+    assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+    assert preds.ndim == 1, "Predictions should be a 1D array"
+    assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+
+    # Ablate midpoints
+    rf = ProductSpaceRF(pm=pm, ablate_midpoints=True, n_estimators=2, random_state=42)
+    rf.fit(X_train, y_train)
+    preds = rf.predict(X_test)
     assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
     assert preds.ndim == 1, "Predictions should be a 1D array"
     assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"

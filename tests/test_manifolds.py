@@ -81,6 +81,15 @@ def _shared_tests(M, X1, X2, is_euclidean):
     X_inv_stereo, X1_inv_stereo, X2_inv_stereo = M_stereo.inverse_stereographic(X1_stereo, X2_stereo)
     assert not X_inv_stereo.is_stereographic
 
+    # Assert calling stereographic and inverse_stereographic returns the same points, if the manifold is already
+    # in the necessary geometry
+    assert M.inverse_stereographic(X1, X2) == (M, X1, X2), (
+        "Inverse stereographic does not return the original points for X1"
+    )
+    assert M_stereo.stereographic(X1_stereo, X2_stereo) == (M_stereo, X1_stereo, X2_stereo), (
+        "Inverse stereographic does not return the original points for X2"
+    )
+
     # Higher-tolerance check for stereographic projection inversion
     assert torch.allclose(X1_inv_stereo, X1, atol=1e-3), "Inverse stereographic conversion mismatch for X1"
     assert torch.allclose(X2_inv_stereo, X2, atol=1e-3), "Inverse stereographic conversion mismatch for X2"
@@ -139,6 +148,7 @@ def test_product_manifold_methods():
         torch.random.manual_seed(42)
         X1, _ = pm.sample(z_mean=means, sigma_factorized=covs)
         X2, _ = pm.sample(z_mean=means[:5], sigma_factorized=[cov[:5] for cov in covs])
+        X3, _ = pm.sample()
 
         # Do attributes work correctly?
         for M in pm.P:
@@ -153,4 +163,4 @@ def test_product_manifold_methods():
         _shared_tests(pm, X1, X2, is_euclidean=all(M.curvature == 0 for M in pm.P))
 
         # Also test gaussian mixture
-        X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+        X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42, adjust_for_dims=True)
