@@ -1,3 +1,5 @@
+import torch
+
 from manify.manifolds import ProductManifold
 from manify.utils.benchmarks import benchmark
 from manify.utils.dataloaders import load_hf
