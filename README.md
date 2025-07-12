@@ -31,7 +31,7 @@ There are two ways to install `manify`:
    pip install manify
    ```
 
-2. **From GitHub**:
+2. **From GitHub** (recommended due to active development of the repo):
    ```bash
    pip install git+https://github.com/pchlenski/manify
    ```
@@ -71,7 +71,7 @@ print(tree.score(X_test, y_test))
 
 **Curvature Estimation**
 - `manify.curvature_estimation.delta_hyperbolicity` - Compute delta-hyperbolicity of a metric space
-- `manify.curvature_estimation.greedy_method` - Greedy selection of signatures
+- `manify.curvature_estimation.greedy_method` - Greedy selection of near-optimal signatures
 - `manify.curvature_estimation.sectional_curvature` - Sectional curvature estimation using Toponogov's theorem
 
 **Embedders**
@@ -80,6 +80,7 @@ print(tree.score(X_test, y_test))
 - `manify.embedders.vae` - Product space variational autoencoder
 
 **Predictors**
+- `manify.predictors.nn` - Neural network layers
 - `manify.predictors.decision_tree` - Decision tree and random forest predictors
 - `manify.predictors.kappa_gcn` - Kappa GCN
 - `manify.predictors.perceptron` - Product space perceptron
@@ -97,8 +98,14 @@ print(tree.score(X_test, y_test))
 - `manify.utils.link_prediction` - Preprocessing graphs with link prediction
 - `manify.utils.visualization` - Tools for visualization
 
-## Research Background
-Manify implements geometric machine learning approaches described in academic papers, particularly focusing on handling data with mixed geometric properties. It's especially suited for data that naturally lives in non-Euclidean spaces, such as hierarchical data, networks, and certain types of biological data.
+## Archival branches
+This repo has a number of archival branches that contain code from previous versions of the library when it was under
+active development. These branches are not maintained and are provided for reference only:
+- [Dataset-Generation](https://github.com/pchlenski/manify/tree/Dataset-Generation). This branch contains code used to
+generate the datasets found in `manify.utils.dataloaders`.
+- [notebook-archive](https://github.com/pchlenski/manify/tree/notebook_archive). This branch contains dozens of Jupyter
+notebooks and datasets that were used to develop the library and carry out various benchmarks for the Mixed Curvature
+Decision Trees and Random Forests paper.
 
 ## Citation
 If you use our work, please cite the `Manify` paper:

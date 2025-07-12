@@ -175,36 +175,29 @@ def test_all_link_predictors():
     print("All link predictors tested successfully.")
 
 
-def test_decision_tree_batch():
-    # Since the decision trees have a few other arguments, here we can play around with them:
+def test_random_forest_batch():
     pm = ProductManifold(signature=[(-1.0, 2), (0.0, 2), (1.0, 2)])
     X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # ProductSpaceDT nobatch version
-    dt_batch1 = ProductSpaceDT(pm=pm, batch_size=1)
-    dt_batch1.fit(X_train, y_train)
-    preds_batch1 = dt_batch1.predict(X_test)
-    assert preds_batch1.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
-    assert preds_batch1.ndim == 1, "Predictions should be a 1D array"
-    assert (preds_batch1 == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+    batch_sizes = [1, 10, None]
+    preds_list = []
 
-    dt_batch10 = ProductSpaceDT(pm=pm, batch_size=10)
-    dt_batch10.fit(X_train, y_train)
-    preds_batch10 = dt_batch10.predict(X_test)
-    assert preds_batch10.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
-    assert preds_batch10.ndim == 1, "Predictions should be a 1D array"
-    assert (preds_batch10 == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+    for batch_size in batch_sizes:
+        rf = ProductSpaceRF(pm=pm, batch_size=batch_size, n_estimators=2, random_state=42, max_features="none")
+        rf.fit(X_train, y_train)
+        preds = rf.predict(X_test)
+        assert preds.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
+        assert preds.ndim == 1, "Predictions should be a 1D array"
+        assert (preds == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
+        preds_list.append(preds)
 
-    dt_nobatch = ProductSpaceDT(pm=pm, batch_size=None)
-    dt_nobatch.fit(X_train, y_train)
-    preds_nobatch = dt_nobatch.predict(X_test)
-    assert preds_nobatch.shape[0] == X_test.shape[0], "Predictions should match the number of test samples"
-    assert preds_nobatch.ndim == 1, "Predictions should be a 1D array"
-    assert (preds_nobatch == y_test).float().mean() >= 0.5, "Model did not achieve sufficient accuracy"
-
-    assert torch.allclose(preds_batch1, preds_batch10), "Predictions should be the same for different batch sizes"
-    assert torch.allclose(preds_batch1, preds_nobatch), "Predictions should be the same for different batch sizes"
+    # Check equality for all outputs
+    for i in range(len(preds_list)):
+        for j in range(i + 1, len(preds_list)):
+            assert torch.allclose(preds_list[i], preds_list[j]), (
+                f"Predictions should be the same for batch sizes {batch_sizes[i]} and {batch_sizes[j]}"
+            )
 
 
 def test_decision_tree_special_dims():

@@ -115,24 +115,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         # If we provide self.manifold.mu0 repeated n_clusters times,
         # it samples n_clusters points, each around mu0.
         means_for_sampling_centers = self.manifold.mu0.repeat(self.n_clusters, 1)
-
-        if isinstance(self.manifold, ProductManifold):
-            # sigma_factorized should be a list of [n_clusters, M.dim, M.dim] tensors
-            # Setting to None will use default identity covariances in .sample()
-            centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers, sigma_factorized=None)
-        elif isinstance(self.manifold, Manifold):
-            # sigma should be a [n_clusters, self.manifold.dim, self.manifold.dim] tensor
-            # Setting to None will use default identity covariance in .sample()
-            centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers, sigma=None)
-        else:
-            # Fallback: Randomly select points from X if the manifold type isn't directly supported for sampling
-            # This is a common k-means initialization strategy.
-            # Ensure X is on the correct device first.
-            X_device = X.to(self.manifold.device)  # Ensure X is on the manifold's device
-            indices = np.random.choice(X_device.shape[0], self.n_clusters, replace=False)
-            centers = X_device[indices]
-            # Ensure centers are detached if they came from X which might require grad
-            centers = centers.detach()
+        centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers)
 
         # IMPORTANT: Use self.manifold.manifold for ManifoldParameter,
         # as self.manifold is our wrapper and self.manifold.manifold is the geoopt object.

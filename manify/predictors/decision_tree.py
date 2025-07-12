@@ -633,7 +633,7 @@ class ProductSpaceRF(BasePredictor):
         min_impurity_decrease: float = 0.0,
         ablate_midpoints: bool = False,
         n_estimators: int = 100,
-        max_features: Literal["sqrt", "log2", "none", "all"] = "sqrt",
+        max_features: Literal["sqrt", "log2", "none"] = "sqrt",
         max_samples: float = 1.0,
         batch_size: int | None = None,
         random_state: int | None = None,

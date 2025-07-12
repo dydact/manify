@@ -38,6 +38,25 @@ def test_benchmark():
     assert set(out.keys()) == target_keys, "Output keys do not match"
     assert all(out[key] >= 0 for key in target_keys), "All scores should be non-negative"
 
+    # Test just the model selection fork of regressor runs
+    out = benchmark(X, y, pm, task="regression", epochs=10, models=[], score=["rmse"])
+    assert out == {}, "Output should be empty for no models"
+
+    # Also test what happens when you specify X_train, device, etc
+    out = benchmark(
+        X=None,
+        y=None,
+        X_train=X,
+        X_test=X,
+        y_train=y,
+        A_train=torch.zeros((100, 100)),
+        A_test=torch.zeros((100, 100)),
+        y_test=y,
+        pm=pm,
+        models=[],
+    )
+    assert out == {}, "Output should be empty for no models"
+
 
 def test_dataloaders():
     print("Testing dataloaders")
