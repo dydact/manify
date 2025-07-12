@@ -8,19 +8,19 @@
 [![codecov](https://codecov.io/gh/pchlenski/manify/branch/main/graph/badge.svg)](https://codecov.io/gh/pchlenski/manify)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-
-Manify is a Python library for generating graph/data embeddings and performing machine learning in product spaces with mixed curvature (hyperbolic, Euclidean, and spherical spaces). It provides tools for manifold creation, curvature estimation, embedding generation, and predictive modeling that respects the underlying geometry of complex data.
-
-You can read our manuscript here: [Manify: A Python Library for Learning Non-Euclidean Representations](https://arxiv.org/abs/2503.09576)
+Manify is a Python library for non-Euclidean representation learning. 
+It is built on top of `geoopt` and follows `scikit-learn` API conventions.
+The library supports a variety of workflows involving (products of) Riemannian manifolds, including:
+- All basic manifold operations (e.g. exponential map, logarithmic map, parallel transport, and distance computations)
+- Sampling Gaussian distributions and Gaussian mixtures
+- Learning embeddings of data on product manifolds, using features and/or distances
+- Training machine learning models on manifold-valued embeddings, including decision trees, random forests, SVMs, 
+perceptrons, and neural networks.
+- Clustering manifold-valued data using Riemannian fuzzy K-Means
 
 📖 **Documentation**: [manify.readthedocs.io](https://manify.readthedocs.io)
-
-## Key Features
-- Create and manipulate manifolds with different curvatures (hyperbolic, Euclidean, spherical)
-- Build product manifolds by combining multiple spaces with different geometric properties
-- Learn embeddings of data in these manifolds
-- Train machine learning models that respect the geometry of the embedding space
-- Generate synthetic data with known geometric properties for benchmarking
+📝 **Manuscript**: [Manify: A Python Library for Learning Non-Euclidean Representations](https://arxiv.org/abs/2503.09576)
+🐛 **Issue Tracker**: [Github](https://github.com/pchlenski/manify/issues)
 
 ## Installation
 
@@ -106,6 +106,10 @@ generate the datasets found in `manify.utils.dataloaders`.
 - [notebook-archive](https://github.com/pchlenski/manify/tree/notebook_archive). This branch contains dozens of Jupyter
 notebooks and datasets that were used to develop the library and carry out various benchmarks for the Mixed Curvature
 Decision Trees and Random Forests paper.
+
+## Contributing
+Please read our [contributing guide](https://github.com/pchlenski/manify/blob/main/CONTRIBUTING.md) for details on how
+to contribute to the project.
 
 ## Citation
 If you use our work, please cite the `Manify` paper:
