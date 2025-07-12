@@ -19,7 +19,9 @@ perceptrons, and neural networks.
 - Clustering manifold-valued data using Riemannian fuzzy K-Means
 
 📖 **Documentation**: [manify.readthedocs.io](https://manify.readthedocs.io)
+
 📝 **Manuscript**: [Manify: A Python Library for Learning Non-Euclidean Representations](https://arxiv.org/abs/2503.09576)
+
 🐛 **Issue Tracker**: [Github](https://github.com/pchlenski/manify/issues)
 
 ## Installation
