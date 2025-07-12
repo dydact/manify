@@ -11,8 +11,9 @@ This module provides two implementations:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+import networkx as nx
 import torch
 
 if TYPE_CHECKING:
@@ -99,8 +100,66 @@ def vectorized_delta_hyperbolicity(
 
     out = torch.minimum(XY_w_xy, XY_w_yz)
 
-    delta = out - XY_w_xz if full else (out - XY_w_xz).max().item()
-
-    delta = 2 * delta / torch.max(D) if relative else delta
+    if full:
+        delta = out - XY_w_xz
+        if relative:
+            delta = 2 * delta / torch.max(D)
+    else:
+        delta = (out - XY_w_xz).max().item()
+        if relative:
+            delta = 2 * delta / torch.max(D).item()
 
     return delta
+
+
+def delta_hyperbolicity(
+    input_data: nx.Graph | Float[torch.Tensor, "n_points n_points"],
+    method: str = "global",
+    **kwargs: Any
+) -> Float[torch.Tensor, "n_points"] | float:
+    r"""Computes the δ-hyperbolicity of a graph or from a distance matrix.
+
+    This function implements δ-hyperbolicity computation, which measures how close a metric 
+    space is to a tree. The value δ ≥ 0 is a global property; smaller values indicate 
+    the space is more hyperbolic (tree-like).
+
+    For each triplet of points (x,y,z) and reference point w, computes:
+    δ(x,y,z) = min((x,y)_w, (y,z)_w) - (x,z)_w
+
+    where (a,b)_w = ½(d(w,a) + d(w,b) - d(a,b)) is the Gromov product.
+
+    Args:
+        input_data: Either a NetworkX graph or a pairwise distance matrix as a torch.Tensor.
+        method: Computation method. Options:
+            - "sampled": Random sampling approach, returns array of δ values for sampled triplets
+            - "global": Global maximum δ value over all triplets, returns single scalar
+            - "full": Full δ tensor over all triplets, returns tensor of shape (n,n,n)
+        **kwargs: Additional arguments passed to the computation function.
+            For "sampled": n_samples, reference_idx, relative
+            For "global"/"full": reference_idx, relative
+
+    Returns:
+        delta_values: δ-hyperbolicity estimates.
+            - "sampled": torch.Tensor of shape (n_samples,)
+            - "global": float scalar (maximum δ value)
+            - "full": torch.Tensor of shape (n_points, n_points, n_points)
+    """
+    # Handle different input types
+    if isinstance(input_data, nx.Graph):
+        # Compute shortest path distance matrix from graph
+        D = torch.tensor(nx.floyd_warshall_numpy(input_data), dtype=torch.float32)
+    elif isinstance(input_data, torch.Tensor):
+        # Use distance matrix directly
+        D = input_data.float()
+    else:
+        raise TypeError(f"input_data must be a NetworkX graph or torch.Tensor, got {type(input_data)}")
+
+    if method == "sampled":
+        deltas, _ = sampled_delta_hyperbolicity(D, **kwargs)
+        return deltas
+    elif method == "global":
+        return vectorized_delta_hyperbolicity(D, full=False, **kwargs)
+    elif method == "full":
+        return vectorized_delta_hyperbolicity(D, full=True, **kwargs)
+    else:
+        raise ValueError(f"Unknown method: {method}. Choose 'sampled', 'global', 'full'")
