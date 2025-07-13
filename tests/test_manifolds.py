@@ -23,6 +23,17 @@ def _shared_tests(M, X1, X2, is_euclidean):
         assert torch.allclose(ip_11, X1 @ X1.T, atol=1e-5), "Euclidean inner products do not match for X1"
         assert torch.allclose(ip_12, X1 @ X2.T, atol=1e-5), "Euclidean inner products do not match for X1 and X2"
 
+    # Sampling shapes should support a variety of inputs
+    stacked_means = torch.stack([M.mu0] * 5)
+    s1 = M.sample(100)
+    assert s1.shape == (100, M.ambient_dim), "Sampled points should have the correct shape"
+    s2 = M.sample(100, z_mean=M.mu0)
+    assert s2.shape == (100, M.ambient_dim), "Sampled points should have the correct shape"
+    s3 = M.sample(z_mean=stacked_means)
+    assert s3.shape == (5, M.ambient_dim), "Sampled points should have the correct shape"
+    s3 = M.sample(100, z_mean=stacked_means)
+    assert s3.shape == (500, M.ambient_dim), "Sampled points should have the correct shape"
+
     # Dists
     dists_11 = M.dist(X1, X1)
     assert dists_11.shape == (10, 10), "Distance shape mismatch for X1"

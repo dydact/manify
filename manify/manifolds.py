@@ -234,6 +234,7 @@ class Manifold:
         z_mean = self.mu0 if z_mean is None else z_mean
         z_mean = torch.Tensor(z_mean).reshape(-1, self.ambient_dim).to(self.device)
         n = z_mean.shape[0]
+
         sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device) if sigma is None else sigma
         sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
         assert sigma.shape == (
@@ -250,7 +251,7 @@ class Manifold:
 
         # Sample initial vector from N(0, sigma)
         N = torch.distributions.MultivariateNormal(
-            loc=torch.zeros((n, self.dim), device=self.device), covariance_matrix=sigma
+            loc=torch.zeros((n * n_samples, self.dim), device=self.device), covariance_matrix=sigma
         )
         v = N.sample()
 
