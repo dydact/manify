@@ -115,7 +115,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         # If we provide self.manifold.mu0 repeated n_clusters times,
         # it samples n_clusters points, each around mu0.
         means_for_sampling_centers = self.manifold.mu0.repeat(self.n_clusters, 1)
-        centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers)
+        centers = self.manifold.sample(z_mean=means_for_sampling_centers)
 
         # IMPORTANT: Use self.manifold.manifold for ManifoldParameter,
         # as self.manifold is our wrapper and self.manifold.manifold is the geoopt object.

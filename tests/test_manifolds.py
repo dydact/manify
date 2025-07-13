@@ -115,8 +115,8 @@ def test_manifold_methods():
         means = torch.vstack([M.mu0] * 10)
         covs = torch.stack([cov] * 10)
         torch.random.manual_seed(42)
-        X1, _ = M.sample(z_mean=means, sigma=covs)
-        X2, _ = M.sample(z_mean=means[:5], sigma=covs[:5])
+        X1 = M.sample(z_mean=means, sigma=covs)
+        X2 = M.sample(z_mean=means[:5], sigma=covs[:5])
 
         # Do attributes work correctly?
         if curv < 0:
@@ -146,9 +146,9 @@ def test_product_manifold_methods():
         covs = [torch.stack([torch.eye(M.dim) / M.dim / 100] * 10) for M in pm.P]
         means = torch.vstack([pm.mu0] * 10)
         torch.random.manual_seed(42)
-        X1, _ = pm.sample(z_mean=means, sigma_factorized=covs)
-        X2, _ = pm.sample(z_mean=means[:5], sigma_factorized=[cov[:5] for cov in covs])
-        X3, _ = pm.sample()
+        X1 = pm.sample(z_mean=means, sigma_factorized=covs)
+        X2 = pm.sample(z_mean=means[:5], sigma_factorized=[cov[:5] for cov in covs])
+        X3 = pm.sample()
 
         # Do attributes work correctly?
         for M in pm.P:

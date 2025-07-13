@@ -53,7 +53,7 @@ def distortion_pipeline(
     return float(distortion_loss(new_dists, dists_rescaled).item())
 
 
-def classifier_pipeline(
+def predictor_pipeline(
     pm: ProductManifold,
     dists: Float[torch.Tensor, "n_nodes n_nodes"],
     labels: Float[torch.Tensor, "n_nodes"],

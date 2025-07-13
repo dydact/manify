@@ -1,6 +1,6 @@
 import torch
 
-from manify.curvature_estimation._pipelines import classifier_pipeline, distortion_pipeline
+from manify.curvature_estimation._pipelines import distortion_pipeline, predictor_pipeline
 from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
 from manify.curvature_estimation.greedy_method import greedy_signature_selection
 from manify.manifolds import ProductManifold
@@ -41,7 +41,7 @@ def gromov_product(i, j, k, D):
 def test_delta_hyperbolicity():
     torch.manual_seed(42)
     pm = ProductManifold(signature=[(-1.0, 2)])
-    X, _ = pm.sample(z_mean=torch.vstack([pm.mu0] * 10))
+    X = pm.sample(10)
     dists = pm.pdist(X)
     dists_max = dists.max()
 
@@ -100,7 +100,7 @@ def test_greedy_method():
 
     # Try classifier pipeline
     optimal_pm, loss_history = greedy_signature_selection(
-        pipeline=classifier_pipeline,
+        pipeline=predictor_pipeline,
         labels=y,
         dists=D,
         embedder_init_kwargs=embedder_init_kwargs,

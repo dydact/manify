@@ -121,7 +121,7 @@ class CoordinateLearning(BaseEmbedder):
         n = D.shape[0]
         covs = [torch.stack([torch.eye(M.dim) / self.pm.dim] * n).to(self.device) for M in self.pm.P]
         means = torch.vstack([self.pm.mu0] * n).to(self.device)
-        X_embed, _ = self.pm.sample(z_mean=means, sigma_factorized=covs)
+        X_embed = self.pm.sample(z_mean=means, sigma_factorized=covs)
         D = D.to(self.device)
 
         # Get train and test indices set up

@@ -29,15 +29,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
 
-      # Cache HuggingFace - this saves time running tests/test_utils.py on subsequent runs
-      - name: Cache HuggingFace datasets
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/huggingface
-          key: ${{ runner.os }}-huggingface-${{ hashFiles('tests/test_*.py') }}
-          restore-keys: |
-            ${{ runner.os }}-huggingface-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -67,8 +58,8 @@ jobs:
         run: mypy manify/
 
       # Unit testing
-      - name: Run unit tests & collect coverage
-        run: pytest tests --cov --cov-report=xml
+      - name: Run unit tests & collect coverage (except dataloaders)
+        run: pytest tests --cov --cov-report=xml -k "not test_dataloaders"
 
 
       # Code coverage
@@ -79,3 +70,46 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           flags: unittests
+          name: python-${{ matrix.python-version }}
+
+  # Dataloaders run in parallel, for speed
+  test-dataloaders:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Cache HuggingFace datasets
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-huggingface-dataloaders-v1
+          restore-keys: |
+            ${{ runner.os }}-huggingface-dataloaders-
+            ${{ runner.os }}-huggingface-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run dataloader tests
+        run: pytest tests/test_utils.py::test_dataloaders -v --cov=manify/dataloaders --cov-report=xml
+
+      # Upload dataloader coverage separately
+      - name: Upload dataloader coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          verbose: true
+          flags: dataloaders
+          name: dataloaders
+
