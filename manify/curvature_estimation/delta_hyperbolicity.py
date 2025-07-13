@@ -102,11 +102,19 @@ def vectorized_delta_hyperbolicity(
     if full:
         delta = out - XY_w_xz
         if relative:
-            delta = 2 * delta / torch.max(D)
+            max_dist = torch.max(D)
+            if max_dist > 0:
+                delta = 2 * delta / max_dist
+            else:
+                delta = torch.zeros_like(delta)
     else:
         delta = (out - XY_w_xz).max().item()
         if relative:
-            delta = 2 * delta / torch.max(D).item()
+            max_dist = torch.max(D).item()
+            if max_dist > 0:
+                delta = 2 * delta / max_dist
+            else:
+                delta = 0.0
 
     return delta
 
