@@ -41,8 +41,10 @@ def test_benchmark():
     assert all(out[key] >= 0 for key in target_keys), "All scores should be non-negative"
 
     # Test just the model selection fork of regressor runs
-    out = benchmark(X, y, pm, task="regression", epochs=10, models=[], score=["rmse"])
-    assert out == {}, "Output should be empty for no models"
+    out = benchmark(X, y, pm, task="regression", epochs=10, models=["sklearn_dt"], score=["rmse"])
+    assert out.keys() == {"sklearn_dt_rmse", "sklearn_dt_time"}, (
+        "Output should only contain the specified model's score and time"
+    )
 
     # Also test what happens when you specify X_train, device, etc
     out = benchmark(
@@ -55,9 +57,11 @@ def test_benchmark():
         A_test=torch.zeros((100, 100)),
         y_test=y,
         pm=pm,
-        models=[],
+        models=["sklearn_dt"],
     )
-    assert out == {}, "Output should be empty for no models"
+    assert out.keys() == {"sklearn_dt_accuracy", "sklearn_dt_f1-micro", "sklearn_dt_f1-macro", "sklearn_dt_time"}, (
+        "Output should only contain the specified model's score and time"
+    )
 
 
 def test_dataloaders():

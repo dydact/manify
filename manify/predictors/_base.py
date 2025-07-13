@@ -47,7 +47,7 @@ class BasePredictor(BaseEstimator, ABC):
         self.pm = pm
         self.task = task
         self.random_state = random_state
-        self.device = pm.device if device is None else device
+        self.device = device or pm.device
         self.loss_history_: dict[str, list[float]] = {}
         self.is_fitted_: bool = False
 

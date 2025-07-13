@@ -52,11 +52,8 @@ class ProductSpacePerceptron(BasePredictor):
         self.pm = pm  # ProductManifold instance
         self.max_epochs = max_epochs
         self.patience = patience  # Number of consecutive epochs without improvement to consider convergence
-        if weights is None:
-            self.weights = torch.ones(len(pm.P), dtype=torch.float32)
-        else:
-            assert len(weights) == len(pm.P), "Number of weights must match the number of manifolds."
-            self.weights = weights
+        self.weights = torch.ones(len(pm.P), dtype=torch.float32) if weights is None else weights
+        assert len(self.weights) == len(pm.P), "Number of weights must match the number of manifolds."
 
     def fit(
         self, X: Float[torch.Tensor, "n_samples n_manifolds"], y: Int[torch.Tensor, "n_samples"]

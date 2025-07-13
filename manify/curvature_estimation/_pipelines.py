@@ -35,10 +35,8 @@ def distortion_pipeline(
         A function f(signature) → loss, where signature is a list
         of (curvature, dim) tuples.
     """
-    if embedder_init_kwargs is None:
-        embedder_init_kwargs = {}
-    if embedder_fit_kwargs is None:
-        embedder_fit_kwargs = {}
+    embedder_init_kwargs = embedder_init_kwargs or {}
+    embedder_fit_kwargs = embedder_fit_kwargs or {}
 
     dists = dists.to(pm.device)
     dists_rescaled = dists / dists.max()
@@ -82,14 +80,10 @@ def classifier_pipeline(
     Returns:
         The loss of the classifier on the test set after embedding the distances using the product manifold.
     """
-    if embedder_init_kwargs is None:
-        embedder_init_kwargs = {}
-    if embedder_fit_kwargs is None:
-        embedder_fit_kwargs = {}
-    if model_init_kwargs is None:
-        model_init_kwargs = {}
-    if model_fit_kwargs is None:
-        model_fit_kwargs = {}
+    embedder_init_kwargs = embedder_init_kwargs or {}
+    embedder_fit_kwargs = embedder_fit_kwargs or {}
+    model_init_kwargs = model_init_kwargs or {}
+    model_fit_kwargs = model_fit_kwargs or {}
 
     dists = dists.to(pm.device)
     dists_rescaled = dists / dists.max()

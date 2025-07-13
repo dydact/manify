@@ -35,16 +35,11 @@ class KappaGCNLayer(torch.nn.Module):
     ):
         super().__init__()
 
-        # Parameters are Euclidean, straightforardly
-        # self.W = torch.rand(in_features, out_features)
+        # Parameters are Euclidean, straightforwardly
         self.W = torch.nn.Parameter(torch.randn(in_features, out_features) * 0.01)
-        # self.b = torch.nn.Parameter(torch.rand(out_features))
 
-        # Noninearity must be applied via the manifold
-        if nonlinearity is None:
-            self.sigma = lambda x: x
-        else:
-            self.sigma = lambda x: manifold.expmap(nonlinearity(manifold.logmap(x)))
+        # Nonlinearity must be applied via the manifold
+        self.sigma = manifold.apply(nonlinearity) if nonlinearity else lambda x: x
 
         # Also store manifold
         self.manifold = manifold

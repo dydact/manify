@@ -61,15 +61,14 @@ def _score(
     use_torch: bool = False,
     score: list[SCORETYPE] | None = None,
 ) -> dict[SCORETYPE, float]:
-    if score is None:
-        score = ["accuracy", "f1-micro"]
-    if y_pred_override is not None:
-        y_pred = y_pred_override
-    else:
-        assert model is not None, "Model must be provided if y_pred_override is not given"
-        y_pred = model.predict(_X)
+    """Helper function to score a model."""
+    score = score or ["accuracy", "f1-micro"]
+    assert model is not None or y_pred_override is not None, "Model must be provided if y_pred_override is not given"
+    y_pred = y_pred_override if y_pred_override is not None else model.predict(_X)  # type: ignore
+
     if use_torch:
         y_pred = y_pred.detach().cpu().numpy()
+
     scoring_funcs = {
         "accuracy": accuracy_score,
         "f1-micro": lambda y, p: f1_score(y, p, average="micro"),
@@ -164,42 +163,40 @@ def benchmark(
     Returns:
         Dictionary mapping model names to their corresponding evaluation scores.
     """
-    if score is None:
-        score = ["accuracy", "f1-micro", "f1-macro"]
-    if models is None:
-        models = [
-            "sklearn_dt",
-            "sklearn_rf",
-            "product_dt",
-            "product_rf",
-            "tangent_dt",
-            "tangent_rf",
-            "knn",
-            "ps_perceptron",
-            # "svm",
-            "ps_svm",
-            # "tangent_mlp",
-            "ambient_mlp",
-            "tangent_gcn",
-            "ambient_gcn",
-            "kappa_gcn",
-            "ambient_mlr",
-            "tangent_mlr",
-            "kappa_mlr",
-            "single_manifold_rf",
-        ]
+    score = score or ["accuracy", "f1-micro", "f1-macro"]
+    models = models or [
+        "sklearn_dt",
+        "sklearn_rf",
+        "product_dt",
+        "product_rf",
+        "tangent_dt",
+        "tangent_rf",
+        "knn",
+        "ps_perceptron",
+        "svm",
+        "ps_svm",
+        "tangent_mlp",
+        "ambient_mlp",
+        "tangent_gcn",
+        "ambient_gcn",
+        "kappa_gcn",
+        "ambient_mlr",
+        "tangent_mlr",
+        "kappa_mlr",
+        "single_manifold_rf",
+    ]
 
     # Input validation on (task, score) pairing
-    if task in ["classification", "link_prediction"]:
-        assert all(s in ["accuracy", "f1-micro", "f1-macro", "time"] for s in score)
+    if task in {"classification", "link_prediction"}:
+        assert all(s in {"accuracy", "f1-micro", "f1-macro", "time"} for s in score)
     elif task == "regression":
-        assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
+        assert all(s in {"mse", "rmse", "percent_rmse", "time"} for s in score)
 
     # Input validation on (task, score) pairing
-    if task in ["classification", "link_prediction"]:
-        assert all(s in ["accuracy", "f1-micro", "f1-macro", "time"] for s in score)
+    if task in {"classification", "link_prediction"}:
+        assert all(s in {"accuracy", "f1-micro", "f1-macro", "time"} for s in score)
     elif task == "regression":
-        assert all(s in ["mse", "rmse", "percent_rmse", "time"] for s in score)
+        assert all(s in {"mse", "rmse", "percent_rmse", "time"} for s in score)
     else:
         raise ValueError(f"Unknown task: {task}")
 
@@ -243,7 +240,7 @@ def benchmark(
         X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)), test_size=0.2)
 
     # Make sure classification labels are formatted correctly
-    if task in ["classification", "link_prediction"]:
+    if task in {"classification", "link_prediction"}:
         y = torch.unique(y, return_inverse=True)[1]
         y_train = y[train_idx]
         y_test = y[test_idx]
@@ -302,7 +299,7 @@ def benchmark(
     nn_train_kwargs = {"epochs": epochs, "lr": lr}
 
     # Define your models
-    if task in ["classification", "link_prediction"]:
+    if task in {"classification", "link_prediction"}:
         dt_class = DecisionTreeClassifier
         rf_class = RandomForestClassifier
         knn_class = KNeighborsClassifier

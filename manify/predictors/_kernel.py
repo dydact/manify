@@ -28,8 +28,7 @@ def compute_kernel_and_norm_manifold(
         kernel_matrix: The kernel matrix between source and target points.
         norm_constant: Scalar normalization constant for the kernel.
     """
-    if X_target is None:
-        X_target = X_source
+    X_target = X_source if X_target is None else X_target
 
     ip = manifold.inner(X_source, X_target)
     ip *= manifold.scale
@@ -77,9 +76,7 @@ def product_kernel(
         kernel_matrices: List of kernel matrices for each component manifold.
         norm_constants: List of normalization constants for each kernel.
     """
-    # If X_target is None, set it to X_source
-    if X_target is None:
-        X_target = X_source
+    X_target = X_source if X_target is None else X_target
 
     # Compute the kernel matrix and norm for each manifold
     Ks = []

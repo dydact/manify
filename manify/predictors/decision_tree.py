@@ -292,10 +292,7 @@ class ProductSpaceDT(BasePredictor):
 
         # Store hyperparameters
         self.pm = pm
-        if max_depth is None:
-            self.max_depth = -1  # This runs forever since the loop checks depth == 0
-        else:
-            self.max_depth = max_depth
+        self.max_depth = max_depth or -1
         self.min_samples_leaf = min_samples_leaf
         self.min_samples_split = min_samples_split
         self.min_impurity_decrease = min_impurity_decrease
@@ -370,7 +367,7 @@ class ProductSpaceDT(BasePredictor):
             dims = self.pm.man2dim[i]
 
             # Non-Euclidean manifolds use angular projections
-            if M.type in ["H", "S"]:
+            if M.type in {"H", "S"}:
                 if self.n_features == "d":
                     dim = dims[0]
                     num = X[:, dim : dim + 1]
@@ -516,7 +513,7 @@ class ProductSpaceDT(BasePredictor):
     ) -> tuple[Float[torch.Tensor, "batch ambient_dim"], ProductManifold]:
         special_dims = []
         for i, M in enumerate(self.pm.P):
-            if M.type in ["H", "S"]:
+            if M.type in {"H", "S"}:
                 dim = self.pm.man2dim[i][0]
                 special_dims.append(X[:, dim : dim + 1])
         if len(special_dims) > 0:
@@ -655,10 +652,7 @@ class ProductSpaceRF(BasePredictor):
         tree_kwargs: Dict[str, Any] = {}
         self.pm = tree_kwargs["pm"] = pm
         self.task = tree_kwargs["task"] = task
-        if max_depth is None:
-            self.max_depth = tree_kwargs["max_depth"] = -1
-        else:
-            self.max_depth = tree_kwargs["max_depth"] = max_depth
+        self.max_depth = tree_kwargs["max_depth"] = max_depth or -1
         self.min_samples_leaf = tree_kwargs["min_samples_leaf"] = min_samples_leaf
         self.min_samples_split = tree_kwargs["min_samples_split"] = min_samples_split
         self.min_impurity_decrease = tree_kwargs["min_impurity_decrease"] = min_impurity_decrease
