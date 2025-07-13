@@ -8,6 +8,7 @@ if os.getenv("BEARTYPE_ENABLE", "false").lower() == "true":
     install_import_hook("manify", "beartype.beartype")
     print("Beartype import hook installed for Manify. Will use beartype for type checking.")
 
+from manify.clustering import RiemannianFuzzyKMeans
 from manify.curvature_estimation import greedy_signature_selection, sampled_delta_hyperbolicity, sectional_curvature
 from manify.embedders import CoordinateLearning, ProductSpaceVAE, SiameseNetwork
 from manify.manifolds import Manifold, ProductManifold
@@ -41,5 +42,7 @@ __all__ = [
     "sampled_delta_hyperbolicity",
     "sectional_curvature",
     "greedy_signature_selection",
+    # manify.clustering
+    "RiemannianFuzzyKMeans",
     # no utils
 ]

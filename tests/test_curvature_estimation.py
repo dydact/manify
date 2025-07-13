@@ -75,7 +75,7 @@ def test_delta_hyperbolicity():
 def test_greedy_method():
     # Get a very small subset of the polblogs dataset
     _, D, _, y = load_hf("polblogs")
-    D = D[:128, :128] / D.max()
+    D = D[:128, :128]
     y = y[:128]
     D = D / D.max()
 
