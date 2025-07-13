@@ -1,17 +1,20 @@
 import torch
 
-from manify.manifolds import ProductManifold
+from manify.curvature_estimation._pipelines import (
+    distortion_pipeline,
+    predictor_pipeline,
+)
 from manify.curvature_estimation.delta_hyperbolicity import delta_hyperbolicity
 from manify.curvature_estimation.sectional_curvature import sectional_curvature
-from manify.curvature_estimation._pipelines import distortion_pipeline, predictor_pipeline
-from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
 from manify.curvature_estimation.greedy_method import greedy_signature_selection
+from manify.manifolds import ProductManifold
+from manify.utils.dataloaders import load_hf
 
 
 def test_delta_hyperbolicity():
     torch.manual_seed(42)
     pm = ProductManifold(signature=[(-1.0, 2)])
-    X, _ = pm.sample(z_mean=torch.stack([pm.mu0] * 10))
+    X = pm.sample(z_mean=torch.stack([pm.mu0] * 10))
     dists = pm.pdist(X)
 
     # Test sampled method
