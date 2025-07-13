@@ -829,7 +829,7 @@ class ProductManifold(Manifold):
 
         # Generate cluster means
         cluster_means = self.sample(num_clusters, sigma_factorized=[torch.eye(M.dim) * cov_scale_means for M in self.P])
-        assert cluster_means.shape == (num_clusters, self.ambient_dim), "Cluster means shape mismatch."
+        assert cluster_means.shape == (num_clusters, self.ambient_dim), "Cluster means shape mismatch."  # type: ignore
 
         # Generate class assignments
         cluster_probs = torch.rand(num_clusters)

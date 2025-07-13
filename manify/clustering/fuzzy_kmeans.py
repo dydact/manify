@@ -120,7 +120,8 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         # IMPORTANT: Use self.manifold.manifold for ManifoldParameter,
         # as self.manifold is our wrapper and self.manifold.manifold is the geoopt object.
         self.mu_ = ManifoldParameter(
-            centers.clone().detach(), manifold=self.manifold.manifold
+            centers.clone().detach(),  # type: ignore
+            manifold=self.manifold.manifold,
         )  # Ensure centers are detached
         self.mu_.requires_grad_(True)
 
