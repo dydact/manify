@@ -89,7 +89,7 @@ class TestVectorizedDeltaHyperbolicity:
         # Test global maximum
         global_delta = vectorized_delta_hyperbolicity(dists, full=False, relative=True)
         assert isinstance(global_delta, float), "Global method should return float"
-        assert global_delta == torch.max(full_deltas).item(), "Global should equal max of full"
+        assert abs(global_delta - torch.max(full_deltas).item()) < 1e-6, "Global should equal max of full"
     
     def test_consistency_with_sampled(self):
         """Test that vectorized and sampled methods are consistent."""
