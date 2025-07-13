@@ -23,6 +23,17 @@ def _shared_tests(M, X1, X2, is_euclidean):
         assert torch.allclose(ip_11, X1 @ X1.T, atol=1e-5), "Euclidean inner products do not match for X1"
         assert torch.allclose(ip_12, X1 @ X2.T, atol=1e-5), "Euclidean inner products do not match for X1 and X2"
 
+    # Sampling shapes should support a variety of inputs
+    stacked_means = torch.stack([M.mu0] * 5)
+    s1 = M.sample(100)
+    assert s1.shape == (100, M.ambient_dim), "Sampled points should have the correct shape"
+    s2 = M.sample(100, z_mean=M.mu0)
+    assert s2.shape == (100, M.ambient_dim), "Sampled points should have the correct shape"
+    s3 = M.sample(z_mean=stacked_means)
+    assert s3.shape == (5, M.ambient_dim), "Sampled points should have the correct shape"
+    s3 = M.sample(100, z_mean=stacked_means)
+    assert s3.shape == (500, M.ambient_dim), "Sampled points should have the correct shape"
+
     # Dists
     dists_11 = M.dist(X1, X1)
     assert dists_11.shape == (10, 10), "Distance shape mismatch for X1"
@@ -81,6 +92,15 @@ def _shared_tests(M, X1, X2, is_euclidean):
     X_inv_stereo, X1_inv_stereo, X2_inv_stereo = M_stereo.inverse_stereographic(X1_stereo, X2_stereo)
     assert not X_inv_stereo.is_stereographic
 
+    # Assert calling stereographic and inverse_stereographic returns the same points, if the manifold is already
+    # in the necessary geometry
+    assert M.inverse_stereographic(X1, X2) == (M, X1, X2), (
+        "Inverse stereographic does not return the original points for X1"
+    )
+    assert M_stereo.stereographic(X1_stereo, X2_stereo) == (M_stereo, X1_stereo, X2_stereo), (
+        "Inverse stereographic does not return the original points for X2"
+    )
+
     # Higher-tolerance check for stereographic projection inversion
     assert torch.allclose(X1_inv_stereo, X1, atol=1e-3), "Inverse stereographic conversion mismatch for X1"
     assert torch.allclose(X2_inv_stereo, X2, atol=1e-3), "Inverse stereographic conversion mismatch for X2"
@@ -106,8 +126,8 @@ def test_manifold_methods():
         means = torch.vstack([M.mu0] * 10)
         covs = torch.stack([cov] * 10)
         torch.random.manual_seed(42)
-        X1, _ = M.sample(z_mean=means, sigma=covs)
-        X2, _ = M.sample(z_mean=means[:5], sigma=covs[:5])
+        X1 = M.sample(z_mean=means, sigma=covs)
+        X2 = M.sample(z_mean=means[:5], sigma=covs[:5])
 
         # Do attributes work correctly?
         if curv < 0:
@@ -137,8 +157,9 @@ def test_product_manifold_methods():
         covs = [torch.stack([torch.eye(M.dim) / M.dim / 100] * 10) for M in pm.P]
         means = torch.vstack([pm.mu0] * 10)
         torch.random.manual_seed(42)
-        X1, _ = pm.sample(z_mean=means, sigma_factorized=covs)
-        X2, _ = pm.sample(z_mean=means[:5], sigma_factorized=[cov[:5] for cov in covs])
+        X1 = pm.sample(z_mean=means, sigma_factorized=covs)
+        X2 = pm.sample(z_mean=means[:5], sigma_factorized=[cov[:5] for cov in covs])
+        X3 = pm.sample()
 
         # Do attributes work correctly?
         for M in pm.P:
@@ -153,4 +174,4 @@ def test_product_manifold_methods():
         _shared_tests(pm, X1, X2, is_euclidean=all(M.curvature == 0 for M in pm.P))
 
         # Also test gaussian mixture
-        X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42)
+        X, y = pm.gaussian_mixture(num_points=100, num_classes=2, seed=42, adjust_for_dims=True)

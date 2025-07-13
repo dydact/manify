@@ -211,27 +211,32 @@ class Manifold:
 
     def sample(
         self,
-        z_mean: Float[torch.Tensor, "n_points n_ambient_dim"] | None = None,
+        n_samples: int = 1,
+        z_mean: Float[torch.Tensor, "n_points n_ambient_dim"] | Float[torch.Tensor, "n_ambient_dim"] | None = None,
         sigma: Float[torch.Tensor, "n_points n_dim n_dim"] | None = None,
-    ) -> tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]:
+        return_tangent: bool = False,
+    ) -> (
+        tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points n_dim"]]
+        | Float[torch.Tensor, "n_points n_ambient_dim"]
+    ):
         """Sample points from the variational distribution on the manifold.
 
         Args:
+            n_samples: Number of points to sample.
             z_mean: Tensor representing the mean of the sample distribution.
             sigma: Optional tensor representing the covariance matrix. If None, defaults to an identity matrix.
+            return_tangent: Whether to return the tangent vectors along with the sampled points.
 
         Returns:
             x: Tensor of sampled points on the manifold
-            v: Tensor of tangent vectors
+            v: Tensor of tangent vectors (if `return_tangent` is True).
         """
-        if z_mean is None:
-            z_mean = self.mu0
+        z_mean = self.mu0 if z_mean is None else z_mean
         z_mean = torch.Tensor(z_mean).reshape(-1, self.ambient_dim).to(self.device)
         n = z_mean.shape[0]
-        if sigma is None:
-            sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device)
-        else:
-            sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
+
+        sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device) if sigma is None else sigma
+        sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
         assert sigma.shape == (
             n,
             self.dim,
@@ -240,9 +245,13 @@ class Manifold:
         assert torch.allclose(sigma, sigma.transpose(-1, -2)), "Covariance matrix must be symmetric"
         assert z_mean.shape[-1] == self.ambient_dim, f"Expected z_mean shape {self.ambient_dim}, got {z_mean.shape[-1]}"
 
+        # Adjust for n_points:
+        z_mean = torch.repeat_interleave(z_mean, n_samples, dim=0)
+        sigma = torch.repeat_interleave(sigma, n_samples, dim=0)
+
         # Sample initial vector from N(0, sigma)
         N = torch.distributions.MultivariateNormal(
-            loc=torch.zeros((n, self.dim), device=self.device), covariance_matrix=sigma
+            loc=torch.zeros((n * n_samples, self.dim), device=self.device), covariance_matrix=sigma
         )
         v = N.sample()
 
@@ -263,8 +272,7 @@ class Manifold:
         # Exp map onto the manifold
         x = self.manifold.expmap(x=z_mean, u=z)
 
-        # Different samples and tangent vectors
-        return x, v
+        return (x, v) if return_tangent else x
 
     def log_likelihood(
         self,
@@ -284,14 +292,11 @@ class Manifold:
                 `mu` and covariance `sigma`.
         """
         # Default to mu=self.mu0 and sigma=I
-        if mu is None:
-            mu = self.mu0
+        mu = self.mu0 if mu is None else mu
         mu = torch.Tensor(mu).reshape(-1, self.ambient_dim).to(self.device)
         n = mu.shape[0]
-        if sigma is None:
-            sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device)
-        else:
-            sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
+        sigma = torch.stack([torch.eye(self.dim)] * n).to(self.device) if sigma is None else sigma
+        sigma = torch.Tensor(sigma).reshape(-1, self.dim, self.dim).to(self.device)
 
         # Euclidean case is regular old Gaussian log-likelihood
         if self.type == "E":
@@ -336,8 +341,7 @@ class Manifold:
         Returns:
             logmap_result: Tensor representing the result of the logarithmic map from `base` to `x` on the manifold.
         """
-        if base is None:
-            base = self.mu0
+        base = self.mu0 if base is None else base
         return self.manifold.logmap(x=base, y=x)
 
     def expmap(
@@ -355,8 +359,7 @@ class Manifold:
         Returns:
             expmap_result: Tensor representing the result of the exponential map applied to `u` at the base point.
         """
-        if base is None:
-            base = self.mu0
+        base = self.mu0 if base is None else base
         return self.manifold.expmap(x=base, u=u)
 
     def stereographic(self, *points: Float[torch.Tensor, "n_points n_dim"]) -> tuple[Manifold, ...]:
@@ -619,43 +622,53 @@ class ProductManifold(Manifold):
 
     def sample(
         self,
+        n_samples: int = 1,
         z_mean: Float[torch.Tensor, "n_points n_ambient_dim"] | None = None,
-        sigma_factorized: list[Float[torch.Tensor, "n_points ..."]] | None = None,  # TODO: fix ... annotations
-    ) -> tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points total_intrinsic_dim"]]:
+        sigma_factorized: list[Float[torch.Tensor, "n_points ..."]] | None = None,
+        return_tangent: bool = False,
+    ) -> (
+        tuple[Float[torch.Tensor, "n_points n_ambient_dim"], Float[torch.Tensor, "n_points total_intrinsic_dim"]]
+        | Float[torch.Tensor, "n_points n_ambient_dim"]
+    ):
         """Sample from the variational distribution.
 
         Args:
+            n_samples: Number of points to sample.
             z_mean: Tensor representing the mean of the sample distribution. If None, defaults to the origin `self.mu0`.
             sigma_factorized: List of tensors representing factorized covariance matrices for each manifold. If None,
                 defaults to a list of identity matrices for each manifold.
+            return_tangent: Whether to return the tangent vectors along with the sampled points.
 
         Returns:
             x: Tensor of sampled points on the manifold
-            v: Tensor of tangent vectors
+            v: Tensor of tangent vectors (if `return_tangent` is True).
         """
-        if z_mean is None:
-            z_mean = self.mu0
+        z_mean = self.mu0 if z_mean is None else z_mean
         z_mean = torch.Tensor(z_mean).reshape(-1, self.ambient_dim).to(self.device)
         n = z_mean.shape[0]
 
-        if sigma_factorized is None:
-            sigma_factorized = [torch.stack([torch.eye(M.dim)] * n) for M in self.P]
-        else:
-            sigma_factorized = [
-                torch.Tensor(sigma).reshape(-1, M.dim, M.dim).to(self.device)
-                for M, sigma in zip(self.P, sigma_factorized, strict=False)
-            ]
-
-        assert all(sigma.shape == (n, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized, strict=False)), (
-            "Sigma matrices must match the dimensions of the manifolds."
+        sigma_factorized = (
+            [torch.stack([torch.eye(M.dim)] * n) for M in self.P] if sigma_factorized is None else sigma_factorized
         )
-        assert z_mean.shape[-1] == self.ambient_dim, (
+        sigma_factorized = [
+            torch.Tensor(sigma).reshape(-1, M.dim, M.dim).to(self.device)
+            for M, sigma in zip(self.P, sigma_factorized, strict=False)
+        ]
+
+        # Adjust for n_points:
+        z_mean = torch.repeat_interleave(z_mean, n_samples, dim=0)
+        sigma_factorized = [torch.repeat_interleave(sigma, n_samples, dim=0) for sigma in sigma_factorized]
+
+        assert all(
+            sigma.shape == (n * n_samples, M.dim, M.dim) for M, sigma in zip(self.P, sigma_factorized, strict=False)
+        ), "Sigma matrices must match the dimensions of the manifolds."
+        assert z_mean.shape == (n * n_samples, self.ambient_dim), (
             "z_mean must have the same ambient dimension as the product manifold."
         )
 
         # Sample initial vector from N(0, sigma)
         samples = [
-            M.sample(z_M, sigma_M)
+            M.sample(1, z_M, sigma_M, return_tangent=True)
             for M, z_M, sigma_M in zip(self.P, self.factorize(z_mean), sigma_factorized, strict=False)
         ]
 
@@ -663,7 +676,7 @@ class ProductManifold(Manifold):
         v = torch.cat([s[1] for s in samples], dim=1)
 
         # Different samples and tangent vectors
-        return x, v
+        return (x, v) if return_tangent else x
 
     def log_likelihood(
         self,
@@ -684,12 +697,12 @@ class ProductManifold(Manifold):
                 `mu` and covariance `sigma`.
         """
         n = z.shape[0]
-        if mu is None:
-            mu = torch.vstack([self.mu0] * n).to(self.device)
+        mu = torch.vstack([self.mu0] * n).to(self.device) if mu is None else mu
 
-        if sigma_factorized is None:
-            sigma_factorized = [torch.stack([torch.eye(M.dim)] * n) for M in self.P]
-            # Note that this factorization assumes block-diagonal covariance matrices
+        sigma_factorized = (
+            [torch.stack([torch.eye(M.dim)] * n) for M in self.P] if sigma_factorized is None else sigma_factorized
+        )
+        # Note that this factorization assumes block-diagonal covariance matrices
 
         mu_factorized = self.factorize(mu)
         z_factorized = self.factorize(z)
@@ -807,10 +820,8 @@ class ProductManifold(Manifold):
             torch.manual_seed(seed)
 
         # Deal with clusters
-        if num_clusters is None:
-            num_clusters = num_classes
-        else:
-            assert num_clusters >= num_classes, "Number of clusters must be at least as large as number of classes."
+        num_clusters = num_clusters or num_classes
+        assert num_clusters >= num_classes, "Number of clusters must be at least as large as number of classes."
 
         # Adjust covariance matrices for number of dimensions
         if adjust_for_dims:
@@ -818,15 +829,13 @@ class ProductManifold(Manifold):
             cov_scale_means /= self.dim
 
         # Generate cluster means
-        cluster_means, _ = self.sample(
-            z_mean=torch.vstack([self.mu0] * num_clusters),
-            sigma_factorized=[torch.stack([torch.eye(M.dim)] * num_clusters) * cov_scale_means for M in self.P],
-        )
-        assert cluster_means.shape == (num_clusters, self.ambient_dim), "Cluster means shape mismatch."
+        cluster_means = self.sample(num_clusters, sigma_factorized=[torch.eye(M.dim) * cov_scale_means for M in self.P])
+        assert cluster_means.shape == (num_clusters, self.ambient_dim), "Cluster means shape mismatch."  # type: ignore
 
         # Generate class assignments
         cluster_probs = torch.rand(num_clusters)
         cluster_probs /= cluster_probs.sum()
+
         # Draw cluster assignments: ensure at least 2 points per cluster. This is to ensure splits can always happen.
         cluster_assignments = torch.multinomial(input=cluster_probs, num_samples=num_points, replacement=True)
         while (cluster_assignments.bincount() < 2).any():
@@ -846,7 +855,7 @@ class ProductManifold(Manifold):
         sample_means = torch.stack([cluster_means[c] for c in cluster_assignments])
         assert sample_means.shape == (num_points, self.ambient_dim), "Sample means shape mismatch."
         sample_covs = [torch.stack([cov_matrix[c] for c in cluster_assignments]) for cov_matrix in cov_matrices]
-        samples, tangent_vals = self.sample(z_mean=sample_means, sigma_factorized=sample_covs)
+        samples, tangent_vals = self.sample(z_mean=sample_means, sigma_factorized=sample_covs, return_tangent=True)
         assert samples.shape == (num_points, self.ambient_dim), "Sample shape mismatch."
 
         # Map clusters to classes

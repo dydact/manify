@@ -1,8 +1,11 @@
 import torch
 
+from manify.manifolds import ProductManifold
 from manify.curvature_estimation.delta_hyperbolicity import delta_hyperbolicity
 from manify.curvature_estimation.sectional_curvature import sectional_curvature
-from manify.manifolds import ProductManifold
+from manify.curvature_estimation._pipelines import distortion_pipeline, predictor_pipeline
+from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
+from manify.curvature_estimation.greedy_method import greedy_signature_selection
 
 
 def test_delta_hyperbolicity():
@@ -56,3 +59,44 @@ def test_sectional_curvature():
     global_curvature = sectional_curvature(A, D, method="global")
     assert isinstance(global_curvature, float)
 
+def test_greedy_method():
+    # Get a very small subset of the polblogs dataset
+    _, D, _, y = load_hf("polblogs")
+    D = D[:128, :128]
+    y = y[:128]
+    D = D / D.max()
+
+    max_components = 3
+    embedder_init_kwargs = {"random_state": 42}
+    embedder_fit_kwargs = {"burn_in_iterations": 10, "training_iterations": 90, "lr": 1e-2}
+
+    # Try distortion pipeline
+    optimal_pm, loss_history = greedy_signature_selection(
+        pipeline=distortion_pipeline,
+        dists=D,
+        embedder_init_kwargs=embedder_init_kwargs,
+        embedder_fit_kwargs=embedder_fit_kwargs,
+    )
+    # assert set(optimal_pm.signature) == set(pm.signature), "Optimal signature should match the initial signature"
+    assert len(optimal_pm.signature) == len(loss_history)
+    assert len(optimal_pm.signature) <= max_components
+    assert len(optimal_pm.signature) > 0, "Optimal signature should not be empty"
+    assert len(loss_history) > 0, "Loss history should not be empty"
+    if len(loss_history) > 1:
+        assert loss_history[-1] < loss_history[0], "Loss should decrease over iterations"
+
+    # Try classifier pipeline
+    optimal_pm, loss_history = greedy_signature_selection(
+        pipeline=predictor_pipeline,
+        labels=y,
+        dists=D,
+        embedder_init_kwargs=embedder_init_kwargs,
+        embedder_fit_kwargs=embedder_fit_kwargs,
+    )
+    # assert set(optimal_pm.signature) == set(pm.signature), "Optimal signature should match the initial signature"
+    assert len(optimal_pm.signature) == len(loss_history)
+    assert len(optimal_pm.signature) <= max_components
+    assert len(optimal_pm.signature) > 0, "Optimal signature should not be empty"
+    assert len(loss_history) > 0, "Loss history should not be empty"
+    if len(loss_history) > 1:
+        assert loss_history[-1] < loss_history[0], "Loss should decrease over iterations"

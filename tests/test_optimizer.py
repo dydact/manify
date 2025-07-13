@@ -106,3 +106,26 @@ def test_radan_vs_adam():
     assert final_loss_radam < 1e-3, "Adam did not converge close enough to the target"
     assert final_loss_radan < 1e-3, "Adan did not converge close enough to the target"
     print("\n✅ Optimization test passed: Both Adam and Adan reached the target with low loss.")
+
+
+def test_radan_stabilize_group():
+    """Test that stabilize_group is called and executes without errors."""
+    device_str = "cuda" if torch.cuda.is_available() else "cpu"
+    product_manifold, target_point_tensor = get_product_manifold_and_target(device_str)
+    target_point_tensor = target_point_tensor.to(device_str)
+
+    initial_point_tensor = torch.tensor([0.0, 0.5, 0.0, -0.5], dtype=torch.float32).to(device_str)
+    point_to_optimize = ManifoldParameter(initial_point_tensor.clone().requires_grad_(True), manifold=product_manifold)
+
+    # Create optimizer with stabilize parameter set
+    optimizer = RiemannianAdan([point_to_optimize], lr=0.1, stabilize=2)  # stabilize every 2 steps
+
+    # Run a few optimization steps to trigger stabilization
+    for i in range(5):
+        optimizer.zero_grad()
+        loss = objective_function(point_to_optimize, target_point_tensor, product_manifold)
+        loss.backward()
+        optimizer.step()
+
+    # If we get here without errors, stabilize_group was called successfully
+    print("✅ Stabilize group test passed: stabilize_group executed without errors")

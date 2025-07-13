@@ -43,7 +43,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
 
     Attributes:
         n_clusters: The number of clusters to form.
-        manifold: An initialized manifold object (from manifolds.py) on which clustering will be performed.
+        pm: An initialized manifold object (from manifolds.py) on which clustering will be performed.
         m: Fuzzifier parameter. Controls the softness of the partition.
         lr: Learning rate for the optimizer.
         max_iter: Maximum number of iterations for the optimization.
@@ -71,7 +71,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
     def __init__(
         self,
         n_clusters: int,
-        manifold: Manifold | ProductManifold,
+        pm: Manifold | ProductManifold,
         m: float = 2.0,
         lr: float = 0.1,
         max_iter: int = 100,
@@ -81,7 +81,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         verbose: bool = False,
     ):
         self.n_clusters = n_clusters
-        self.manifold = manifold
+        self.pm = pm
         self.m = m
         self.lr = lr
         self.max_iter = max_iter
@@ -97,11 +97,11 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
             torch.manual_seed(self.random_state)
             np.random.seed(self.random_state)
 
-        # Input data X's second dimension should match the manifold's ambient dimension
-        if X.shape[1] != self.manifold.ambient_dim:
+        # Input data X's second dimension should match the pm's ambient dimension
+        if X.shape[1] != self.pm.ambient_dim:
             raise ValueError(
                 f"Input data X's dimension ({X.shape[1]}) does not match "
-                f"the manifold's ambient dimension ({self.manifold.ambient_dim})."
+                f"the manifold's ambient dimension ({self.pm.ambient_dim})."
             )
 
         # Generate initial centers using the manifold's sample method
@@ -112,32 +112,15 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
 
         # For sampling initial centers, we want n_clusters distinct points.
         # The .sample() method typically takes a z_mean of shape (num_points_to_sample, ambient_dim).
-        # If we provide self.manifold.mu0 repeated n_clusters times,
+        # If we provide self.pm.mu0 repeated n_clusters times,
         # it samples n_clusters points, each around mu0.
-        means_for_sampling_centers = self.manifold.mu0.repeat(self.n_clusters, 1)
-
-        if isinstance(self.manifold, ProductManifold):
-            # sigma_factorized should be a list of [n_clusters, M.dim, M.dim] tensors
-            # Setting to None will use default identity covariances in .sample()
-            centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers, sigma_factorized=None)
-        elif isinstance(self.manifold, Manifold):
-            # sigma should be a [n_clusters, self.manifold.dim, self.manifold.dim] tensor
-            # Setting to None will use default identity covariance in .sample()
-            centers, _ = self.manifold.sample(z_mean=means_for_sampling_centers, sigma=None)
-        else:
-            # Fallback: Randomly select points from X if the manifold type isn't directly supported for sampling
-            # This is a common k-means initialization strategy.
-            # Ensure X is on the correct device first.
-            X_device = X.to(self.manifold.device)  # Ensure X is on the manifold's device
-            indices = np.random.choice(X_device.shape[0], self.n_clusters, replace=False)
-            centers = X_device[indices]
-            # Ensure centers are detached if they came from X which might require grad
-            centers = centers.detach()
+        centers = self.pm.sample(self.n_clusters)
 
         # IMPORTANT: Use self.manifold.manifold for ManifoldParameter,
         # as self.manifold is our wrapper and self.manifold.manifold is the geoopt object.
         self.mu_ = ManifoldParameter(
-            centers.clone().detach(), manifold=self.manifold.manifold
+            centers.clone().detach(),  # type: ignore
+            manifold=self.pm.manifold,
         )  # Ensure centers are detached
         self.mu_.requires_grad_(True)
 
@@ -166,12 +149,12 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
             X = torch.tensor(X, dtype=torch.get_default_dtype())
 
         # Ensure X is on the same device as the manifold
-        X = X.to(self.manifold.device)
+        X = X.to(self.pm.device)
 
-        if X.shape[1] != self.manifold.ambient_dim:
+        if X.shape[1] != self.pm.ambient_dim:
             raise ValueError(
                 f"Input data X's dimension ({X.shape[1]}) in fit() does not match "
-                f"the manifold's ambient dimension ({self.manifold.ambient_dim})."
+                f"the manifold's ambient dimension ({self.pm.ambient_dim})."
             )
 
         self._init_centers(X)
@@ -179,9 +162,9 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         losses = []
         for i in range(self.max_iter):
             self.opt_.zero_grad()
-            # self.manifold.dist is implemented in manifolds.py and handles broadcasting
-            d = self.manifold.dist(X, self.mu_)  # X is (N,D), mu_ is (K,D) -> d is (N,K)
-            # Original RFK: d = self.manifold.dist(X.unsqueeze(1), self.mu_.unsqueeze(0))
+            # self.pm.dist is implemented in manifolds.py and handles broadcasting
+            d = self.pm.dist(X, self.mu_)  # X is (N,D), mu_ is (K,D) -> d is (N,K)
+            # Original RFK: d = self.pm.dist(X.unsqueeze(1), self.mu_.unsqueeze(0))
             # The .dist in manifolds.py uses X[:, None] and Y[None, :], so direct call should work if mu_ is (K,D)
 
             S = torch.sum(d.pow(-2 / (m - 1)) + 1e-8, dim=1)  # Add epsilon for stability
@@ -197,7 +180,7 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
         # save the result
         self.losses_ = np.array(losses)
         with torch.no_grad():  # Ensure no gradients are computed for final calculations
-            dfin = self.manifold.dist(X, self.mu_)  # Re-calculate dist to final centers
+            dfin = self.pm.dist(X, self.mu_)  # Re-calculate dist to final centers
             inv = dfin.pow(-2 / (m - 1)) + 1e-8  # Add epsilon
             u_final = inv / (inv.sum(dim=1, keepdim=True) + 1e-8)  # Add epsilon
         self.u_ = u_final.detach().cpu().numpy()
@@ -224,19 +207,19 @@ class RiemannianFuzzyKMeans(BaseEstimator, ClusterMixin):
             X = torch.tensor(X, dtype=torch.get_default_dtype())
 
         # Ensure X is on the same device as the manifold
-        X = X.to(self.manifold.device)
+        X = X.to(self.pm.device)
 
-        if X.shape[1] != self.manifold.ambient_dim:
+        if X.shape[1] != self.pm.ambient_dim:
             raise ValueError(
                 f"Input data X's dimension ({X.shape[1]}) in predict() does not match "
-                f"the manifold's ambient dimension ({self.manifold.ambient_dim})."
+                f"the manifold's ambient dimension ({self.pm.ambient_dim})."
             )
 
         if not hasattr(self, "mu_") or self.mu_ is None:
             raise RuntimeError("The RFK model has not been fitted yet. Call 'fit' before 'predict'.")
 
         with torch.no_grad():
-            dmat = self.manifold.dist(X, self.mu_)  # X is (N,D), mu_ is (K,D) -> dmat is (N,K)
+            dmat = self.pm.dist(X, self.mu_)  # X is (N,D), mu_ is (K,D) -> dmat is (N,K)
             inv = dmat.pow(-2 / (self.m - 1)) + 1e-8  # Add epsilon
             u = inv / (inv.sum(dim=1, keepdim=True) + 1e-8)  # Add epsilon
             labels = torch.argmax(u, dim=1).cpu().numpy()

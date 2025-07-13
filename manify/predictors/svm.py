@@ -82,7 +82,7 @@ class ProductSpaceSVM(BasePredictor):
         self.eps = epsilon
         self.task = task
         self.weights = torch.ones(len(pm.P), dtype=torch.float32) if weights is None else weights
-        assert len(self.weights) == len(pm.P), "Number of weights must match manifolds."
+        assert len(self.weights) == len(pm.P), "Number of weights must match the number of manifolds."
 
     def fit(
         self,
@@ -99,7 +99,6 @@ class ProductSpaceSVM(BasePredictor):
             self: Fitted ProductSpaceSVM instance.
         """
         # unique classes
-        # self.classes_ = torch.unique(y).tolist()
         self._store_classes(y)
         n = X.shape[0]
 

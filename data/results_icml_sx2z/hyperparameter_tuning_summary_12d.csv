@@ -1,5 +1,0 @@
-,Model,CV Score,Test Score,max_depth,max_features,min_samples_leaf,min_samples_split,n_estimators,n_features,use_special_dims
-0,ProductSpaceRF,0.7074,0.7153 [0.6757-0.7550],9,sqrt,8,8,24,d_choose_2,True
-2,TangentRF,0.7017,0.7007 [0.6484-0.7530],9,sqrt,2,4,24,,
-1,SklearnRF,0.6926,0.6927 [0.6488-0.7365],9,None,1,2,24,,
-3,SingleManifoldEnsembleRF,0.6300,0.6360 [0.5782-0.6938],9,,2,16,6,d_choose_2,False

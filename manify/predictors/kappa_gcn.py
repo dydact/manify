@@ -214,6 +214,7 @@ class KappaGCN(BasePredictor, torch.nn.Module):
         if use_tqdm:
             my_tqdm = tqdm(total=epochs, desc=tqdm_prefix)
 
+        losses = []
         for i in range(epochs):
             opt.zero_grad()
             if riemannian_params:
@@ -234,12 +235,13 @@ class KappaGCN(BasePredictor, torch.nn.Module):
             if torch.isnan(loss):
                 print("Loss is NaN, stopping training.")
                 break
+            losses.append(loss.item())
 
         if use_tqdm:
             my_tqdm.close()
 
         self.is_fitted_ = True
-        self.loss_history_["train"] = [loss.item()]
+        self.loss_history_["train"] = losses
         return self
 
     def predict_proba(

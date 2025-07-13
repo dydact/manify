@@ -180,7 +180,7 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         sigmas = [torch.diag_embed(torch.exp(z_logvar) + 1e-8) for z_logvar in sigma_factorized]
 
         # Sample and decode
-        z, _ = self.pm.sample(z_means, sigmas)
+        z = self.pm.sample(z_mean=z_means, sigma_factorized=sigmas)
         x_reconstructed = self.decode(z)
         return x_reconstructed, z_means, sigmas
 
@@ -213,7 +213,8 @@ class ProductSpaceVAE(BaseEmbedder, torch.nn.Module):
         sigmas_factorized_interleaved = [
             torch.repeat_interleave(sigma, self.n_samples, dim=0) for sigma in sigma_factorized
         ]
-        z_samples, _ = self.pm.sample(means, sigmas_factorized_interleaved)
+        # We want to use n_samples = 1 here, since we'll need to pass the interleaved means/sigmas to the log-likelihood
+        z_samples = self.pm.sample(z_mean=means, sigma_factorized=sigmas_factorized_interleaved)
         log_qz = self.pm.log_likelihood(z_samples, means, sigmas_factorized_interleaved)
         log_pz = self.pm.log_likelihood(z_samples)
         return (log_qz - log_pz).view(-1, self.n_samples).mean(dim=1)
