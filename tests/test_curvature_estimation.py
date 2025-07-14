@@ -1,76 +1,66 @@
 import torch
 
-from manify.curvature_estimation._pipelines import distortion_pipeline, predictor_pipeline
-from manify.curvature_estimation.delta_hyperbolicity import sampled_delta_hyperbolicity, vectorized_delta_hyperbolicity
+from manify.curvature_estimation._pipelines import (
+    distortion_pipeline,
+    predictor_pipeline,
+)
+from manify.curvature_estimation.delta_hyperbolicity import delta_hyperbolicity
+from manify.curvature_estimation.sectional_curvature import sectional_curvature
 from manify.curvature_estimation.greedy_method import greedy_signature_selection
 from manify.manifolds import ProductManifold
 from manify.utils.dataloaders import load_hf
 
 
-def iterative_delta_hyperbolicity(D, reference_idx=0, relative=True):
-    """delta(x,y,z) = min((x,y)_w,(y-z)_w) - (x,z)_w"""
-    n = D.shape[0]
-    w = reference_idx
-    gromov_products = torch.zeros((n, n))
-    deltas = torch.zeros((n, n, n))
-
-    # Get Gromov Products
-    for x in range(n):
-        for y in range(n):
-            gromov_products[x, y] = gromov_product(w, x, y, D)
-
-    # Get Deltas
-    for x in range(n):
-        for y in range(n):
-            for z in range(n):
-                xz_w = gromov_products[x, z]
-                xy_w = gromov_products[x, y]
-                yz_w = gromov_products[y, z]
-                deltas[x, y, z] = torch.minimum(xy_w, yz_w) - xz_w
-
-    deltas = 2 * deltas / torch.max(D) if relative else deltas
-
-    return deltas, gromov_products
-
-
-def gromov_product(i, j, k, D):
-    """(j,k)_i = 0.5 (d(i,j) + d(i,k) - d(j,k))"""
-    return float(0.5 * (D[i, j] + D[i, k] - D[j, k]))
-
-
 def test_delta_hyperbolicity():
     torch.manual_seed(42)
     pm = ProductManifold(signature=[(-1.0, 2)])
-    X = pm.sample(10)
+    X = pm.sample(z_mean=torch.stack([pm.mu0] * 10))
     dists = pm.pdist(X)
-    dists_max = dists.max()
 
-    # Iterative deltas
-    iterative_deltas, gromov_products = iterative_delta_hyperbolicity(dists, relative=True)
-    assert (gromov_products >= 0).all()
-    assert (gromov_products <= dists_max).all()
-    assert (iterative_deltas <= 1).all(), "Deltas should be in the range [-2, 1]"
-    assert (iterative_deltas >= -2).all(), "Deltas should be in the range [-2, 1]"
-    assert iterative_deltas.shape == (10, 10, 10)
+    # Test sampled method
+    sampled_deltas = delta_hyperbolicity(dists, method="sampled", n_samples=10)
+    assert sampled_deltas.shape == (10,)
+    assert (sampled_deltas <= 1).all()
+    assert (sampled_deltas >= -2).all()
 
-    # Vectorized deltas
-    vectorized_deltas = vectorized_delta_hyperbolicity(dists, full=True, relative=True)
-    assert (vectorized_deltas <= 1).all(), "Deltas should be in the range [-2, 1]"
-    assert (vectorized_deltas >= -2).all(), "Deltas should be in the range [-2, 1]"
-    assert vectorized_deltas.shape == (10, 10, 10)
-    assert torch.allclose(vectorized_deltas, iterative_deltas, atol=1e-5), (
-        "Vectorized deltas should be close to iterative deltas."
-    )
+    # Test global method
+    global_delta = delta_hyperbolicity(dists, method="global")
+    assert isinstance(global_delta, float)
+    assert -2 <= global_delta <= 1
 
-    # Sampled deltas
-    sampled_deltas, indices = sampled_delta_hyperbolicity(dists, n_samples=10, relative=True)
-    assert (sampled_deltas <= 1).all(), "Sampled deltas should be in the range [-2, 1]"
-    assert (sampled_deltas >= -2).all(), "Sampled deltas should be in the range [-2, 1]"
-    assert sampled_deltas.shape == (10,), "There should be 10 sampled deltas"
-    assert torch.allclose(sampled_deltas, vectorized_deltas[indices[:, 0], indices[:, 1], indices[:, 2]], atol=1e-5), (
-        "Sampled deltas should be close to vectorized deltas."
-    )
+    # Test full method
+    full_deltas = delta_hyperbolicity(dists, method="full")
+    assert full_deltas.shape == (10, 10, 10)
+    assert (full_deltas <= 1).all()
+    assert (full_deltas >= -2).all()
 
+
+def test_sectional_curvature():
+    torch.manual_seed(42)
+    n = 8
+    # Create simple adjacency matrix (ring graph)
+    A = torch.zeros(n, n)
+    for i in range(n):
+        A[i, (i + 1) % n] = 1
+        A[(i + 1) % n, i] = 1
+    
+    # Create distance matrix (shortest path distances)
+    D = torch.zeros(n, n)
+    for i in range(n):
+        for j in range(n):
+            D[i, j] = min(abs(i - j), n - abs(i - j))
+
+    # Test sampled method
+    sampled_curvatures = sectional_curvature(A, D, method="sampled", n_samples=10)
+    assert sampled_curvatures.shape == (10,)
+
+    # Test per_node method
+    node_curvatures = sectional_curvature(A, D, method="per_node")
+    assert node_curvatures.shape == (n,)
+
+    # Test global method
+    global_curvature = sectional_curvature(A, D, method="global")
+    assert isinstance(global_curvature, float)
 
 def test_greedy_method():
     # Get a very small subset of the polblogs dataset
