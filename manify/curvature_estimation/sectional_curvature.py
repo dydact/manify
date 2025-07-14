@@ -15,11 +15,13 @@ This module provides two implementations:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from jaxtyping import Float, Int
 
 
@@ -110,7 +112,10 @@ def sampled_sectional_curvature(
 
 
 def vectorized_sectional_curvature(
-    A: Float[torch.Tensor, "n_points n_points"], D: Float[torch.Tensor, "n_points n_points"], relative: bool = True, full: bool = False
+    A: Float[torch.Tensor, "n_points n_points"],
+    D: Float[torch.Tensor, "n_points n_points"],
+    relative: bool = True,
+    full: bool = False,
 ) -> Float[torch.Tensor, "n_points"] | float:
     r"""Computes sectional curvature estimates for all nodes in a graph.
 
@@ -172,7 +177,7 @@ def sectional_curvature(
     adjacency_matrix: Float[torch.Tensor, "n_points n_points"],
     distance_matrix: Float[torch.Tensor, "n_points n_points"],
     method: str = "sampled",
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Float[torch.Tensor, "n_points"] | float:
     r"""Estimates the sectional curvature of a graph from adjacency and distance matrices.
 
@@ -204,10 +209,10 @@ def sectional_curvature(
     # Validate input matrices
     if not isinstance(adjacency_matrix, torch.Tensor) or not isinstance(distance_matrix, torch.Tensor):
         raise TypeError("Both adjacency_matrix and distance_matrix must be torch.Tensors")
-    
+
     if adjacency_matrix.shape != distance_matrix.shape:
         raise ValueError("Adjacency matrix and distance matrix must have the same shape")
-    
+
     A = adjacency_matrix.float()
     D = distance_matrix.float()
 

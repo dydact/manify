@@ -11,11 +11,13 @@ This module provides two implementations:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from jaxtyping import Float, Int
 
 
@@ -103,31 +105,24 @@ def vectorized_delta_hyperbolicity(
         delta = out - XY_w_xz
         if relative:
             max_dist = torch.max(D)
-            if max_dist > 0:
-                delta = 2 * delta / max_dist
-            else:
-                delta = torch.zeros_like(delta)
+            delta = 2 * delta / max_dist if max_dist > 0 else torch.zeros_like(delta)
+
     else:
         delta = (out - XY_w_xz).max().item()
         if relative:
             max_dist = torch.max(D).item()
-            if max_dist > 0:
-                delta = 2 * delta / max_dist
-            else:
-                delta = 0.0
+            delta = 2 * delta / max_dist if max_dist > 0 else 0.0
 
     return delta
 
 
 def delta_hyperbolicity(
-    distance_matrix: Float[torch.Tensor, "n_points n_points"],
-    method: str = "global",
-    **kwargs: Any
+    distance_matrix: Float[torch.Tensor, "n_points n_points"], method: str = "global", **kwargs: Any
 ) -> Float[torch.Tensor, "n_points"] | float:
     r"""Computes the δ-hyperbolicity from a distance matrix.
 
-    This function implements δ-hyperbolicity computation, which measures how close a metric 
-    space is to a tree. The value δ ≥ 0 is a global property; smaller values indicate 
+    This function implements δ-hyperbolicity computation, which measures how close a metric
+    space is to a tree. The value δ ≥ 0 is a global property; smaller values indicate
     the space is more hyperbolic (tree-like).
 
     For each triplet of points (x,y,z) and reference point w, computes:
@@ -154,7 +149,7 @@ def delta_hyperbolicity(
     # Validate input
     if not isinstance(distance_matrix, torch.Tensor):
         raise TypeError(f"distance_matrix must be a torch.Tensor, got {type(distance_matrix)}")
-    
+
     D = distance_matrix.float()
 
     if method == "sampled":
