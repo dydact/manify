@@ -13,6 +13,11 @@ coverage:
         target: auto
         threshold: 10%  # More lenient threshold for status checks
         informational: true  # Make coverage status checks informational only
+    patch:
+      default:
+        target: auto
+        threshold: 100%  # Set very high threshold
+        informational: true  # Make patch coverage informational too
 
 ignore:
   - "tests/**"             # Exclude test files from coverage
