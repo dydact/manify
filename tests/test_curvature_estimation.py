@@ -126,6 +126,7 @@ def test_greedy_method():
         dists=D,
         embedder_init_kwargs=embedder_init_kwargs,
         embedder_fit_kwargs=embedder_fit_kwargs,
+        verbose=True,  # Ensure this hits the print statements
     )
     # assert set(optimal_pm.signature) == set(pm.signature), "Optimal signature should match the initial signature"
     assert len(optimal_pm.signature) == len(loss_history)
