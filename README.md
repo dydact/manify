@@ -57,6 +57,10 @@ model.fit(X_train, y_train)
 print(model.score(X_test, y_test))
 ```
 
+## Tutorial
+The official tutorial for Manify can be found in [`tutorial.ipynb`](tutorial.ipynb). This Jupyter
+notebook contains a comprehensive overview of all of the library's core features. 
+
 ## Modules
 
 **Manifold Operations**
