@@ -58,13 +58,11 @@ def sectional_curvature(
 
 
 def _sample_curvatures(
-    D: Float[torch.Tensor, "n_points n_points"], 
-    n_samples: int, 
-    relative: bool
+    D: Float[torch.Tensor, "n_points n_points"], n_samples: int, relative: bool
 ) -> Float[torch.Tensor, "n_samples"]:
     """Sample random triangle configurations and compute curvature estimates."""
     n = D.shape[0]
-    
+
     # Sample random configurations: reference point a, triangle vertices b,c, midpoint m
     indices = torch.randint(0, n, (n_samples, 4))
     a, b, c, m = indices.T
@@ -102,25 +100,25 @@ def _compute_node_curvatures(
 
     for m in range(n):
         neighbors = torch.where(A[m] == 1)[0]
-        
+
         if len(neighbors) < 2:
             continue  # Need at least 2 neighbors to form triangles
 
         triangle_curvatures = []
-        
+
         # Consider all pairs of neighbors
         for i in range(len(neighbors)):
             for j in range(i + 1, len(neighbors)):
                 b, c = neighbors[i], neighbors[j]
-                
+
                 # Average curvature over all reference points
                 reference_curvatures = []
                 for a in range(n):
                     if a != m:
                         # Compute ξ(a,b,c;m)
-                        curvature = (
-                            D[a, m] ** 2 + (D[b, c] ** 2) / 4.0 - (D[a, b] ** 2 + D[a, c] ** 2) / 2.0
-                        ) / (2 * D[a, m])
+                        curvature = (D[a, m] ** 2 + (D[b, c] ** 2) / 4.0 - (D[a, b] ** 2 + D[a, c] ** 2) / 2.0) / (
+                            2 * D[a, m]
+                        )
                         reference_curvatures.append(curvature)
 
                 if reference_curvatures:

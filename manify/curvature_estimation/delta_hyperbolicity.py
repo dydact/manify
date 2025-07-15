@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def delta_hyperbolicity(
-    distance_matrix: Float[torch.Tensor, "n_points n_points"], 
+    distance_matrix: Float[torch.Tensor, "n_points n_points"],
     samples: int | None = None,
     reference_idx: int = 0,
     relative: bool = True,
@@ -53,14 +53,11 @@ def delta_hyperbolicity(
 
 
 def _sample_delta_values(
-    D: Float[torch.Tensor, "n_points n_points"], 
-    n_samples: int, 
-    reference_idx: int, 
-    relative: bool
+    D: Float[torch.Tensor, "n_points n_points"], n_samples: int, reference_idx: int, relative: bool
 ) -> Float[torch.Tensor, "n_samples"]:
     """Sample random triplets and compute δ values."""
     n = D.shape[0]
-    
+
     # Sample random triplets
     indices = torch.randint(0, n, (n_samples, 3))
     x, y, z = indices.T
@@ -81,9 +78,7 @@ def _sample_delta_values(
 
 
 def _compute_full_delta_tensor(
-    D: Float[torch.Tensor, "n_points n_points"], 
-    reference_idx: int, 
-    relative: bool
+    D: Float[torch.Tensor, "n_points n_points"], reference_idx: int, relative: bool
 ) -> Float[torch.Tensor, "n_points n_points n_points"]:
     """Compute full δ tensor over all triplets."""
     n = D.shape[0]
