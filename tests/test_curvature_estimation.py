@@ -57,18 +57,18 @@ def test_delta_hyperbolicity():
     assert iterative_deltas.shape == (10, 10, 10)
 
     # Test sampled method
-    sampled_deltas = delta_hyperbolicity(dists, method="sampled", n_samples=10)
+    sampled_deltas = delta_hyperbolicity(dists, samples=10)
     assert sampled_deltas.shape == (10,)
     assert (sampled_deltas <= 1).all()
     assert (sampled_deltas >= -2).all()
 
-    # Test global method
-    global_delta = delta_hyperbolicity(dists, method="global")
+    # Test global method (user calls .max() themselves)
+    full_deltas = delta_hyperbolicity(dists)
+    global_delta = full_deltas.max().item()
     assert isinstance(global_delta, float)
     assert -2 <= global_delta <= 1
 
     # Test full method
-    full_deltas = delta_hyperbolicity(dists, method="full")
     assert full_deltas.shape == (10, 10, 10)
     assert (full_deltas <= 1).all()
     assert (full_deltas >= -2).all()
@@ -97,15 +97,15 @@ def test_sectional_curvature():
             D[i, j] = min(abs(i - j), n - abs(i - j))
 
     # Test sampled method
-    sampled_curvatures = sectional_curvature(A, D, method="sampled", n_samples=10)
+    sampled_curvatures = sectional_curvature(A, D, samples=10)
     assert sampled_curvatures.shape == (10,)
 
     # Test per_node method
-    node_curvatures = sectional_curvature(A, D, method="per_node")
+    node_curvatures = sectional_curvature(A, D)
     assert node_curvatures.shape == (n,)
 
-    # Test global method
-    global_curvature = sectional_curvature(A, D, method="global")
+    # Test global method (user calls .mean() themselves)
+    global_curvature = node_curvatures.mean().item()
     assert isinstance(global_curvature, float)
 
 
