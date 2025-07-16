@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manify"
-version = "0.2.0"
+version = "0.2.1"
 description = "Manifold-based machine learning"
 authors = [
     { name = "Philippe Chlenski", email = "pac@cs.columbia.edu"},
